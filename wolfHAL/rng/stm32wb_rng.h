@@ -22,39 +22,8 @@ typedef struct whal_Stm32wbRng_Cfg {
     const void *clk;     /* Clock descriptor */
 } whal_Stm32wbRng_Cfg;
 
-/*
- * @brief Driver instance for STM32WB RNG peripheral.
- */
-extern const whal_RngDriver whal_Stm32wbRng_Driver;
-
-/*
- * @brief Initialize the STM32WB RNG peripheral.
- *
- * @param rngDev RNG device instance.
- *
- * @retval WHAL_SUCCESS Initialization completed.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Stm32wbRng_Init(whal_Rng *rngDev);
-/*
- * @brief Deinitialize the STM32WB RNG peripheral.
- *
- * @param rngDev RNG device instance.
- *
- * @retval WHAL_SUCCESS Deinit completed.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Stm32wbRng_Deinit(whal_Rng *rngDev);
-/*
- * @brief Generate random data.
- *
- * @param rngDev    RNG device instance.
- * @param rngData   Destination buffer.
- * @param rngDataSz Number of random bytes to generate.
- *
- * @retval WHAL_SUCCESS Buffer filled with random data.
- * @retval WHAL_EINVAL  Invalid arguments or seed/clock error detected.
- */
-whal_Error whal_Stm32wbRng_Generate(whal_Rng *rngDev, uint8_t *rngData, size_t rngDataSz);
+whal_Error WHAL_DRV_FN(Stm32wbRng, init)(whal_Rng *rngDev);
+whal_Error WHAL_DRV_FN(Stm32wbRng, deinit)(whal_Rng *rngDev);
+whal_Error WHAL_DRV_FN(Stm32wbRng, generate)(whal_Rng *rngDev, uint8_t *rngData, size_t rngDataSz);
 
 #endif /* WHAL_STM32WB_RNG_H */

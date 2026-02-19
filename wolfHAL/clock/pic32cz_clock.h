@@ -192,58 +192,10 @@ typedef struct whal_Pic32czClock_Clk {
     size_t mclkEnableMask;    /* Bit mask within the MCLK mask register */
 } whal_Pic32czClock_Clk;
 
-/*
- * @brief Driver instance for PIC32CZ oscillator clock.
- */
-extern const whal_ClockDriver whal_Pic32czClockPll_Driver;
-
-/*
- * @brief Initialize the PIC32CZ oscillator clock.
- *
- * @param clkDev Clock device instance to initialize.
- *
- * @retval WHAL_SUCCESS Initialization completed.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Pic32czClock_Init(whal_Clock *clkDev);
-/*
- * @brief Deinitialize the PIC32CZ oscillator clock.
- *
- * @param clkDev Clock device instance to deinitialize.
- *
- * @retval WHAL_SUCCESS Deinit completed.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Pic32czClock_Deinit(whal_Clock *clkDev);
-/*
- * @brief Enable the PIC32CZ oscillator clock.
- *
- * @param clkDev Clock device instance to enable.
- * @param clk    Clock selector (unused in stub).
- *
- * @retval WHAL_SUCCESS Clock enabled.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Pic32czClock_Enable(whal_Clock *clkDev, const void *clk);
-/*
- * @brief Disable the PIC32CZ oscillator clock.
- *
- * @param clkDev Clock device instance to disable.
- * @param clk    Clock selector (unused in stub).
- *
- * @retval WHAL_SUCCESS Clock disabled.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Pic32czClock_Disable(whal_Clock *clkDev, const void *clk);
-/*
- * @brief Report the PIC32CZ oscillator clock rate.
- *
- * @param clkDev  Clock device instance to query.
- * @param rateOut Storage for the clock rate.
- *
- * @retval WHAL_SUCCESS Rate reported.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Pic32czClock_GetRate(whal_Clock *clkDev, size_t *rateOut);
+whal_Error WHAL_DRV_FN(Pic32czClockPll, init)(whal_Clock *clkDev);
+whal_Error WHAL_DRV_FN(Pic32czClockPll, deinit)(whal_Clock *clkDev);
+whal_Error WHAL_DRV_FN(Pic32czClockPll, enable)(whal_Clock *clkDev, const void *clk);
+whal_Error WHAL_DRV_FN(Pic32czClockPll, disable)(whal_Clock *clkDev, const void *clk);
+whal_Error WHAL_DRV_FN(Pic32czClockPll, getrate)(whal_Clock *clkDev, size_t *rateOut);
 
 #endif /* WHAL_PIC32CZ_CLOCK_H */

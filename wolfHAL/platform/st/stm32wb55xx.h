@@ -15,62 +15,29 @@
  * @brief Convenience initializers for STM32WB55xx device instances.
  */
 
-#define WHAL_STM32WB55_LPUART1_DEVICE   \
-    .regmap = {                         \
-        .base = 0x40008000,             \
-        .size = 0x400,                  \
-    },                                  \
-    .driver = &whal_Stm32wbLpuart_Driver
+#define WHAL_STM32WB55_LPUART1_REGMAP   { .base = 0x40008000, .size = 0x400 }
+#define WHAL_STM32WB55_LPUART1_DRIVER   Stm32wbLpuart
 
-#define WHAL_STM32WB55_SPI1_DEVICE      \
-    .regmap = {                         \
-        .base = 0x40013000,             \
-        .size = 0x400,                  \
-    },                                  \
-    .driver = &whal_Stm32wbSpi_Driver
+#define WHAL_STM32WB55_SPI1_REGMAP      { .base = 0x40013000, .size = 0x400 }
+#define WHAL_STM32WB55_SPI1_DRIVER      Stm32wbSpi
 
-#define WHAL_STM32WB55_UART1_DEVICE     \
-    .regmap = {                         \
-        .base = 0x40013800,             \
-        .size = 0x400,                  \
-    },                                  \
-    .driver = &whal_Stm32wbUart_Driver
+#define WHAL_STM32WB55_UART1_REGMAP     { .base = 0x40013800, .size = 0x400 }
+#define WHAL_STM32WB55_UART1_DRIVER     Stm32wbUart
 
-#define WHAL_STM32WB55_GPIO_DEVICE      \
-    .regmap = {                         \
-        .base = 0x48000000,             \
-        .size = 0x400,                  \
-    },                                  \
-    .driver = &whal_Stm32wbGpio_Driver
+#define WHAL_STM32WB55_GPIO_REGMAP      { .base = 0x48000000, .size = 0x400 }
+#define WHAL_STM32WB55_GPIO_DRIVER      Stm32wbGpio
 
-#define WHAL_STM32WB55_RCC_PLL_DEVICE   \
-    .regmap = {                         \
-        .base = 0x58000000,             \
-        .size = 0x400,                  \
-    },                                  \
-    .driver = &whal_Stm32wbRccPll_Driver
+#define WHAL_STM32WB55_RCC_PLL_REGMAP   { .base = 0x58000000, .size = 0x400 }
+#define WHAL_STM32WB55_RCC_PLL_DRIVER   Stm32wbRccPll
 
-#define WHAL_STM32WB55_RCC_MSI_DEVICE   \
-    .regmap = {                         \
-        .base = 0x58000000,             \
-        .size = 0x400,                  \
-    },                                  \
-    .driver = &whal_Stm32wbRccPll_Driver
+#define WHAL_STM32WB55_RCC_MSI_REGMAP   { .base = 0x58000000, .size = 0x400 }
+#define WHAL_STM32WB55_RCC_MSI_DRIVER   Stm32wbRccMsi
 
-#define WHAL_STM32WB55_RNG_DEVICE       \
-    .regmap = {                         \
-        .base = 0x58001000,             \
-        .size = 0x400,                  \
-    },                                  \
-    .driver = &whal_Stm32wbRng_Driver
+#define WHAL_STM32WB55_RNG_REGMAP       { .base = 0x58001000, .size = 0x400 }
+#define WHAL_STM32WB55_RNG_DRIVER       Stm32wbRng
 
-#define WHAL_STM32WB55_FLASH_DEVICE     \
-    .regmap = {                         \
-        .base = 0x58004000,             \
-        .size = 0x400,                  \
-    },                                  \
-    .driver = &whal_Stm32wbFlash_Driver
-
+#define WHAL_STM32WB55_FLASH_REGMAP     { .base = 0x58004000, .size = 0x400 }
+#define WHAL_STM32WB55_FLASH_DRIVER     Stm32wbFlash
 
 #define WHAL_STM32WB55_PLL_CLOCK    \
     .regOffset = 0x00,              \

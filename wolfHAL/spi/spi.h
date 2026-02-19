@@ -1,6 +1,7 @@
 #ifndef WHAL_SPI_H
 #define WHAL_SPI_H
 
+#include <wolfHAL/driver.h>
 #include <wolfHAL/error.h>
 #include <wolfHAL/regmap.h>
 #include <stdint.h>
@@ -8,110 +9,101 @@
 
 /*
  * @file spi.h
- * @brief Generic SPI abstraction and driver interface.
+ * @brief Generic SPI abstraction with compile-time dispatch.
  */
 
 typedef struct whal_Spi whal_Spi;
 
-/*
- * @brief Driver vtable for SPI devices.
- */
-typedef struct {
-    /* Initialize the SPI hardware. */
-    whal_Error (*Init)(whal_Spi *spiDev);
-    /* Deinitialize the SPI hardware. */
-    whal_Error (*Deinit)(whal_Spi *spiDev);
-    /* Perform a bidirectional transfer. */
-    whal_Error (*SendRecv)(whal_Spi *spiDev, void *spiComCfg, const uint8_t *tx, size_t txLen, uint8_t *rx, size_t rxLen);
-    /* Transmit a buffer. */
-    whal_Error (*Send)(whal_Spi *spiDev, void *spiComCfg, const uint8_t *data, size_t dataSz);
-    /* Receive into a buffer. */
-    whal_Error (*Recv)(whal_Spi *spiDev, void *spiComCfg, uint8_t *data, size_t dataSz);
-} whal_SpiDriver;
+#ifdef WHAL_RUNTIME_POLYMORPHISM
 
-/*
- * @brief SPI device instance tying a register map and driver.
- */
+typedef struct {
+    whal_Error (*init)(whal_Spi *dev);
+    whal_Error (*deinit)(whal_Spi *dev);
+    whal_Error (*sendrecv)(whal_Spi *dev, void *spiComCfg, const uint8_t *tx, size_t txLen, uint8_t *rx, size_t rxLen);
+    whal_Error (*send)(whal_Spi *dev, void *spiComCfg, const uint8_t *data, size_t dataSz);
+    whal_Error (*recv)(whal_Spi *dev, void *spiComCfg, uint8_t *data, size_t dataSz);
+} whal_SpiOps;
+
+#define WHAL_SPI_OPS(DRIVER) {                  \
+    .init     = WHAL_DRV_FN(DRIVER, init),      \
+    .deinit   = WHAL_DRV_FN(DRIVER, deinit),    \
+    .sendrecv = WHAL_DRV_FN(DRIVER, sendrecv),  \
+    .send     = WHAL_DRV_FN(DRIVER, send),      \
+    .recv     = WHAL_DRV_FN(DRIVER, recv),       \
+}
+
+#endif /* WHAL_RUNTIME_POLYMORPHISM */
+
 struct whal_Spi {
     const whal_Regmap regmap;
-    const whal_SpiDriver *driver;
     void *cfg;
+#ifdef WHAL_RUNTIME_POLYMORPHISM
+    const whal_SpiOps *ops;
+#endif
 };
 
-/*
- * @brief Initializes an SPI device and its driver.
- *
- * @param spiDev Pointer to the SPI instance to initialize.
- *
- * @retval WHAL_SUCCESS Driver-specific init completed.
- * @retval WHAL_EINVAL  Null pointer or driver rejected configuration.
- */
-#ifdef WHAL_CFG_NO_CALLBACKS
-#define whal_Spi_Init(spiDev) ((spiDev)->driver->Init((spiDev)))
-#define whal_Spi_Deinit(spiDev) ((spiDev)->driver->Deinit((spiDev)))
-#define whal_Spi_SendRecv(spiDev, spiComCfg, tx, txLen, rx, rxLen) \
-    ((spiDev)->driver->SendRecv((spiDev), (spiComCfg), (tx), (txLen), (rx), (rxLen)))
-#define whal_Spi_Send(spiDev, spiComCfg, data, dataSz) \
-    ((spiDev)->driver->Send((spiDev), (spiComCfg), (data), (dataSz)))
-#define whal_Spi_Recv(spiDev, spiComCfg, data, dataSz) \
-    ((spiDev)->driver->Recv((spiDev), (spiComCfg), (data), (dataSz)))
+#define WHAL_SPI_DEV_DECLARE(NAME, DRIVER)                                                                                          \
+    extern whal_Spi whal_dev_##NAME;                                                                                                \
+    static inline whal_Error whal_dev_##NAME##_init(void) {                                                                         \
+        return WHAL_DRV_FN(DRIVER, init)(&whal_dev_##NAME);                                                                         \
+    }                                                                                                                               \
+    static inline whal_Error whal_dev_##NAME##_deinit(void) {                                                                       \
+        return WHAL_DRV_FN(DRIVER, deinit)(&whal_dev_##NAME);                                                                       \
+    }                                                                                                                               \
+    static inline whal_Error whal_dev_##NAME##_sendrecv(void *spiComCfg, const uint8_t *tx, size_t txLen, uint8_t *rx, size_t rxLen) {   \
+        return WHAL_DRV_FN(DRIVER, sendrecv)(&whal_dev_##NAME, spiComCfg, tx, txLen, rx, rxLen);                                     \
+    }                                                                                                                               \
+    static inline whal_Error whal_dev_##NAME##_send(void *spiComCfg, const uint8_t *data, size_t dataSz) {                          \
+        return WHAL_DRV_FN(DRIVER, send)(&whal_dev_##NAME, spiComCfg, data, dataSz);                                                \
+    }                                                                                                                               \
+    static inline whal_Error whal_dev_##NAME##_recv(void *spiComCfg, uint8_t *data, size_t dataSz) {                                \
+        return WHAL_DRV_FN(DRIVER, recv)(&whal_dev_##NAME, spiComCfg, data, dataSz);                                                \
+    }
+
+#ifdef WHAL_RUNTIME_POLYMORPHISM
+#define WHAL_SPI_DEV_DEFINE(NAME, DRIVER, REGMAP, CFG)                          \
+    static const whal_SpiOps whal_dev_##NAME##_ops = WHAL_SPI_OPS(DRIVER);      \
+    whal_Spi whal_dev_##NAME = {                                                \
+        .regmap = REGMAP,                                                       \
+        .cfg = CFG,                                                             \
+        .ops = &whal_dev_##NAME##_ops,                                          \
+    }
 #else
-/*
- * @brief Initializes an SPI device and its driver.
- *
- * @param spiDev Pointer to the SPI instance to initialize.
- *
- * @retval WHAL_SUCCESS Driver-specific init completed.
- * @retval WHAL_EINVAL  Null pointer or driver rejected configuration.
- */
-whal_Error whal_Spi_Init(whal_Spi *spiDev);
-/*
- * @brief Deinitializes an SPI device and releases resources.
- *
- * @param spiDev Pointer to the SPI instance to deinitialize.
- *
- * @retval WHAL_SUCCESS Driver-specific deinit completed.
- * @retval WHAL_EINVAL  Null pointer or driver refused to deinit.
- */
-whal_Error whal_Spi_Deinit(whal_Spi *spiDev);
-/*
- * @brief Perform a bidirectional SPI transfer.
- *
- * @param spiDev Pointer to the SPI instance.
- * @param spiComCfg Communication configuration (chip select, mode, speed, etc).
- * @param tx     Buffer of bytes to transmit (may be NULL for read-only).
- * @param txLen  Number of bytes to transmit.
- * @param rx     Buffer to receive bytes into (may be NULL for write-only).
- * @param rxLen  Number of bytes to receive.
- *
- * @retval WHAL_SUCCESS Transfer completed or queued.
- * @retval WHAL_EINVAL  Null pointer or driver failed to transfer.
- */
-whal_Error whal_Spi_SendRecv(whal_Spi *spiDev, void *spiComCfg, const uint8_t *tx, size_t txLen, uint8_t *rx, size_t rxLen);
-/*
- * @brief Sends a buffer over SPI.
- *
- * @param spiDev Pointer to the SPI instance.
- * @param spiComCfg Communication configuration (chip select, mode, speed, etc).
- * @param data   Buffer to transmit.
- * @param dataSz Number of bytes to send.
- *
- * @retval WHAL_SUCCESS Buffer was queued or transmitted.
- * @retval WHAL_EINVAL  Null pointer or driver failed to send.
- */
-whal_Error whal_Spi_Send(whal_Spi *spiDev, void *spiComCfg, const uint8_t *data, size_t dataSz);
-/*
- * @brief Receives data from SPI into a buffer.
- *
- * @param spiDev Pointer to the SPI instance.
- * @param spiComCfg Communication configuration (chip select, mode, speed, etc).
- * @param data   Destination buffer.
- * @param dataSz Maximum number of bytes to read.
- *
- * @retval WHAL_SUCCESS Buffer was filled or receive started.
- * @retval WHAL_EINVAL  Null pointer or driver failed to receive.
- */
-whal_Error whal_Spi_Recv(whal_Spi *spiDev, void *spiComCfg, uint8_t *data, size_t dataSz);
+#define WHAL_SPI_DEV_DEFINE(NAME, DRIVER, REGMAP, CFG)      \
+    whal_Spi whal_dev_##NAME = {                            \
+        .regmap = REGMAP,                                   \
+        .cfg = CFG,                                         \
+    }
 #endif
+
+#define WHAL_SPI_INIT(NAME)                                         whal_dev_##NAME##_init()
+#define WHAL_SPI_DEINIT(NAME)                                       whal_dev_##NAME##_deinit()
+#define WHAL_SPI_SENDRECV(NAME, spiComCfg, tx, txLen, rx, rxLen)    whal_dev_##NAME##_sendrecv(spiComCfg, tx, txLen, rx, rxLen)
+#define WHAL_SPI_SEND(NAME, spiComCfg, data, dataSz)                whal_dev_##NAME##_send(spiComCfg, data, dataSz)
+#define WHAL_SPI_RECV(NAME, spiComCfg, data, dataSz)                whal_dev_##NAME##_recv(spiComCfg, data, dataSz)
+
+#ifdef WHAL_RUNTIME_POLYMORPHISM
+
+static inline whal_Error whal_Spi_Init(whal_Spi *dev) {
+    return dev->ops->init(dev);
+}
+static inline whal_Error whal_Spi_Deinit(whal_Spi *dev) {
+    return dev->ops->deinit(dev);
+}
+static inline whal_Error whal_Spi_Sendrecv(whal_Spi *dev, void *spiComCfg,
+                                           const uint8_t *tx, size_t txLen,
+                                           uint8_t *rx, size_t rxLen) {
+    return dev->ops->sendrecv(dev, spiComCfg, tx, txLen, rx, rxLen);
+}
+static inline whal_Error whal_Spi_Send(whal_Spi *dev, void *spiComCfg,
+                                       const uint8_t *data, size_t dataSz) {
+    return dev->ops->send(dev, spiComCfg, data, dataSz);
+}
+static inline whal_Error whal_Spi_Recv(whal_Spi *dev, void *spiComCfg,
+                                       uint8_t *data, size_t dataSz) {
+    return dev->ops->recv(dev, spiComCfg, data, dataSz);
+}
+
+#endif /* WHAL_RUNTIME_POLYMORPHISM */
 
 #endif /* WHAL_SPI_H */

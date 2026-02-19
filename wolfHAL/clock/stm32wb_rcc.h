@@ -17,8 +17,8 @@
  * - Bus clock prescalers
  *
  * Two driver variants are provided:
- * - whal_Stm32wbRccPll_Driver: Uses PLL as system clock source
- * - whal_Stm32wbRccMsi_Driver: Uses MSI oscillator as system clock source
+ * - Stm32wbRccPll: Uses PLL as system clock source
+ * - Stm32wbRccMsi: Uses MSI oscillator as system clock source
  *
  * When changing clock speeds, flash latency must be adjusted appropriately
  * to ensure reliable flash access at the new frequency.
@@ -106,7 +106,7 @@ typedef struct whal_Stm32wbRcc_MsiClkCfg {
  * @brief Peripheral clock enable descriptor.
  *
  * Describes the register offset and bit mask needed to enable/disable
- * a peripheral's bus clock. Used with whal_Stm32wbRcc_Enable/Disable.
+ * a peripheral's bus clock. Used with clock enable/disable operations.
  *
  * Example for GPIOA:
  *   { .regOffset = 0x04C, .enableMask = (1 << 0) }  // AHB2ENR.GPIOAEN
@@ -130,97 +130,19 @@ typedef struct whal_Stm32wbRcc_Cfg {
     void *sysClkCfg; /* Pointer to PllClkCfg or MsiClkCfg based on driver */
 } whal_Stm32wbRcc_Cfg;
 
-/*
- * @brief Driver instance for the STM32 RCC clock controller.
- */
-extern const whal_ClockDriver whal_Stm32wbRccPll_Driver;
-extern const whal_ClockDriver whal_Stm32wbRccMsi_Driver;
+whal_Error WHAL_DRV_FN(Stm32wbRccPll, init)(whal_Clock *clkDev);
+whal_Error WHAL_DRV_FN(Stm32wbRccPll, deinit)(whal_Clock *clkDev);
+whal_Error WHAL_DRV_FN(Stm32wbRccMsi, init)(whal_Clock *clkDev);
+whal_Error WHAL_DRV_FN(Stm32wbRccMsi, deinit)(whal_Clock *clkDev);
+whal_Error WHAL_DRV_FN(Stm32wbRccPll, enable)(whal_Clock *clkDev, const void *clk);
+whal_Error WHAL_DRV_FN(Stm32wbRccPll, disable)(whal_Clock *clkDev, const void *clk);
+whal_Error WHAL_DRV_FN(Stm32wbRccPll, getrate)(whal_Clock *clkDev, size_t *rateOut);
+whal_Error WHAL_DRV_FN(Stm32wbRccMsi, getrate)(whal_Clock *clkDev, size_t *rateOut);
 
-/*
- * @brief Initialize the RCC peripheral.
- *
- * @param clkDev Clock device instance.
- *
- * @retval WHAL_SUCCESS Initialization completed.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Stm32wbRccPll_Init(whal_Clock *clkDev);
-/*
- * @brief Deinitialize the RCC peripheral.
- *
- * @param clkDev Clock device instance.
- *
- * @retval WHAL_SUCCESS Deinit completed.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Stm32wbRccPll_Deinit(whal_Clock *clkDev);
-/*
- * @brief Initialize the RCC peripheral.
- *
- * @param clkDev Clock device instance.
- *
- * @retval WHAL_SUCCESS Initialization completed.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Stm32wbRccMsi_Init(whal_Clock *clkDev);
-/*
- * @brief Deinitialize the RCC peripheral.
- *
- * @param clkDev Clock device instance.
- *
- * @retval WHAL_SUCCESS Deinit completed.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Stm32wbRccMsi_Deinit(whal_Clock *clkDev);
-/*
- * @brief Enable a peripheral clock gate.
- *
- * @param clkDev Clock device instance.
- * @param clk    Pointer to a whal_Stm32wbRcc_Clk descriptor.
- *
- * @retval WHAL_SUCCESS Clock enabled.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Stm32wbRcc_Enable(whal_Clock *clkDev, const void *clk);
-/*
- * @brief Disable a peripheral clock gate.
- *
- * @param clkDev Clock device instance.
- * @param clk    Pointer to a whal_Stm32wbRcc_Clk descriptor.
- *
- * @retval WHAL_SUCCESS Clock disabled.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Stm32wbRcc_Disable(whal_Clock *clkDev, const void *clk);
-/*
- * @brief Compute the current system clock rate.
- *
- * @param clkDev  Clock device instance.
- * @param rateOut Output for the computed rate in Hz.
- *
- * @retval WHAL_SUCCESS Rate computed.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Stm32wbRccPll_GetRate(whal_Clock *clkDev, size_t *rateOut);
-/*
- * @brief Compute the current system clock rate.
- *
- * @param clkDev  Clock device instance.
- * @param rateOut Output for the computed rate in Hz.
- *
- * @retval WHAL_SUCCESS Rate computed.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Stm32wbRccMsi_GetRate(whal_Clock *clkDev, size_t *rateOut);
-/*
- * @brief Enable or disable the HSI48 oscillator required by the RNG peripheral.
- *
- * @param clkDev Clock controller instance.
- * @param enable 1 to enable, 0 to disable.
- *
- * @retval WHAL_SUCCESS HSI48 enabled and ready, or disabled.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
+/* MSI shares enable/disable with PLL */
+#define whal_drv_Stm32wbRccMsi_enable  WHAL_DRV_FN(Stm32wbRccPll, enable)
+#define whal_drv_Stm32wbRccMsi_disable WHAL_DRV_FN(Stm32wbRccPll, disable)
+
 whal_Error whal_Stm32wbRcc_Ext_EnableHsi48(whal_Clock *clkDev, uint8_t enable);
 
 #endif /* WHAL_STM32WB_RCC_H */

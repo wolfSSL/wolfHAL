@@ -2,6 +2,7 @@
 #include <wolfHAL/spi/stm32wb_spi.h>
 #include <wolfHAL/spi/spi.h>
 #include <wolfHAL/clock/clock.h>
+#include <wolfHAL/clock/stm32wb_rcc.h>
 #include <wolfHAL/error.h>
 #include <wolfHAL/regmap.h>
 #include <wolfHAL/bitops.h>
@@ -75,7 +76,8 @@ static void whal_Stm32wbSpi_ApplyComCfg(const whal_Regmap *reg,
     size_t pclk;
     uint32_t cpol, cpha, br;
 
-    err = whal_Clock_GetRate(cfg->clkCtrl, &pclk);
+    /* FIXME: Derive pclk from the active RCC driver in cfg->clkCtrl, not PLL-only getrate. */
+    err = WHAL_DRV_FN(Stm32wbRccPll, getrate)(cfg->clkCtrl, &pclk);
     if (err) {
         return;
     }
@@ -101,7 +103,7 @@ static void whal_Stm32wbSpi_ApplyComCfg(const whal_Regmap *reg,
                     whal_SetBits(SSPI_CR1_SPE, 1));
 }
 
-whal_Error whal_Stm32wbSpi_Init(whal_Spi *spiDev)
+whal_Error WHAL_DRV_FN(Stm32wbSpi, init)(whal_Spi *spiDev)
 {
     whal_Error err;
     whal_Stm32wbSpi_Cfg *cfg;
@@ -114,7 +116,7 @@ whal_Error whal_Stm32wbSpi_Init(whal_Spi *spiDev)
     reg = &spiDev->regmap;
     cfg = (whal_Stm32wbSpi_Cfg *)spiDev->cfg;
 
-    err = whal_Clock_Enable(cfg->clkCtrl, cfg->clk);
+    err = WHAL_DRV_FN(Stm32wbRccPll, enable)(cfg->clkCtrl, cfg->clk);
     if (err != WHAL_SUCCESS) {
         return err;
     }
@@ -135,7 +137,7 @@ whal_Error whal_Stm32wbSpi_Init(whal_Spi *spiDev)
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Stm32wbSpi_Deinit(whal_Spi *spiDev)
+whal_Error WHAL_DRV_FN(Stm32wbSpi, deinit)(whal_Spi *spiDev)
 {
     whal_Error err;
     const whal_Regmap *reg;
@@ -152,7 +154,7 @@ whal_Error whal_Stm32wbSpi_Deinit(whal_Spi *spiDev)
     whal_Reg_Update(reg->base, SSPI_CR1_REG, SSPI_CR1_SPE,
                     whal_SetBits(SSPI_CR1_SPE, 0));
 
-    err = whal_Clock_Disable(cfg->clkCtrl, cfg->clk);
+    err = WHAL_DRV_FN(Stm32wbRccPll, disable)(cfg->clkCtrl, cfg->clk);
     if (err) {
         return err;
     }
@@ -160,7 +162,7 @@ whal_Error whal_Stm32wbSpi_Deinit(whal_Spi *spiDev)
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Stm32wbSpi_SendRecv(whal_Spi *spiDev, void *spiComCfg, const uint8_t *tx,
+whal_Error WHAL_DRV_FN(Stm32wbSpi, sendrecv)(whal_Spi *spiDev, void *spiComCfg, const uint8_t *tx,
                                     size_t txLen, uint8_t *rx, size_t rxLen)
 {
     const whal_Regmap *reg;
@@ -214,23 +216,15 @@ whal_Error whal_Stm32wbSpi_SendRecv(whal_Spi *spiDev, void *spiComCfg, const uin
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Stm32wbSpi_Send(whal_Spi *spiDev, void *spiComCfg, const uint8_t *data,
+whal_Error WHAL_DRV_FN(Stm32wbSpi, send)(whal_Spi *spiDev, void *spiComCfg, const uint8_t *data,
                                 size_t dataSz)
 {
-    return whal_Stm32wbSpi_SendRecv(spiDev, spiComCfg, data, dataSz, NULL, 0);
+    return WHAL_DRV_FN(Stm32wbSpi, sendrecv)(spiDev, spiComCfg, data, dataSz, NULL, 0);
 }
 
-whal_Error whal_Stm32wbSpi_Recv(whal_Spi *spiDev, void *spiComCfg, uint8_t *data,
+whal_Error WHAL_DRV_FN(Stm32wbSpi, recv)(whal_Spi *spiDev, void *spiComCfg, uint8_t *data,
                                 size_t dataSz)
 {
     uint8_t dummyByte = 0xFF;
-    return whal_Stm32wbSpi_SendRecv(spiDev, spiComCfg, &dummyByte, 1, data, dataSz);
+    return WHAL_DRV_FN(Stm32wbSpi, sendrecv)(spiDev, spiComCfg, &dummyByte, 1, data, dataSz);
 }
-
-const whal_SpiDriver whal_Stm32wbSpi_Driver = {
-    .Init = whal_Stm32wbSpi_Init,
-    .Deinit = whal_Stm32wbSpi_Deinit,
-    .SendRecv = whal_Stm32wbSpi_SendRecv,
-    .Send = whal_Stm32wbSpi_Send,
-    .Recv = whal_Stm32wbSpi_Recv,
-};

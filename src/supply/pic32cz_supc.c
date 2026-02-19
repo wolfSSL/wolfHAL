@@ -6,17 +6,17 @@
 #define PIC32CZ_VREGCTRL_AVREGEN WHAL_MASK_RANGE(18, 16)
 
 
-whal_Error whal_Pic32czSupc_Init(whal_Supply *supplyCtrl)
+whal_Error WHAL_DRV_FN(Pic32czSupc, init)(whal_Supply *supplyCtrl)
 {
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Pic32czSupc_Deinit(whal_Supply *supplyCtrl)
+whal_Error WHAL_DRV_FN(Pic32czSupc, deinit)(whal_Supply *supplyCtrl)
 {
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Pic32czSupc_Enable(whal_Supply *supplyCtrl, void *supply)
+whal_Error WHAL_DRV_FN(Pic32czSupc, enable)(whal_Supply *supplyCtrl, void *supply)
 {
     if (!supplyCtrl || !supply) {
         return WHAL_EINVAL;
@@ -30,7 +30,7 @@ whal_Error whal_Pic32czSupc_Enable(whal_Supply *supplyCtrl, void *supply)
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Pic32czSupc_Disable(whal_Supply *supplyCtrl, void *supply)
+whal_Error WHAL_DRV_FN(Pic32czSupc, disable)(whal_Supply *supplyCtrl, void *supply)
 {
     if (!supplyCtrl) {
         return WHAL_EINVAL;
@@ -44,9 +44,3 @@ whal_Error whal_Pic32czSupc_Disable(whal_Supply *supplyCtrl, void *supply)
     return WHAL_SUCCESS;
 }
 
-const whal_SupplyDriver whal_Pic32czSupc_Driver = {
-    .Init = whal_Pic32czSupc_Init,
-    .Deinit = whal_Pic32czSupc_Deinit,
-    .Enable = whal_Pic32czSupc_Enable,
-    .Disable = whal_Pic32czSupc_Disable,
-};

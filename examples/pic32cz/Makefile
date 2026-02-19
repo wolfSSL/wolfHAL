@@ -10,14 +10,7 @@ DEPDIR = .deps/
 SOURCE ?= $(wildcard *.c)
 SOURCE += $(wildcard $(WHAL_DIR)/src/*.c)
 
-SOURCE += $(wildcard $(WHAL_DIR)/src/*/gpio.c)
-SOURCE += $(wildcard $(WHAL_DIR)/src/*/clock.c)
-SOURCE += $(wildcard $(WHAL_DIR)/src/*/uart.c)
-SOURCE += $(wildcard $(WHAL_DIR)/src/*/timer.c)
-SOURCE += $(wildcard $(WHAL_DIR)/src/*/supply.c)
-SOURCE += $(wildcard $(WHAL_DIR)/src/*/flash.c)
-SOURCE += $(wildcard $(WHAL_DIR)/src/*/pic32cz_*.c)
-SOURCE += $(wildcard $(WHAL_DIR)/src/*/systick.c)
+SOURCE += $(wildcard $(WHAL_DIR)/src/*/*.c)
 
 OBJECTS = $(patsubst %.c,%.o,$(SOURCE))
 

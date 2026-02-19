@@ -45,69 +45,13 @@ typedef struct whal_Stm32wbSpi_ComCfg {
     uint32_t baud;       /* Baud rate in Hz */
 } whal_Stm32wbSpi_ComCfg;
 
-/*
- * @brief Driver instance for STM32 SPI peripheral.
- */
-extern const whal_SpiDriver whal_Stm32wbSpi_Driver;
-
-/*
- * @brief Initialize the STM32 SPI peripheral.
- *
- * @param spiDev SPI device instance to initialize.
- *
- * @retval WHAL_SUCCESS Initialization completed.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Stm32wbSpi_Init(whal_Spi *spiDev);
-/*
- * @brief Deinitialize the STM32 SPI peripheral.
- *
- * @param spiDev SPI device instance to deinitialize.
- *
- * @retval WHAL_SUCCESS Deinit completed.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Stm32wbSpi_Deinit(whal_Spi *spiDev);
-/*
- * @brief Perform a full-duplex SPI transfer.
- *
- * @param spiDev    SPI device instance.
- * @param spiComCfg Per-transfer configuration.
- * @param tx        Data to transmit (may be NULL).
- * @param txLen     Number of bytes to transmit.
- * @param rx        Receive buffer (may be NULL).
- * @param rxLen     Number of bytes to receive.
- *
- * @retval WHAL_SUCCESS Transfer completed.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Stm32wbSpi_SendRecv(whal_Spi *spiDev, void *spiComCfg, const uint8_t *tx,
+whal_Error WHAL_DRV_FN(Stm32wbSpi, init)(whal_Spi *spiDev);
+whal_Error WHAL_DRV_FN(Stm32wbSpi, deinit)(whal_Spi *spiDev);
+whal_Error WHAL_DRV_FN(Stm32wbSpi, sendrecv)(whal_Spi *spiDev, void *spiComCfg, const uint8_t *tx,
                                size_t txLen, uint8_t *rx, size_t rxLen);
-/*
- * @brief Transmit a buffer over SPI.
- *
- * @param spiDev    SPI device instance.
- * @param spiComCfg Per-transfer configuration.
- * @param data      Buffer to transmit.
- * @param dataSz    Number of bytes to transmit.
- *
- * @retval WHAL_SUCCESS Transfer completed.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Stm32wbSpi_Send(whal_Spi *spiDev, void *spiComCfg, const uint8_t *data,
+whal_Error WHAL_DRV_FN(Stm32wbSpi, send)(whal_Spi *spiDev, void *spiComCfg, const uint8_t *data,
                            size_t dataSz);
-/*
- * @brief Receive a buffer over SPI.
- *
- * @param spiDev    SPI device instance.
- * @param spiComCfg Per-transfer configuration.
- * @param data      Receive buffer.
- * @param dataSz    Number of bytes to receive.
- *
- * @retval WHAL_SUCCESS Transfer completed.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Stm32wbSpi_Recv(whal_Spi *spiDev, void *spiComCfg, uint8_t *data,
+whal_Error WHAL_DRV_FN(Stm32wbSpi, recv)(whal_Spi *spiDev, void *spiComCfg, uint8_t *data,
                            size_t dataSz);
 
 #endif /* WHAL_STM32WB_SPI_H */

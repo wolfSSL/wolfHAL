@@ -8,40 +8,20 @@
 #include <wolfHAL/flash/pic32cz_flash.h>
 #include <wolfHAL/platform/arm/cortex_m7.h>
 
-#define WHAL_PIC32CZ_FLASH_DEVICE       \
-    .regmap = {                         \
-        .base = 0x44002000,             \
-        .size = 0x4000,                 \
-    },                                  \
-    .driver = &whal_Pic32czFlash_Driver
+#define WHAL_PIC32CZ_FLASH_REGMAP       { .base = 0x44002000, .size = 0x4000 }
+#define WHAL_PIC32CZ_FLASH_DRIVER       Pic32czFlash
 
-#define WHAL_PIC32CZ_SUPPLY_DEVICE      \
-    .regmap = {                         \
-        .base = 0x44020000,             \
-        .size = 0x2000,                 \
-    },                                  \
-    .driver = &whal_Pic32czSupc_Driver
+#define WHAL_PIC32CZ_SUPPLY_REGMAP      { .base = 0x44020000, .size = 0x2000 }
+#define WHAL_PIC32CZ_SUPPLY_DRIVER      Pic32czSupc
 
-#define WHAL_PIC32CZ_CLOCK_PLL_DEVICE   \
-    .regmap = {                         \
-        .base = 0x44040000,             \
-        .size = 0x14000,                \
-    },                                  \
-    .driver = &whal_Pic32czClockPll_Driver
+#define WHAL_PIC32CZ_CLOCK_PLL_REGMAP   { .base = 0x44040000, .size = 0x14000 }
+#define WHAL_PIC32CZ_CLOCK_PLL_DRIVER   Pic32czClockPll
 
-#define WHAL_PIC32CZ_GPIO_DEVICE        \
-    .regmap = {                         \
-        .base = 0x44840000,             \
-        .size = 0x2000,                 \
-    },                                  \
-    .driver = &whal_Pic32czGpio_Driver
+#define WHAL_PIC32CZ_GPIO_REGMAP        { .base = 0x44840000, .size = 0x2000 }
+#define WHAL_PIC32CZ_GPIO_DRIVER        Pic32czGpio
 
-#define WHAL_PIC32CZ_SERCOM4_UART_DEVICE    \
-    .regmap = {                             \
-        .base = 0x46004000,                 \
-        .size = 0x2000,                     \
-    },                                      \
-    .driver = &whal_Pic32czUart_Driver
+#define WHAL_PIC32CZ_SERCOM4_UART_REGMAP    { .base = 0x46004000, .size = 0x2000 }
+#define WHAL_PIC32CZ_SERCOM4_UART_DRIVER    Pic32czUart
 
 #define WHAL_PIC32CZ_SUPPLY_PLL     \
     .enableMask = (1 << 18)

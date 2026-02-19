@@ -1,14 +1,9 @@
 #include <wolfHAL/platform/st/stm32wb55xx.h>
 #include "stm32wb55xx_nucleo.h"
 
-whal_Clock g_whalClock;
-whal_Flash g_whalFlash;
-
-whal_Clock g_whalClock = {
-    WHAL_STM32WB55_RCC_PLL_DEVICE,
-
-    .cfg = &(whal_Stm32wbRcc_Cfg) {
-        .flash = &g_whalFlash,
+WHAL_CLOCK_DEV_DEFINE(clock, WHAL_STM32WB55_RCC_PLL_DRIVER, WHAL_STM32WB55_RCC_PLL_REGMAP,
+    (&(whal_Stm32wbRcc_Cfg) {
+        .flash = &whal_dev_flash,
         .flashLatency = WHAL_STM32WB_FLASH_LATENCY_3,
 
         .sysClkSrc = WHAL_STM32WB_RCC_SYSCLK_SRC_PLL,
@@ -22,14 +17,11 @@ whal_Clock g_whalClock = {
             .q = 0,
             .p = 0,
         },
-    },
-};
+    }));
 
-whal_Gpio g_whalGpio = {
-    WHAL_STM32WB55_GPIO_DEVICE,
-
-    .cfg = &(whal_Stm32wbGpio_Cfg) {
-        .clkCtrl = &g_whalClock,
+WHAL_GPIO_DEV_DEFINE(gpio, WHAL_STM32WB55_GPIO_DRIVER, WHAL_STM32WB55_GPIO_REGMAP,
+    (&(whal_Stm32wbGpio_Cfg) {
+        .clkCtrl = &whal_dev_clock,
         .clk = (const void *[2]) {
             &(whal_Stm32wbRcc_Clk){WHAL_STM32WB55_GPIOA_CLOCK},
             &(whal_Stm32wbRcc_Clk){WHAL_STM32WB55_GPIOB_CLOCK},
@@ -102,56 +94,40 @@ whal_Gpio g_whalGpio = {
             },
         },
         .pinCount = 7,
-    },
-};
+    }));
 
-whal_Timer g_whalTimer = {
-    WHAL_CORTEX_M4_SYSTICK_DEVICE,
-
-    .cfg = &(whal_SysTick_Cfg) {
+WHAL_TIMER_DEV_DEFINE(timer, WHAL_CORTEX_M4_SYSTICK_DRIVER, WHAL_CORTEX_M4_SYSTICK_REGMAP,
+    (&(whal_SysTick_Cfg) {
         .cyclesPerTick = 64000000 / 1000,
         .clkSrc = WHAL_SYSTICK_CLKSRC_SYSCLK,
         .tickInt = WHAL_SYSTICK_TICKINT_ENABLED,
-    },
-};
+    }));
 
-whal_Uart g_whalUart = {
-    WHAL_STM32WB55_UART1_DEVICE,
-
-    .cfg = &(whal_Stm32wbUart_Cfg) {
-        .clkCtrl = &g_whalClock,
+WHAL_UART_DEV_DEFINE(uart, WHAL_STM32WB55_UART1_DRIVER, WHAL_STM32WB55_UART1_REGMAP,
+    (&(whal_Stm32wbUart_Cfg) {
+        .clkCtrl = &whal_dev_clock,
         .clk = &(whal_Stm32wbRcc_Clk) {WHAL_STM32WB55_UART1_CLOCK},
 
         .baud = 115200,
-    },
-};
+    }));
 
-whal_Flash g_whalFlash = {
-    WHAL_STM32WB55_FLASH_DEVICE,
-
-    .cfg = &(whal_Stm32wbFlash_Cfg) {
-        .clkCtrl = &g_whalClock,
+WHAL_FLASH_DEV_DEFINE(flash, WHAL_STM32WB55_FLASH_DRIVER, WHAL_STM32WB55_FLASH_REGMAP,
+    (&(whal_Stm32wbFlash_Cfg) {
+        .clkCtrl = &whal_dev_clock,
         .clk = &(whal_Stm32wbRcc_Clk) {WHAL_STM32WB55_FLASH_CLOCK},
 
         .startAddr = 0x08000000,
         .size = 0x100000,
-    },
-};
+    }));
 
-whal_Spi g_whalSpi = {
-    WHAL_STM32WB55_SPI1_DEVICE,
-
-    .cfg = &(whal_Stm32wbSpi_Cfg) {
-        .clkCtrl = &g_whalClock,
+WHAL_SPI_DEV_DEFINE(spi, WHAL_STM32WB55_SPI1_DRIVER, WHAL_STM32WB55_SPI1_REGMAP,
+    (&(whal_Stm32wbSpi_Cfg) {
+        .clkCtrl = &whal_dev_clock,
         .clk = &(whal_Stm32wbRcc_Clk) {WHAL_STM32WB55_SPI1_CLOCK},
-    },
-};
+    }));
 
-whal_Rng g_whalRng = {
-    WHAL_STM32WB55_RNG_DEVICE,
-
-    .cfg = &(whal_Stm32wbRng_Cfg) {
-        .clkCtrl = &g_whalClock,
+WHAL_RNG_DEV_DEFINE(rng, WHAL_STM32WB55_RNG_DRIVER, WHAL_STM32WB55_RNG_REGMAP,
+    (&(whal_Stm32wbRng_Cfg) {
+        .clkCtrl = &whal_dev_clock,
         .clk = &(whal_Stm32wbRcc_Clk) {WHAL_STM32WB55_RNG_CLOCK},
-    },
-};
+    }));

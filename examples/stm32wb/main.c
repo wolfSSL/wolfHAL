@@ -39,80 +39,80 @@ void main(void)
 {
     whal_Error err;
 
-    err = whal_Clock_Init(&g_whalClock); 
+    err = WHAL_CLOCK_INIT(clock);
     if (err) {
         goto loop;
     }
 
-    err = whal_Gpio_Init(&g_whalGpio);
+    err = WHAL_GPIO_INIT(gpio);
     if (err) {
         goto loop;
     }
-    err = whal_Gpio_Set(&g_whalGpio, LED_PIN, 1);
-    if (err) {
-        goto loop;
-    }
-
-    err = whal_Uart_Init(&g_whalUart);
+    err = WHAL_GPIO_SET(gpio, LED_PIN, 1);
     if (err) {
         goto loop;
     }
 
-    err = whal_Flash_Init(&g_whalFlash);
+    err = WHAL_UART_INIT(uart);
     if (err) {
         goto loop;
     }
 
-    err = whal_Timer_Init(&g_whalTimer);
+    err = WHAL_FLASH_INIT(flash);
     if (err) {
         goto loop;
     }
 
-    err = whal_Timer_Start(&g_whalTimer);
+    err = WHAL_TIMER_INIT(timer);
     if (err) {
         goto loop;
     }
 
-    whal_Flash_Unlock(&g_whalFlash, 0, 0);
-    
+    err = WHAL_TIMER_START(timer);
+    if (err) {
+        goto loop;
+    }
+
+    WHAL_FLASH_UNLOCK(flash, 0, 0);
+
     uint8_t data[] = "TESTING TESTING HELLO\r\n";
     uint8_t tmp[sizeof(data)] = {0};
-    whal_Flash_Erase(&g_whalFlash, 0x08080000, 0x1000);
+    WHAL_FLASH_ERASE(flash, 0x08080000, 0x1000);
 
     do {
-        err = whal_Flash_Write(&g_whalFlash, 0x08080000, data, sizeof(data));
+        err = WHAL_FLASH_WRITE(flash, 0x08080000, data, sizeof(data));
     } while (err == WHAL_ENOTREADY);
 
-    whal_Flash_Read(&g_whalFlash, 0x08080000, tmp, sizeof(tmp));
+    WHAL_FLASH_READ(flash, 0x08080000, tmp, sizeof(tmp));
 
-    whal_Flash_Lock(&g_whalFlash, 0, 0);
+    WHAL_FLASH_LOCK(flash, 0, 0);
 
-    whal_Uart_Send(&g_whalUart, tmp, sizeof(tmp));
+    WHAL_UART_SEND(uart, tmp, sizeof(tmp));
 
     while (1) {
         uint8_t input[8];
-        err = whal_Uart_Send(&g_whalUart, (uint8_t *)"Enter Stuff:\r\n", 14);
+        err = WHAL_UART_SEND(uart, (uint8_t *)"Enter Stuff:\r\n", 14);
         if (err) {
             goto loop;
         }
 
-        err = whal_Uart_Recv(&g_whalUart, input, sizeof(input));
+        err = WHAL_UART_RECV(uart, input, sizeof(input));
         if (err) {
             goto loop;
         }
 
-        err = whal_Uart_Send(&g_whalUart, input, sizeof(input));
+        err = WHAL_UART_SEND(uart, input, sizeof(input));
         if (err) {
             goto loop;
         }
-        err = whal_Gpio_Set(&g_whalGpio, LED_PIN, 1);
+        err = WHAL_GPIO_SET(gpio, LED_PIN, 1);
         if (err) {
             goto loop;
         }
 
         WaitMs(1000);
 
-        err = whal_Gpio_Set(&g_whalGpio, LED_PIN, 0);
+        err = WHAL_GPIO_SET(gpio, LED_PIN, 0);
         if (err) {
             goto loop;
         }

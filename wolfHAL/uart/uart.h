@@ -3,88 +3,96 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <wolfHAL/driver.h>
 #include <wolfHAL/regmap.h>
 #include <wolfHAL/error.h>
 
 /*
  * @file uart.h
- * @brief Generic UART abstraction and driver interface.
+ * @brief Generic UART abstraction with compile-time dispatch.
  */
 
 typedef struct whal_Uart whal_Uart;
 
-/*
- * @brief Driver vtable for UART devices.
- */
-typedef struct {
-    /* Initialize the UART hardware. */
-    whal_Error (*Init)(whal_Uart *uartDev);
-    /* Deinitialize the UART hardware. */
-    whal_Error (*Deinit)(whal_Uart *uartDev);
-    /* Transmit a buffer. */
-    whal_Error (*Send)(whal_Uart *uartDev, const uint8_t *data, size_t dataSz);
-    /* Receive into a buffer. */
-    whal_Error (*Recv)(whal_Uart *uartDev, uint8_t *data, size_t dataSz);
-} whal_UartDriver;
+#ifdef WHAL_RUNTIME_POLYMORPHISM
 
-/*
- * @brief UART device instance tying a register map and driver.
- */
+typedef struct {
+    whal_Error (*init)(whal_Uart *dev);
+    whal_Error (*deinit)(whal_Uart *dev);
+    whal_Error (*send)(whal_Uart *dev, const uint8_t *data, size_t dataSz);
+    whal_Error (*recv)(whal_Uart *dev, uint8_t *data, size_t dataSz);
+} whal_UartOps;
+
+#define WHAL_UART_OPS(DRIVER) {                 \
+    .init   = WHAL_DRV_FN(DRIVER, init),        \
+    .deinit = WHAL_DRV_FN(DRIVER, deinit),      \
+    .send   = WHAL_DRV_FN(DRIVER, send),        \
+    .recv   = WHAL_DRV_FN(DRIVER, recv),         \
+}
+
+#endif /* WHAL_RUNTIME_POLYMORPHISM */
+
 struct whal_Uart {
     const whal_Regmap regmap;
-    const whal_UartDriver *driver;
     void *cfg;
+#ifdef WHAL_RUNTIME_POLYMORPHISM
+    const whal_UartOps *ops;
+#endif
 };
 
-#ifdef WHAL_CFG_NO_CALLBACKS
-#define whal_Uart_Init(uartDev) ((uartDev)->driver->Init((uartDev)))
-#define whal_Uart_Deinit(uartDev) ((uartDev)->driver->Deinit((uartDev)))
-#define whal_Uart_Send(uartDev, data, dataSz) ((uartDev)->driver->Send((uartDev), (data), (dataSz)))
-#define whal_Uart_Recv(uartDev, data, dataSz) ((uartDev)->driver->Recv((uartDev), (data), (dataSz)))
+#define WHAL_UART_DEV_DECLARE(NAME, DRIVER)                                             \
+    extern whal_Uart whal_dev_##NAME;                                                   \
+    static inline whal_Error whal_dev_##NAME##_init(void) {                             \
+        return WHAL_DRV_FN(DRIVER, init)(&whal_dev_##NAME);                             \
+    }                                                                                   \
+    static inline whal_Error whal_dev_##NAME##_deinit(void) {                           \
+        return WHAL_DRV_FN(DRIVER, deinit)(&whal_dev_##NAME);                           \
+    }                                                                                   \
+    static inline whal_Error whal_dev_##NAME##_send(const uint8_t *data, size_t dataSz) {   \
+        return WHAL_DRV_FN(DRIVER, send)(&whal_dev_##NAME, data, dataSz);               \
+    }                                                                                   \
+    static inline whal_Error whal_dev_##NAME##_recv(uint8_t *data, size_t dataSz) {     \
+        return WHAL_DRV_FN(DRIVER, recv)(&whal_dev_##NAME, data, dataSz);               \
+    }
+
+#ifdef WHAL_RUNTIME_POLYMORPHISM
+#define WHAL_UART_DEV_DEFINE(NAME, DRIVER, REGMAP, CFG)                             \
+    static const whal_UartOps whal_dev_##NAME##_ops = WHAL_UART_OPS(DRIVER);        \
+    whal_Uart whal_dev_##NAME = {                                                   \
+        .regmap = REGMAP,                                                           \
+        .cfg = CFG,                                                                 \
+        .ops = &whal_dev_##NAME##_ops,                                              \
+    }
 #else
-/*
- * @brief Initializes a UART device and its driver.
- *
- * @param uartDev Pointer to the UART instance to initialize.
- *
- * @retval WHAL_SUCCESS Driver-specific init completed.
- * @retval WHAL_EINVAL  Null pointer or driver rejected configuration.
- */
-whal_Error whal_Uart_Init(whal_Uart *uartDev);
-
-/*
- * @brief Deinitializes a UART device and releases resources.
- *
- * @param uartDev Pointer to the UART instance to deinitialize.
- *
- * @retval WHAL_SUCCESS Driver-specific deinit completed.
- * @retval WHAL_EINVAL  Null pointer or driver refused to deinit.
- */
-whal_Error whal_Uart_Deinit(whal_Uart *uartDev);
-
-/*
- * @brief Sends a buffer over the UART.
- *
- * @param uartDev Pointer to the UART instance.
- * @param data    Buffer to transmit.
- * @param dataSz  Number of bytes to send.
- *
- * @retval WHAL_SUCCESS Buffer was queued or transmitted.
- * @retval WHAL_EINVAL  Null pointer or driver failed to send.
- */
-whal_Error whal_Uart_Send(whal_Uart *uartDev, const uint8_t *data, size_t dataSz);
-
-/*
- * @brief Receives data from the UART into a buffer.
- *
- * @param uartDev Pointer to the UART instance.
- * @param data    Destination buffer.
- * @param dataSz  Maximum number of bytes to read.
- *
- * @retval WHAL_SUCCESS Buffer was filled or receive started.
- * @retval WHAL_EINVAL  Null pointer or driver failed to receive.
- */
-whal_Error whal_Uart_Recv(whal_Uart *uartDev, uint8_t *data, size_t dataSz);
+#define WHAL_UART_DEV_DEFINE(NAME, DRIVER, REGMAP, CFG)     \
+    whal_Uart whal_dev_##NAME = {                           \
+        .regmap = REGMAP,                                   \
+        .cfg = CFG,                                         \
+    }
 #endif
+
+#define WHAL_UART_INIT(NAME)                    whal_dev_##NAME##_init()
+#define WHAL_UART_DEINIT(NAME)                  whal_dev_##NAME##_deinit()
+#define WHAL_UART_SEND(NAME, data, dataSz)      whal_dev_##NAME##_send(data, dataSz)
+#define WHAL_UART_RECV(NAME, data, dataSz)      whal_dev_##NAME##_recv(data, dataSz)
+
+#ifdef WHAL_RUNTIME_POLYMORPHISM
+
+static inline whal_Error whal_Uart_Init(whal_Uart *dev) {
+    return dev->ops->init(dev);
+}
+static inline whal_Error whal_Uart_Deinit(whal_Uart *dev) {
+    return dev->ops->deinit(dev);
+}
+static inline whal_Error whal_Uart_Send(whal_Uart *dev, const uint8_t *data,
+                                        size_t dataSz) {
+    return dev->ops->send(dev, data, dataSz);
+}
+static inline whal_Error whal_Uart_Recv(whal_Uart *dev, uint8_t *data,
+                                        size_t dataSz) {
+    return dev->ops->recv(dev, data, dataSz);
+}
+
+#endif /* WHAL_RUNTIME_POLYMORPHISM */
 
 #endif /* WHAL_UART_H */

@@ -12,7 +12,7 @@
 #define SYSTICK_RVR_REG 0x04
 #define SYSTICK_RVR_RELOAD WHAL_MASK_RANGE(23, 0)
 
-whal_Error SysTick_Init(whal_Timer *timerDev)
+whal_Error WHAL_DRV_FN(SysTick, init)(whal_Timer *timerDev)
 {
     whal_SysTick_Cfg *cfg;
     const whal_Regmap *reg = &timerDev->regmap;
@@ -35,12 +35,12 @@ whal_Error SysTick_Init(whal_Timer *timerDev)
     return WHAL_SUCCESS;
 }
 
-whal_Error SysTick_Deinit(whal_Timer *timerDev)
+whal_Error WHAL_DRV_FN(SysTick, deinit)(whal_Timer *timerDev)
 {
     return WHAL_SUCCESS;
 }
 
-whal_Error SysTick_Start(whal_Timer *timerDev)
+whal_Error WHAL_DRV_FN(SysTick, start)(whal_Timer *timerDev)
 {
     const whal_Regmap *reg = &timerDev->regmap;
     
@@ -54,7 +54,7 @@ whal_Error SysTick_Start(whal_Timer *timerDev)
     return WHAL_SUCCESS;
 }
 
-whal_Error SysTick_Stop(whal_Timer *timerDev)
+whal_Error WHAL_DRV_FN(SysTick, stop)(whal_Timer *timerDev)
 {
     const whal_Regmap *reg = &timerDev->regmap;
     
@@ -68,16 +68,9 @@ whal_Error SysTick_Stop(whal_Timer *timerDev)
     return WHAL_SUCCESS;
 }
 
-whal_Error SysTick_Reset(whal_Timer *timerDev)
+whal_Error WHAL_DRV_FN(SysTick, reset)(whal_Timer *timerDev)
 {
 
     return WHAL_SUCCESS;
 }
 
-const whal_TimerDriver whal_SysTick_Driver = {
-    .Init = SysTick_Init,
-    .Deinit = SysTick_Deinit,
-    .Start = SysTick_Start,
-    .Stop = SysTick_Stop,
-    .Reset = SysTick_Reset,
-};

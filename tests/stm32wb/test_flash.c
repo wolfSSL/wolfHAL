@@ -18,34 +18,34 @@ static void test_flash_write_read(void)
     uint8_t pattern[] = "wolfHAL TEST";
     uint8_t readback[sizeof(pattern)] = {0};
 
-    WHAL_ASSERT_EQ(whal_Flash_Unlock(&g_whalFlash, 0, 0), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(WHAL_FLASH_UNLOCK(flash, 0, 0), WHAL_SUCCESS);
 
-    WHAL_ASSERT_EQ(whal_Flash_Erase(&g_whalFlash, TEST_FLASH_ADDR, TEST_FLASH_SIZE),
+    WHAL_ASSERT_EQ(WHAL_FLASH_ERASE(flash, TEST_FLASH_ADDR, TEST_FLASH_SIZE),
               WHAL_SUCCESS);
 
     whal_Error err;
     do {
-        err = whal_Flash_Write(&g_whalFlash, TEST_FLASH_ADDR, pattern,
+        err = WHAL_FLASH_WRITE(flash, TEST_FLASH_ADDR, pattern,
                                sizeof(pattern));
     } while (err == WHAL_ENOTREADY);
     WHAL_ASSERT_EQ(err, WHAL_SUCCESS);
 
-    WHAL_ASSERT_EQ(whal_Flash_Read(&g_whalFlash, TEST_FLASH_ADDR, readback,
+    WHAL_ASSERT_EQ(WHAL_FLASH_READ(flash, TEST_FLASH_ADDR, readback,
                               sizeof(readback)),
               WHAL_SUCCESS);
 
     WHAL_ASSERT_MEM_EQ(pattern, readback, sizeof(pattern));
 
-    WHAL_ASSERT_EQ(whal_Flash_Lock(&g_whalFlash, 0, 0), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(WHAL_FLASH_LOCK(flash, 0, 0), WHAL_SUCCESS);
 }
 
 static void test_flash_lock_readback(void)
 {
     /* After locking, the CR.LOCK bit should be set */
-    WHAL_ASSERT_EQ(whal_Flash_Lock(&g_whalFlash, 0, 0), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(WHAL_FLASH_LOCK(flash, 0, 0), WHAL_SUCCESS);
 
     size_t val = 0;
-    whal_Reg_Get(g_whalFlash.regmap.base, FLASH_CR_REG, FLASH_CR_LOCK, &val);
+    whal_Reg_Get(whal_dev_flash.regmap.base, FLASH_CR_REG, FLASH_CR_LOCK, &val);
     WHAL_ASSERT_EQ(val, 1);
 }
 

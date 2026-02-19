@@ -89,50 +89,9 @@ typedef struct whal_Pic32czGpio_Cfg {
     whal_Pic32czGpio_PinCfg *pinCfg; /* Array of pin configurations */
 } whal_Pic32czGpio_Cfg;
 
-/*
- * @brief Driver instance for PIC32CZ GPIO.
- */
-extern const whal_GpioDriver whal_Pic32czGpio_Driver;
-
-/*
- * @brief Initialize the PIC32CZ GPIO peripheral.
- *
- * @param gpioDev GPIO device instance.
- *
- * @retval WHAL_SUCCESS Initialization completed.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Pic32czGpio_Init(whal_Gpio *gpioDev);
-/*
- * @brief Deinitialize the PIC32CZ GPIO peripheral.
- *
- * @param gpioDev GPIO device instance.
- *
- * @retval WHAL_SUCCESS Deinit completed.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Pic32czGpio_Deinit(whal_Gpio *gpioDev);
-/*
- * @brief Read a GPIO pin value.
- *
- * @param gpioDev GPIO device instance.
- * @param pin     Pin index in the configured pin table.
- * @param value   Output for the sampled pin value.
- *
- * @retval WHAL_SUCCESS Pin value read.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Pic32czGpio_Get(whal_Gpio *gpioDev, size_t pin, size_t *value);
-/*
- * @brief Set a GPIO pin value.
- *
- * @param gpioDev GPIO device instance.
- * @param pin     Pin index in the configured pin table.
- * @param value   Value to drive.
- *
- * @retval WHAL_SUCCESS Pin updated.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Pic32czGpio_Set(whal_Gpio *gpioDev, size_t pin, size_t value);
+whal_Error WHAL_DRV_FN(Pic32czGpio, init)(whal_Gpio *gpioDev);
+whal_Error WHAL_DRV_FN(Pic32czGpio, deinit)(whal_Gpio *gpioDev);
+whal_Error WHAL_DRV_FN(Pic32czGpio, get)(whal_Gpio *gpioDev, size_t pin, size_t *value);
+whal_Error WHAL_DRV_FN(Pic32czGpio, set)(whal_Gpio *gpioDev, size_t pin, size_t value);
 
 #endif /* WHAL_PIC32CZ_GPIO_H */

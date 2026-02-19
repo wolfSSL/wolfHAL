@@ -8,8 +8,8 @@
 
 static void test_rng_init_deinit(void)
 {
-    WHAL_ASSERT_EQ(whal_Rng_Init(&g_whalRng), WHAL_SUCCESS);
-    WHAL_ASSERT_EQ(whal_Rng_Deinit(&g_whalRng), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(WHAL_RNG_INIT(rng), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(WHAL_RNG_DEINIT(rng), WHAL_SUCCESS);
 }
 
 static void test_rng_generate_nonzero(void)
@@ -17,11 +17,11 @@ static void test_rng_generate_nonzero(void)
     uint8_t buf[16] = {0};
     int allZero = 1;
 
-    whal_Stm32wbRcc_Ext_EnableHsi48(&g_whalClock, 1);
-    WHAL_ASSERT_EQ(whal_Rng_Init(&g_whalRng), WHAL_SUCCESS);
-    WHAL_ASSERT_EQ(whal_Rng_Generate(&g_whalRng, buf, sizeof(buf)), WHAL_SUCCESS);
-    WHAL_ASSERT_EQ(whal_Rng_Deinit(&g_whalRng), WHAL_SUCCESS);
-    whal_Stm32wbRcc_Ext_EnableHsi48(&g_whalClock, 0);
+    whal_Stm32wbRcc_Ext_EnableHsi48(&whal_dev_clock, 1);
+    WHAL_ASSERT_EQ(WHAL_RNG_INIT(rng), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(WHAL_RNG_GENERATE(rng, buf, sizeof(buf)), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(WHAL_RNG_DEINIT(rng), WHAL_SUCCESS);
+    whal_Stm32wbRcc_Ext_EnableHsi48(&whal_dev_clock, 0);
 
     for (size_t i = 0; i < sizeof(buf); i++) {
         if (buf[i] != 0) {
@@ -40,12 +40,12 @@ static void test_rng_generate_unique(void)
     uint8_t buf2[16] = {0};
     int same = 1;
 
-    whal_Stm32wbRcc_Ext_EnableHsi48(&g_whalClock, 1);
-    WHAL_ASSERT_EQ(whal_Rng_Init(&g_whalRng), WHAL_SUCCESS);
-    WHAL_ASSERT_EQ(whal_Rng_Generate(&g_whalRng, buf1, sizeof(buf1)), WHAL_SUCCESS);
-    WHAL_ASSERT_EQ(whal_Rng_Generate(&g_whalRng, buf2, sizeof(buf2)), WHAL_SUCCESS);
-    WHAL_ASSERT_EQ(whal_Rng_Deinit(&g_whalRng), WHAL_SUCCESS);
-    whal_Stm32wbRcc_Ext_EnableHsi48(&g_whalClock, 0);
+    whal_Stm32wbRcc_Ext_EnableHsi48(&whal_dev_clock, 1);
+    WHAL_ASSERT_EQ(WHAL_RNG_INIT(rng), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(WHAL_RNG_GENERATE(rng, buf1, sizeof(buf1)), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(WHAL_RNG_GENERATE(rng, buf2, sizeof(buf2)), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(WHAL_RNG_DEINIT(rng), WHAL_SUCCESS);
+    whal_Stm32wbRcc_Ext_EnableHsi48(&whal_dev_clock, 0);
 
     for (size_t i = 0; i < sizeof(buf1); i++) {
         if (buf1[i] != buf2[i]) {

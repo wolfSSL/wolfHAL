@@ -28,9 +28,9 @@ void whalTest_Puts(const char *s)
 {
     while (*s) {
         if (*s == '\n')
-            whal_Uart_Send(&g_whalUart, (const uint8_t *)"\r\n", 2);
+            WHAL_UART_SEND(uart, (const uint8_t *)"\r\n", 2);
         else
-            whal_Uart_Send(&g_whalUart, (const uint8_t *)s, 1);
+            WHAL_UART_SEND(uart, (const uint8_t *)s, 1);
         s++;
     }
 }
@@ -56,30 +56,30 @@ void main(void)
     g_whalTestFailed = 0;
 
     /* Bootstrap: clock -> GPIO -> UART -> flash -> timer */
-    err = whal_Clock_Init(&g_whalClock);
+    err = WHAL_CLOCK_INIT(clock);
     if (err)
         goto fail;
 
-    err = whal_Gpio_Init(&g_whalGpio);
+    err = WHAL_GPIO_INIT(gpio);
     if (err)
         goto fail;
 
     /* LED on to indicate boot */
-    whal_Gpio_Set(&g_whalGpio, LED_PIN, 1);
+    WHAL_GPIO_SET(gpio, LED_PIN, 1);
 
-    err = whal_Uart_Init(&g_whalUart);
+    err = WHAL_UART_INIT(uart);
     if (err)
         goto fail;
 
-    err = whal_Flash_Init(&g_whalFlash);
+    err = WHAL_FLASH_INIT(flash);
     if (err)
         goto fail;
 
-    err = whal_Timer_Init(&g_whalTimer);
+    err = WHAL_TIMER_INIT(timer);
     if (err)
         goto fail;
 
-    err = whal_Timer_Start(&g_whalTimer);
+    err = WHAL_TIMER_START(timer);
     if (err)
         goto fail;
 
@@ -96,7 +96,7 @@ void main(void)
 
     /* Visual indication: solid LED = all pass, blink = failure */
     if (g_whalTestFailed == 0) {
-        whal_Gpio_Set(&g_whalGpio, LED_PIN, 1);
+        WHAL_GPIO_SET(gpio, LED_PIN, 1);
         while (1)
             ;
     }
@@ -104,9 +104,9 @@ void main(void)
 fail:
     /* Rapid blink = failure */
     while (1) {
-        whal_Gpio_Set(&g_whalGpio, LED_PIN, 1);
+        WHAL_GPIO_SET(gpio, LED_PIN, 1);
         delay_ms(100);
-        whal_Gpio_Set(&g_whalGpio, LED_PIN, 0);
+        WHAL_GPIO_SET(gpio, LED_PIN, 0);
         delay_ms(100);
     }
 }

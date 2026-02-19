@@ -45,7 +45,7 @@
 #define PIC32CZ_PINCFGx_INEN(pin)   (WHAL_MASK(1) << (((pin) & 3) * 8))
 #define PIC32CZ_PINCFGx_PULLEN(pin) (WHAL_MASK(2) << (((pin) & 3) * 8))
 
-whal_Error whal_Pic32czGpio_Init(whal_Gpio *gpioDev)
+whal_Error WHAL_DRV_FN(Pic32czGpio, init)(whal_Gpio *gpioDev)
 {
     if (!gpioDev) {
         return WHAL_EINVAL;
@@ -112,7 +112,7 @@ whal_Error whal_Pic32czGpio_Init(whal_Gpio *gpioDev)
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Pic32czGpio_Deinit(whal_Gpio *gpioDev)
+whal_Error WHAL_DRV_FN(Pic32czGpio, deinit)(whal_Gpio *gpioDev)
 {
     if (!gpioDev) {
         return WHAL_EINVAL;
@@ -121,7 +121,7 @@ whal_Error whal_Pic32czGpio_Deinit(whal_Gpio *gpioDev)
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Pic32czGpio_Get(whal_Gpio *gpioDev, size_t pin, size_t *value)
+whal_Error WHAL_DRV_FN(Pic32czGpio, get)(whal_Gpio *gpioDev, size_t pin, size_t *value)
 {
     if (!gpioDev || !value) {
         return WHAL_EINVAL;
@@ -149,7 +149,7 @@ whal_Error whal_Pic32czGpio_Get(whal_Gpio *gpioDev, size_t pin, size_t *value)
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Pic32czGpio_Set(whal_Gpio *gpioDev, size_t pin, size_t value)
+whal_Error WHAL_DRV_FN(Pic32czGpio, set)(whal_Gpio *gpioDev, size_t pin, size_t value)
 {
     if (!gpioDev) {
         return WHAL_EINVAL;
@@ -167,9 +167,3 @@ whal_Error whal_Pic32czGpio_Set(whal_Gpio *gpioDev, size_t pin, size_t value)
     return WHAL_SUCCESS;
 }
 
-const whal_GpioDriver whal_Pic32czGpio_Driver = {
-    .Init = whal_Pic32czGpio_Init,
-    .Deinit = whal_Pic32czGpio_Deinit,
-    .Get = whal_Pic32czGpio_Get,
-    .Set = whal_Pic32czGpio_Set,
-};

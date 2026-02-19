@@ -31,93 +31,14 @@ typedef struct whal_Pic32czFlash_Cfg {
     size_t size;
 } whal_Pic32czFlash_Cfg;
 
-/*
- * @brief Driver instance for PIC32CZ flash.
- */
-extern const whal_FlashDriver whal_Pic32czFlash_Driver;
-
-/*
- * @brief Initialize the PIC32CZ flash interface.
- *
- * @param flashDev Flash device instance to initialize.
- *
- * @retval WHAL_SUCCESS Initialization completed.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Pic32czFlash_Init(whal_Flash *flashDev);
-/*
- * @brief Deinitialize the PIC32CZ flash interface.
- *
- * @param flashDev Flash device instance to deinitialize.
- *
- * @retval WHAL_SUCCESS Deinit completed.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Pic32czFlash_Deinit(whal_Flash *flashDev);
-/*
- * @brief Lock a flash range (stub, not yet implemented).
- *
- * @param flashDev Flash device instance.
- * @param addr     Flash address to lock.
- * @param len      Number of bytes to lock.
- *
- * @retval WHAL_SUCCESS Lock applied.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Pic32czFlash_Lock(whal_Flash *flashDev, size_t addr, size_t len);
-/*
- * @brief Unlock a flash range (stub, not yet implemented).
- *
- * @param flashDev Flash device instance.
- * @param addr     Flash address to unlock.
- * @param len      Number of bytes to unlock.
- *
- * @retval WHAL_SUCCESS Unlock applied.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Pic32czFlash_Unlock(whal_Flash *flashDev, size_t addr, size_t len);
-/*
- * @brief Read data from flash into a buffer.
- *
- * @param flashDev Flash device instance.
- * @param addr     Flash address to read.
- * @param data     Destination buffer.
- * @param dataSz   Number of bytes to read.
- *
- * @retval WHAL_SUCCESS Read completed.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Pic32czFlash_Read(whal_Flash *flashDev, size_t addr, uint8_t *data,
+whal_Error WHAL_DRV_FN(Pic32czFlash, init)(whal_Flash *flashDev);
+whal_Error WHAL_DRV_FN(Pic32czFlash, deinit)(whal_Flash *flashDev);
+whal_Error WHAL_DRV_FN(Pic32czFlash, lock)(whal_Flash *flashDev, size_t addr, size_t len);
+whal_Error WHAL_DRV_FN(Pic32czFlash, unlock)(whal_Flash *flashDev, size_t addr, size_t len);
+whal_Error WHAL_DRV_FN(Pic32czFlash, read)(whal_Flash *flashDev, size_t addr, uint8_t *data,
                              size_t dataSz);
-/*
- * @brief Write a block of data to flash.
- *
- * Address and size must be double-word (8-byte) aligned. Uses quad double
- * word writes (32 bytes) where alignment permits, falling back to single
- * double word writes (8 bytes) for the remainder.
- *
- * @param flashDev Flash device instance.
- * @param addr     Flash address to program (8-byte aligned).
- * @param data     Buffer to program (8-byte aligned).
- * @param dataSz   Number of bytes to program (multiple of 8).
- *
- * @retval WHAL_SUCCESS Program completed.
- * @retval WHAL_EINVAL  Invalid arguments or alignment.
- */
-whal_Error whal_Pic32czFlash_Write(whal_Flash *flashDev, size_t addr, const uint8_t *data,
+whal_Error WHAL_DRV_FN(Pic32czFlash, write)(whal_Flash *flashDev, size_t addr, const uint8_t *data,
                               size_t dataSz);
-/*
- * @brief Erase flash pages covering the given range.
- *
- * Erases all 4 KB pages that overlap the address range [addr, addr+dataSz).
- *
- * @param flashDev Flash device instance.
- * @param addr     Flash address to start erasing.
- * @param dataSz   Number of bytes to erase.
- *
- * @retval WHAL_SUCCESS Erase completed.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Pic32czFlash_Erase(whal_Flash *flashDev, size_t addr, size_t dataSz);
+whal_Error WHAL_DRV_FN(Pic32czFlash, erase)(whal_Flash *flashDev, size_t addr, size_t dataSz);
 
 #endif /* WHAL_PIC32CZ_FLASH_H */

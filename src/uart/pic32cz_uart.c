@@ -2,6 +2,7 @@
 #include <wolfHAL/uart/pic32cz_uart.h>
 #include <wolfHAL/uart/uart.h>
 #include <wolfHAL/clock/clock.h>
+#include <wolfHAL/clock/pic32cz_clock.h>
 #include <wolfHAL/error.h>
 #include <wolfHAL/regmap.h>
 #include <wolfHAL/bitops.h>
@@ -92,7 +93,7 @@ static void whal_Pic32czUart_WaitSync(const whal_Regmap *reg, size_t mask)
     }
 }
 
-whal_Error whal_Pic32czUart_Init(whal_Uart *uartDev)
+whal_Error WHAL_DRV_FN(Pic32czUart, init)(whal_Uart *uartDev)
 {
     whal_Error err;
     whal_Pic32czUart_Cfg *cfg;
@@ -106,7 +107,7 @@ whal_Error whal_Pic32czUart_Init(whal_Uart *uartDev)
     cfg = (whal_Pic32czUart_Cfg *)uartDev->cfg;
 
     /* Enable peripheral clock */
-    err = whal_Clock_Enable(cfg->clkCtrl, cfg->clk);
+    err = WHAL_DRV_FN(Pic32czClockPll, enable)(cfg->clkCtrl, cfg->clk);
     if (err != WHAL_SUCCESS) {
         return err;
     }
@@ -165,7 +166,7 @@ whal_Error whal_Pic32czUart_Init(whal_Uart *uartDev)
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Pic32czUart_Deinit(whal_Uart *uartDev)
+whal_Error WHAL_DRV_FN(Pic32czUart, deinit)(whal_Uart *uartDev)
 {
     whal_Error err;
     const whal_Regmap *reg;
@@ -196,7 +197,7 @@ whal_Error whal_Pic32czUart_Deinit(whal_Uart *uartDev)
     whal_Pic32czUart_WaitSync(reg, SERCOM_USART_SYNCBUSY_CTRLB);
 
     /* Disable peripheral clock */
-    err = whal_Clock_Disable(cfg->clkCtrl, cfg->clk);
+    err = WHAL_DRV_FN(Pic32czClockPll, disable)(cfg->clkCtrl, cfg->clk);
     if (err != WHAL_SUCCESS) {
         return err;
     }
@@ -204,7 +205,7 @@ whal_Error whal_Pic32czUart_Deinit(whal_Uart *uartDev)
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Pic32czUart_Send(whal_Uart *uartDev, const uint8_t *data, size_t dataSz)
+whal_Error WHAL_DRV_FN(Pic32czUart, send)(whal_Uart *uartDev, const uint8_t *data, size_t dataSz)
 {
     const whal_Regmap *reg;
 
@@ -245,7 +246,7 @@ whal_Error whal_Pic32czUart_Send(whal_Uart *uartDev, const uint8_t *data, size_t
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Pic32czUart_Recv(whal_Uart *uartDev, uint8_t *data, size_t dataSz)
+whal_Error WHAL_DRV_FN(Pic32czUart, recv)(whal_Uart *uartDev, uint8_t *data, size_t dataSz)
 {
     const whal_Regmap *reg;
 
@@ -275,9 +276,3 @@ whal_Error whal_Pic32czUart_Recv(whal_Uart *uartDev, uint8_t *data, size_t dataS
     return WHAL_SUCCESS;
 }
 
-const whal_UartDriver whal_Pic32czUart_Driver = {
-    .Init = whal_Pic32czUart_Init,
-    .Deinit = whal_Pic32czUart_Deinit,
-    .Send = whal_Pic32czUart_Send,
-    .Recv = whal_Pic32czUart_Recv,
-};

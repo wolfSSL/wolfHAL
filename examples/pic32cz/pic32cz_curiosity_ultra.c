@@ -1,17 +1,13 @@
 #include <wolfHAL/wolfHAL.h>
 #include <wolfHAL/platform/microchip/pic32cz.h>
 
-whal_Supply g_whalSupply = {
-    WHAL_PIC32CZ_SUPPLY_DEVICE,
-};
+WHAL_SUPPLY_DEV_DEFINE(supply, WHAL_PIC32CZ_SUPPLY_DRIVER, WHAL_PIC32CZ_SUPPLY_REGMAP, NULL);
 
-whal_Clock g_whalClock = {
-    WHAL_PIC32CZ_CLOCK_PLL_DEVICE,
-
-    .cfg = &(whal_Pic32czClock_Cfg) {
+WHAL_CLOCK_DEV_DEFINE(clock, WHAL_PIC32CZ_CLOCK_PLL_DRIVER, WHAL_PIC32CZ_CLOCK_PLL_REGMAP,
+    (&(whal_Pic32czClock_Cfg) {
         /* 300MHz clock */
         .oscCtrlCfg = &(whal_Pic32czClockPll_OscCtrlCfg) {
-            .supplyCtrl = &g_whalSupply,
+            .supplyCtrl = &whal_dev_supply,
             .supply = &(whal_Pic32czSupc_Supply){WHAL_PIC32CZ_SUPPLY_PLL},
 
             .pllInst = WHAL_PIC32CZ_PLL0,
@@ -37,13 +33,10 @@ whal_Clock g_whalClock = {
             .genSrc = WHAL_PIC32CZ_GENSRC_PLL0_CLOCKOUT0,
             .genDiv = 1,
         },
-    },
-};
+    }));
 
-whal_Gpio g_whalGpio = {
-    WHAL_PIC32CZ_GPIO_DEVICE,
-    
-    .cfg = &(whal_Pic32czGpio_Cfg) {
+WHAL_GPIO_DEV_DEFINE(gpio, WHAL_PIC32CZ_GPIO_DRIVER, WHAL_PIC32CZ_GPIO_REGMAP,
+    (&(whal_Pic32czGpio_Cfg) {
         .pinCfgCount = 3,
         .pinCfg = (whal_Pic32czGpio_PinCfg[]) {
             { /* LED */
@@ -65,8 +58,7 @@ whal_Gpio g_whalGpio = {
                 .pmux = WHAL_PIC32CZ_PMUX_SERCOM_ALT,
             },
         },
-    },
-};
+    }));
 
 static whal_Pic32czClock_Clk uartClk = {
     .gclkPeriphChannel = 25, /* SERCOM 4 */
@@ -75,28 +67,20 @@ static whal_Pic32czClock_Clk uartClk = {
     .mclkEnableMask = WHAL_MASK(3), /* SERCOM 4 enable mask */
 };
 
-whal_Uart g_whalUart = {
-    WHAL_PIC32CZ_SERCOM4_UART_DEVICE,
-
-    .cfg = &(whal_Pic32czUart_Cfg) {
-        .clkCtrl = &g_whalClock,
+WHAL_UART_DEV_DEFINE(uart, WHAL_PIC32CZ_SERCOM4_UART_DRIVER, WHAL_PIC32CZ_SERCOM4_UART_REGMAP,
+    (&(whal_Pic32czUart_Cfg) {
+        .clkCtrl = &whal_dev_clock,
         .clk = &uartClk,
         .baud = WHAL_PIC32CZ_UART_BAUD(115200, 300000000),
         .txPad = WHAL_PIC32CZ_UART_TXPO_PAD0,
         .rxPad = WHAL_PIC32CZ_UART_RXPO_PAD1,
-    },
-};
+    }));
 
-whal_Timer g_whalTimer = {
-    WHAL_CORTEX_M7_SYSTICK_DEVICE,
-
-    .cfg = &(whal_SysTick_Cfg) {
+WHAL_TIMER_DEV_DEFINE(timer, WHAL_CORTEX_M7_SYSTICK_DRIVER, WHAL_CORTEX_M7_SYSTICK_REGMAP,
+    (&(whal_SysTick_Cfg) {
         .cyclesPerTick = 300000000 / 1000,
         .clkSrc = WHAL_SYSTICK_CLKSRC_SYSCLK,
         .tickInt = WHAL_SYSTICK_TICKINT_ENABLED,
-    },
-};
+    }));
 
-whal_Flash g_whalFlash = {
-    WHAL_PIC32CZ_FLASH_DEVICE,
-};
+WHAL_FLASH_DEV_DEFINE(flash, WHAL_PIC32CZ_FLASH_DRIVER, WHAL_PIC32CZ_FLASH_REGMAP, NULL);

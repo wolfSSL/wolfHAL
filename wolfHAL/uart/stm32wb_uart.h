@@ -20,60 +20,15 @@ typedef struct whal_Stm32wbUart_Cfg {
     uint32_t baud;
 } whal_Stm32wbUart_Cfg;
 
-/*
- * @brief Driver instance for STM32 UART peripheral.
- */
-extern const whal_UartDriver whal_Stm32wbUart_Driver;
-extern const whal_UartDriver whal_Stm32wbLpuart_Driver;
+whal_Error WHAL_DRV_FN(Stm32wbUart, init)(whal_Uart *uartDev);
+whal_Error WHAL_DRV_FN(Stm32wbLpuart, init)(whal_Uart *uartDev);
+whal_Error WHAL_DRV_FN(Stm32wbUart, deinit)(whal_Uart *uartDev);
+whal_Error WHAL_DRV_FN(Stm32wbUart, send)(whal_Uart *uartDev, const uint8_t *data, size_t dataSz);
+whal_Error WHAL_DRV_FN(Stm32wbUart, recv)(whal_Uart *uartDev, uint8_t *data, size_t dataSz);
 
-/*
- * @brief Initialize the STM32 UART peripheral.
- *
- * @param uartDev UART device instance to initialize.
- *
- * @retval WHAL_SUCCESS Initialization completed.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Stm32wbUart_Init(whal_Uart *uartDev);
-/*
- * @brief Initialize the STM32 UART peripheral.
- *
- * @param uartDev UART device instance to initialize.
- *
- * @retval WHAL_SUCCESS Initialization completed.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Stm32wbLpuart_Init(whal_Uart *uartDev);
-/*
- * @brief Deinitialize the STM32 UART peripheral.
- *
- * @param uartDev UART device instance to deinitialize.
- *
- * @retval WHAL_SUCCESS Deinit completed.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Stm32wbUart_Deinit(whal_Uart *uartDev);
-/*
- * @brief Transmit a buffer over UART.
- *
- * @param uartDev UART device instance.
- * @param data    Buffer to transmit.
- * @param dataSz  Number of bytes to transmit.
- *
- * @retval WHAL_SUCCESS Transfer completed.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Stm32wbUart_Send(whal_Uart *uartDev, const uint8_t *data, size_t dataSz);
-/*
- * @brief Receive a buffer over UART.
- *
- * @param uartDev UART device instance.
- * @param data    Receive buffer.
- * @param dataSz  Number of bytes to receive.
- *
- * @retval WHAL_SUCCESS Transfer completed.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Stm32wbUart_Recv(whal_Uart *uartDev, uint8_t *data, size_t dataSz);
+/* LPUART shares deinit/send/recv with UART */
+#define whal_drv_Stm32wbLpuart_deinit WHAL_DRV_FN(Stm32wbUart, deinit)
+#define whal_drv_Stm32wbLpuart_send   WHAL_DRV_FN(Stm32wbUart, send)
+#define whal_drv_Stm32wbLpuart_recv   WHAL_DRV_FN(Stm32wbUart, recv)
 
 #endif /* WHAL_STM32WB_UART_H */

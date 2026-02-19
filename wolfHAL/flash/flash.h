@@ -1,6 +1,7 @@
 #ifndef WHAL_FLASH_H
 #define WHAL_FLASH_H
 
+#include <wolfHAL/driver.h>
 #include <wolfHAL/error.h>
 #include <wolfHAL/regmap.h>
 #include <stddef.h>
@@ -8,132 +9,120 @@
 
 /*
  * @file flash.h
- * @brief Generic flash abstraction and driver interface.
+ * @brief Generic flash abstraction with compile-time dispatch.
  */
 
 typedef struct whal_Flash whal_Flash;
 
-/*
- * @brief Driver vtable for flash devices.
- */
-typedef struct {
-    /* Bring the flash peripheral into a usable state. */
-    whal_Error (*Init)(whal_Flash *flashDev);
-    /* Release any resources owned by the flash driver. */
-    whal_Error (*Deinit)(whal_Flash *flashDev);
-    /* Lock a flash region to prevent modification. */
-    whal_Error (*Lock)(whal_Flash *flashDev, size_t addr, size_t len);
-    /* Unlock a flash region to allow modification. */
-    whal_Error (*Unlock)(whal_Flash *flashDev, size_t addr, size_t len);
-    /* Read data from flash into a buffer. */
-    whal_Error (*Read)(whal_Flash *flashDev, size_t addr, uint8_t *data, size_t dataSz);
-    /* Program a region of flash starting at @p addr. */
-    whal_Error (*Write)(whal_Flash *flashDev, size_t addr, const uint8_t *data, size_t dataSz);
-    /* Erase a flash range starting at @p addr. */
-    whal_Error (*Erase)(whal_Flash *flashDev, size_t addr, size_t dataSz);
-} whal_FlashDriver;
+#ifdef WHAL_RUNTIME_POLYMORPHISM
 
-/*
- * @brief Flash device instance tying configuration to a driver implementation.
- */
+typedef struct {
+    whal_Error (*init)(whal_Flash *dev);
+    whal_Error (*deinit)(whal_Flash *dev);
+    whal_Error (*lock)(whal_Flash *dev, size_t addr, size_t len);
+    whal_Error (*unlock)(whal_Flash *dev, size_t addr, size_t len);
+    whal_Error (*read)(whal_Flash *dev, size_t addr, uint8_t *data, size_t dataSz);
+    whal_Error (*write)(whal_Flash *dev, size_t addr, const uint8_t *data, size_t dataSz);
+    whal_Error (*erase)(whal_Flash *dev, size_t addr, size_t dataSz);
+} whal_FlashOps;
+
+#define WHAL_FLASH_OPS(DRIVER) {                \
+    .init   = WHAL_DRV_FN(DRIVER, init),        \
+    .deinit = WHAL_DRV_FN(DRIVER, deinit),      \
+    .lock   = WHAL_DRV_FN(DRIVER, lock),        \
+    .unlock = WHAL_DRV_FN(DRIVER, unlock),      \
+    .read   = WHAL_DRV_FN(DRIVER, read),        \
+    .write  = WHAL_DRV_FN(DRIVER, write),       \
+    .erase  = WHAL_DRV_FN(DRIVER, erase),       \
+}
+
+#endif /* WHAL_RUNTIME_POLYMORPHISM */
+
 struct whal_Flash {
     const whal_Regmap regmap;
-    const whal_FlashDriver *driver;
     void *cfg;
+#ifdef WHAL_RUNTIME_POLYMORPHISM
+    const whal_FlashOps *ops;
+#endif
 };
 
-/*
- * @brief Initialize a flash device and its driver.
- *
- * @param flashDev Flash instance to initialize.
- *
- * @retval WHAL_SUCCESS Driver-specific init completed.
- * @retval WHAL_EINVAL  Null pointer or missing driver function.
- */
-#ifdef WHAL_CFG_NO_CALLBACKS
-#define whal_Flash_Init(flashDev) ((flashDev)->driver->Init((flashDev)))
-#define whal_Flash_Deinit(flashDev) ((flashDev)->driver->Deinit((flashDev)))
-#define whal_Flash_Lock(flashDev, addr, len) ((flashDev)->driver->Lock((flashDev), (addr), (len)))
-#define whal_Flash_Unlock(flashDev, addr, len) ((flashDev)->driver->Unlock((flashDev), (addr), (len)))
-#define whal_Flash_Read(flashDev, addr, data, dataSz) ((flashDev)->driver->Read((flashDev), (addr), (data), (dataSz)))
-#define whal_Flash_Write(flashDev, addr, data, dataSz) ((flashDev)->driver->Write((flashDev), (addr), (data), (dataSz)))
-#define whal_Flash_Erase(flashDev, addr, dataSz) ((flashDev)->driver->Erase((flashDev), (addr), (dataSz)))
+#define WHAL_FLASH_DEV_DECLARE(NAME, DRIVER)                                                            \
+    extern whal_Flash whal_dev_##NAME;                                                                  \
+    static inline whal_Error whal_dev_##NAME##_init(void) {                                             \
+        return WHAL_DRV_FN(DRIVER, init)(&whal_dev_##NAME);                                             \
+    }                                                                                                   \
+    static inline whal_Error whal_dev_##NAME##_deinit(void) {                                           \
+        return WHAL_DRV_FN(DRIVER, deinit)(&whal_dev_##NAME);                                           \
+    }                                                                                                   \
+    static inline whal_Error whal_dev_##NAME##_lock(size_t addr, size_t len) {                          \
+        return WHAL_DRV_FN(DRIVER, lock)(&whal_dev_##NAME, addr, len);                                  \
+    }                                                                                                   \
+    static inline whal_Error whal_dev_##NAME##_unlock(size_t addr, size_t len) {                        \
+        return WHAL_DRV_FN(DRIVER, unlock)(&whal_dev_##NAME, addr, len);                                \
+    }                                                                                                   \
+    static inline whal_Error whal_dev_##NAME##_read(size_t addr, uint8_t *data, size_t dataSz) {        \
+        return WHAL_DRV_FN(DRIVER, read)(&whal_dev_##NAME, addr, data, dataSz);                         \
+    }                                                                                                   \
+    static inline whal_Error whal_dev_##NAME##_write(size_t addr, const uint8_t *data, size_t dataSz) { \
+        return WHAL_DRV_FN(DRIVER, write)(&whal_dev_##NAME, addr, data, dataSz);                        \
+    }                                                                                                   \
+    static inline whal_Error whal_dev_##NAME##_erase(size_t addr, size_t dataSz) {                      \
+        return WHAL_DRV_FN(DRIVER, erase)(&whal_dev_##NAME, addr, dataSz);                              \
+    }
+
+#ifdef WHAL_RUNTIME_POLYMORPHISM
+#define WHAL_FLASH_DEV_DEFINE(NAME, DRIVER, REGMAP, CFG)                            \
+    static const whal_FlashOps whal_dev_##NAME##_ops = WHAL_FLASH_OPS(DRIVER);      \
+    whal_Flash whal_dev_##NAME = {                                                  \
+        .regmap = REGMAP,                                                           \
+        .cfg = CFG,                                                                 \
+        .ops = &whal_dev_##NAME##_ops,                                              \
+    }
 #else
-/*
- * @brief Initialize a flash device and its driver.
- *
- * @param flashDev Flash instance to initialize.
- *
- * @retval WHAL_SUCCESS Driver-specific init completed.
- * @retval WHAL_EINVAL  Null pointer or missing driver function.
- */
-whal_Error whal_Flash_Init(whal_Flash *flashDev);
-/*
- * @brief Deinitialize a flash device.
- *
- * @param flashDev Flash instance to deinitialize.
- *
- * @retval WHAL_SUCCESS Driver-specific deinit completed.
- * @retval WHAL_EINVAL  Null pointer or missing driver function.
- */
-whal_Error whal_Flash_Deinit(whal_Flash *flashDev);
-/*
- * @brief Lock a region of flash to prevent modification.
- *
- * @param flashDev Flash instance to lock.
- * @param addr     Byte address in flash to lock.
- * @param len      Number of bytes to lock.
- *
- * @retval WHAL_SUCCESS Lock applied.
- * @retval WHAL_EINVAL  Null pointer or missing driver function.
- */
-whal_Error whal_Flash_Lock(whal_Flash *flashDev, size_t addr, size_t len);
-/*
- * @brief Unlock a region of flash to allow modification.
- *
- * @param flashDev Flash instance to unlock.
- * @param addr     Byte address in flash to unlock.
- * @param len      Number of bytes to unlock.
- *
- * @retval WHAL_SUCCESS Unlock applied.
- * @retval WHAL_EINVAL  Null pointer or missing driver function.
- */
-whal_Error whal_Flash_Unlock(whal_Flash *flashDev, size_t addr, size_t len);
-/*
- * @brief Read data from flash into a buffer.
- *
- * @param flashDev Flash instance to read from.
- * @param addr     Byte address in flash to read.
- * @param data     Destination buffer.
- * @param dataSz   Number of bytes to read.
- *
- * @retval WHAL_SUCCESS Read completed.
- * @retval WHAL_EINVAL  Null pointer or missing driver function.
- */
-whal_Error whal_Flash_Read(whal_Flash *flashDev, size_t addr, uint8_t *data, size_t dataSz);
-/*
- * @brief Write data into flash.
- *
- * @param flashDev Flash instance to program.
- * @param addr     Byte address in flash to start writing.
- * @param data     Buffer containing data to write.
- * @param dataSz   Number of bytes to write.
- *
- * @retval WHAL_SUCCESS Write accepted or completed.
- * @retval WHAL_EINVAL  Null pointer, missing driver function, or bad arguments.
- */
-whal_Error whal_Flash_Write(whal_Flash *flashDev, size_t addr, const uint8_t *data, size_t dataSz);
-/*
- * @brief Erase a region of flash.
- *
- * @param flashDev Flash instance to erase.
- * @param addr     Byte address in flash where erasure starts.
- * @param dataSz   Number of bytes (or sector-aligned size) to erase.
- *
- * @retval WHAL_SUCCESS Erase accepted or completed.
- * @retval WHAL_EINVAL  Null pointer or missing driver function.
- */
-whal_Error whal_Flash_Erase(whal_Flash *flashDev, size_t addr, size_t dataSz);
+#define WHAL_FLASH_DEV_DEFINE(NAME, DRIVER, REGMAP, CFG)    \
+    whal_Flash whal_dev_##NAME = {                          \
+        .regmap = REGMAP,                                   \
+        .cfg = CFG,                                         \
+    }
 #endif
+
+#define WHAL_FLASH_INIT(NAME)                           whal_dev_##NAME##_init()
+#define WHAL_FLASH_DEINIT(NAME)                         whal_dev_##NAME##_deinit()
+#define WHAL_FLASH_LOCK(NAME, addr, len)                whal_dev_##NAME##_lock(addr, len)
+#define WHAL_FLASH_UNLOCK(NAME, addr, len)              whal_dev_##NAME##_unlock(addr, len)
+#define WHAL_FLASH_READ(NAME, addr, data, dataSz)       whal_dev_##NAME##_read(addr, data, dataSz)
+#define WHAL_FLASH_WRITE(NAME, addr, data, dataSz)      whal_dev_##NAME##_write(addr, data, dataSz)
+#define WHAL_FLASH_ERASE(NAME, addr, dataSz)            whal_dev_##NAME##_erase(addr, dataSz)
+
+#ifdef WHAL_RUNTIME_POLYMORPHISM
+
+static inline whal_Error whal_Flash_Init(whal_Flash *dev) {
+    return dev->ops->init(dev);
+}
+static inline whal_Error whal_Flash_Deinit(whal_Flash *dev) {
+    return dev->ops->deinit(dev);
+}
+static inline whal_Error whal_Flash_Lock(whal_Flash *dev, size_t addr,
+                                         size_t len) {
+    return dev->ops->lock(dev, addr, len);
+}
+static inline whal_Error whal_Flash_Unlock(whal_Flash *dev, size_t addr,
+                                           size_t len) {
+    return dev->ops->unlock(dev, addr, len);
+}
+static inline whal_Error whal_Flash_Read(whal_Flash *dev, size_t addr,
+                                         uint8_t *data, size_t dataSz) {
+    return dev->ops->read(dev, addr, data, dataSz);
+}
+static inline whal_Error whal_Flash_Write(whal_Flash *dev, size_t addr,
+                                          const uint8_t *data, size_t dataSz) {
+    return dev->ops->write(dev, addr, data, dataSz);
+}
+static inline whal_Error whal_Flash_Erase(whal_Flash *dev, size_t addr,
+                                          size_t dataSz) {
+    return dev->ops->erase(dev, addr, dataSz);
+}
+
+#endif /* WHAL_RUNTIME_POLYMORPHISM */
 
 #endif /* WHAL_FLASH_H */

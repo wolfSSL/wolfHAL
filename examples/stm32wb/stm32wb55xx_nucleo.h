@@ -19,25 +19,12 @@ enum {
     CS_PIN,
 };
 
-/* RCC clock controller instance. */
-extern whal_Clock g_whalClock;
-
-/* GPIO controller instance. */
-extern whal_Gpio g_whalGpio;
-
-/* SysTick timer instance. */
-extern whal_Timer g_whalTimer;
-
-/* LPUART1 UART instance. */
-extern whal_Uart g_whalUart;
-
-/* Flash controller instance. */
-extern whal_Flash g_whalFlash;
-
-/* SPI controller instance. */
-extern whal_Spi g_whalSpi;
-
-/* RNG instance. */
-extern whal_Rng g_whalRng;
+WHAL_CLOCK_DEV_DECLARE(clock, Stm32wbRccPll)
+WHAL_GPIO_DEV_DECLARE(gpio, Stm32wbGpio)
+WHAL_TIMER_DEV_DECLARE(timer, SysTick)
+WHAL_UART_DEV_DECLARE(uart, Stm32wbUart)
+WHAL_FLASH_DEV_DECLARE(flash, Stm32wbFlash)
+WHAL_SPI_DEV_DECLARE(spi, Stm32wbSpi)
+WHAL_RNG_DEV_DECLARE(rng, Stm32wbRng)
 
 #endif /* STM32WB55XX_NUCLEO_H */

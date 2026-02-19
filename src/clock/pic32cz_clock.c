@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <wolfHAL/bitops.h>
 #include <wolfHAL/clock/pic32cz_clock.h>
+#include <wolfHAL/supply/pic32cz_supc.h>
 #include <wolfHAL/error.h>
 
 /*
@@ -75,7 +76,6 @@
  *
  * whal_Clock clk = {
  *     .regmap = { .base = 0x44000000 },  // Clock controller base
- *     .driver = &whal_Pic32czClockPll_Driver,
  *     .cfg = &(whal_Pic32czClock_Cfg) {
  *         .oscCtrlCfg = &(whal_Pic32czClockPll_OscCtrlCfg) {
  *             .pllInst = WHAL_PIC32CZ_PLL0,
@@ -111,7 +111,7 @@
  * };
  */
 
-whal_Error whal_Pic32czClockPll_Init(whal_Clock *clkDev)
+whal_Error WHAL_DRV_FN(Pic32czClockPll, init)(whal_Clock *clkDev)
 {
     whal_Pic32czClock_Cfg *cfg;
     whal_Pic32czClockPll_OscCtrlCfg *oscCtrlCfg;
@@ -138,7 +138,7 @@ whal_Error whal_Pic32czClockPll_Init(whal_Clock *clkDev)
     PLLxPOSTDIVA_REG = PIC32CZ_OSCCTRL_PLLxPOSTDIVA_REG(oscCtrlCfg->pllInst);
 
     /* Enable power supply for the PLL */
-    whal_Supply_Enable(oscCtrlCfg->supplyCtrl, oscCtrlCfg->supply);
+    WHAL_DRV_FN(Pic32czSupc, enable)(oscCtrlCfg->supplyCtrl, oscCtrlCfg->supply);
 
     /* Configure PLL feedback divider (sets VCO multiplication factor) */
     whal_Reg_Update(clkDev->regmap.base, PLLxFBDIV_REG, PIC32CZ_OSCCTRL_PLLxFBDIV,
@@ -199,7 +199,7 @@ whal_Error whal_Pic32czClockPll_Init(whal_Clock *clkDev)
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Pic32czClockPll_Deinit(whal_Clock *clkDev)
+whal_Error WHAL_DRV_FN(Pic32czClockPll, deinit)(whal_Clock *clkDev)
 {
     if (!clkDev) {
         return WHAL_EINVAL;
@@ -208,7 +208,7 @@ whal_Error whal_Pic32czClockPll_Deinit(whal_Clock *clkDev)
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Pic32czClock_Enable(whal_Clock *clkDev, const void *clk)
+whal_Error WHAL_DRV_FN(Pic32czClockPll, enable)(whal_Clock *clkDev, const void *clk)
 {
     const whal_Pic32czClock_Clk *pic32Clk = clk;
 
@@ -236,7 +236,7 @@ whal_Error whal_Pic32czClock_Enable(whal_Clock *clkDev, const void *clk)
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Pic32czClock_Disable(whal_Clock *clkDev, const void *clk)
+whal_Error WHAL_DRV_FN(Pic32czClockPll, disable)(whal_Clock *clkDev, const void *clk)
 {
     const whal_Pic32czClock_Clk *pic32Clk = clk;
 
@@ -258,7 +258,7 @@ whal_Error whal_Pic32czClock_Disable(whal_Clock *clkDev, const void *clk)
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Pic32czClock_GetRate(whal_Clock *clkDev, size_t *rateOut)
+whal_Error WHAL_DRV_FN(Pic32czClockPll, getrate)(whal_Clock *clkDev, size_t *rateOut)
 {
     if (!clkDev || !rateOut) {
         return WHAL_EINVAL;
@@ -269,10 +269,3 @@ whal_Error whal_Pic32czClock_GetRate(whal_Clock *clkDev, size_t *rateOut)
     return WHAL_SUCCESS;
 }
 
-const whal_ClockDriver whal_Pic32czClockPll_Driver = {
-    .Init = whal_Pic32czClockPll_Init,
-    .Deinit = whal_Pic32czClockPll_Deinit,
-    .Enable = whal_Pic32czClock_Enable,
-    .Disable = whal_Pic32czClock_Disable,
-    .GetRate = whal_Pic32czClock_GetRate,
-};

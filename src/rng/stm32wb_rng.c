@@ -2,6 +2,7 @@
 #include <wolfHAL/rng/stm32wb_rng.h>
 #include <wolfHAL/rng/rng.h>
 #include <wolfHAL/clock/clock.h>
+#include <wolfHAL/clock/stm32wb_rcc.h>
 #include <wolfHAL/error.h>
 #include <wolfHAL/regmap.h>
 #include <wolfHAL/bitops.h>
@@ -30,7 +31,7 @@
 /* Data Register - 32-bit random value */
 #define SRNG_DR_REG  0x08
 
-whal_Error whal_Stm32wbRng_Init(whal_Rng *rngDev)
+whal_Error WHAL_DRV_FN(Stm32wbRng, init)(whal_Rng *rngDev)
 {
     whal_Error err;
     whal_Stm32wbRng_Cfg *cfg;
@@ -41,7 +42,7 @@ whal_Error whal_Stm32wbRng_Init(whal_Rng *rngDev)
 
     cfg = (whal_Stm32wbRng_Cfg *)rngDev->cfg;
 
-    err = whal_Clock_Enable(cfg->clkCtrl, cfg->clk);
+    err = WHAL_DRV_FN(Stm32wbRccPll, enable)(cfg->clkCtrl, cfg->clk);
     if (err != WHAL_SUCCESS) {
         return err;
     }
@@ -49,7 +50,7 @@ whal_Error whal_Stm32wbRng_Init(whal_Rng *rngDev)
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Stm32wbRng_Deinit(whal_Rng *rngDev)
+whal_Error WHAL_DRV_FN(Stm32wbRng, deinit)(whal_Rng *rngDev)
 {
     whal_Error err;
 
@@ -59,7 +60,7 @@ whal_Error whal_Stm32wbRng_Deinit(whal_Rng *rngDev)
 
     whal_Stm32wbRng_Cfg *cfg = (whal_Stm32wbRng_Cfg *)rngDev->cfg;
 
-    err = whal_Clock_Disable(cfg->clkCtrl, cfg->clk);
+    err = WHAL_DRV_FN(Stm32wbRccPll, disable)(cfg->clkCtrl, cfg->clk);
     if (err) {
         return err;
     }
@@ -67,7 +68,7 @@ whal_Error whal_Stm32wbRng_Deinit(whal_Rng *rngDev)
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Stm32wbRng_Generate(whal_Rng *rngDev, uint8_t *rngData, size_t rngDataSz)
+whal_Error WHAL_DRV_FN(Stm32wbRng, generate)(whal_Rng *rngDev, uint8_t *rngData, size_t rngDataSz)
 {
     if (!rngDev || !rngData) {
         return WHAL_EINVAL;
@@ -117,8 +118,3 @@ exit:
     return err;
 }
 
-const whal_RngDriver whal_Stm32wbRng_Driver = {
-    .Init = whal_Stm32wbRng_Init,
-    .Deinit = whal_Stm32wbRng_Deinit,
-    .Generate = whal_Stm32wbRng_Generate,
-};

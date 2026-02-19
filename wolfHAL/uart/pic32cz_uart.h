@@ -44,50 +44,9 @@ typedef struct whal_Pic32czUart_Cfg {
     whal_Pic32czUart_RxPad rxPad;
 } whal_Pic32czUart_Cfg;
 
-/*
- * @brief Driver instance for PIC32CZ UART.
- */
-extern const whal_UartDriver whal_Pic32czUart_Driver;
-
-/*
- * @brief Initialize the PIC32CZ UART peripheral.
- *
- * @param uartDev UART device instance to initialize.
- *
- * @retval WHAL_SUCCESS Initialization completed.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Pic32czUart_Init(whal_Uart *uartDev);
-/*
- * @brief Deinitialize the PIC32CZ UART peripheral.
- *
- * @param uartDev UART device instance to deinitialize.
- *
- * @retval WHAL_SUCCESS Deinit completed.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Pic32czUart_Deinit(whal_Uart *uartDev);
-/*
- * @brief Transmit a buffer over UART.
- *
- * @param uartDev UART device instance.
- * @param data    Buffer to transmit.
- * @param dataSz  Number of bytes to transmit.
- *
- * @retval WHAL_SUCCESS Transfer completed.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Pic32czUart_Send(whal_Uart *uartDev, const uint8_t *data, size_t dataSz);
-/*
- * @brief Receive a buffer over UART.
- *
- * @param uartDev UART device instance.
- * @param data    Receive buffer.
- * @param dataSz  Number of bytes to receive.
- *
- * @retval WHAL_SUCCESS Transfer completed.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Pic32czUart_Recv(whal_Uart *uartDev, uint8_t *data, size_t dataSz);
+whal_Error WHAL_DRV_FN(Pic32czUart, init)(whal_Uart *uartDev);
+whal_Error WHAL_DRV_FN(Pic32czUart, deinit)(whal_Uart *uartDev);
+whal_Error WHAL_DRV_FN(Pic32czUart, send)(whal_Uart *uartDev, const uint8_t *data, size_t dataSz);
+whal_Error WHAL_DRV_FN(Pic32czUart, recv)(whal_Uart *uartDev, uint8_t *data, size_t dataSz);
 
 #endif /* WHAL_PIC32CZ_UART_H */

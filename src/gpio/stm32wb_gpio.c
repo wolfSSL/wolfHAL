@@ -96,7 +96,7 @@ static inline whal_Error whal_Stm32wbGpio_InitPin(whal_Gpio *gpioDev, whal_Stm32
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Stm32wbGpio_Init(whal_Gpio *gpioDev)
+whal_Error WHAL_DRV_FN(Stm32wbGpio, init)(whal_Gpio *gpioDev)
 {
     whal_Error err;
     whal_Stm32wbGpio_Cfg *cfg;
@@ -111,7 +111,7 @@ whal_Error whal_Stm32wbGpio_Init(whal_Gpio *gpioDev)
 
     for (size_t i = 0; i < cfg->clkCount; ++i) {
         /* Enable GPIO port clock before accessing registers */
-        err = whal_Clock_Enable(cfg->clkCtrl, cfg->clk[i]);
+        err = WHAL_DRV_FN(Stm32wbRccPll, enable)(cfg->clkCtrl, cfg->clk[i]);
         if (err) {
             return err;
         }
@@ -128,7 +128,7 @@ whal_Error whal_Stm32wbGpio_Init(whal_Gpio *gpioDev)
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Stm32wbGpio_Deinit(whal_Gpio *gpioDev)
+whal_Error WHAL_DRV_FN(Stm32wbGpio, deinit)(whal_Gpio *gpioDev)
 {
     whal_Error err;
     whal_Stm32wbGpio_Cfg *cfg;
@@ -137,7 +137,7 @@ whal_Error whal_Stm32wbGpio_Deinit(whal_Gpio *gpioDev)
 
     for (size_t i = 0; i < cfg->clkCount; ++i) {
         /* Disable GPIO port clock */
-        err = whal_Clock_Disable(cfg->clkCtrl, cfg->clk[i]);
+        err = WHAL_DRV_FN(Stm32wbRccPll, disable)(cfg->clkCtrl, cfg->clk[i]);
         if (err) {
             return err;
         }
@@ -188,19 +188,12 @@ static whal_Error whal_Stm32wbGpio_SetOrGet(whal_Gpio *gpioDev, size_t pin, size
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Stm32wbGpio_Get(whal_Gpio *gpioDev, size_t pin, size_t *value)
+whal_Error WHAL_DRV_FN(Stm32wbGpio, get)(whal_Gpio *gpioDev, size_t pin, size_t *value)
 {
     return whal_Stm32wbGpio_SetOrGet(gpioDev, pin, value, 0);
 }
 
-whal_Error whal_Stm32wbGpio_Set(whal_Gpio *gpioDev, size_t pin, size_t value)
+whal_Error WHAL_DRV_FN(Stm32wbGpio, set)(whal_Gpio *gpioDev, size_t pin, size_t value)
 {
     return whal_Stm32wbGpio_SetOrGet(gpioDev, pin, &value, 1);
 }
-
-const whal_GpioDriver whal_Stm32wbGpio_Driver = {
-    .Init = whal_Stm32wbGpio_Init,
-    .Deinit = whal_Stm32wbGpio_Deinit,
-    .Get = whal_Stm32wbGpio_Get,
-    .Set = whal_Stm32wbGpio_Set,
-};

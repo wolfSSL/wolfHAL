@@ -128,7 +128,7 @@ static whal_Error whal_Pic32czFlash_ExecCmd(const whal_Regmap *reg, size_t cmd)
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Pic32czFlash_Init(whal_Flash *flashDev)
+whal_Error WHAL_DRV_FN(Pic32czFlash, init)(whal_Flash *flashDev)
 {
     const whal_Regmap *reg;
 
@@ -150,7 +150,7 @@ whal_Error whal_Pic32czFlash_Init(whal_Flash *flashDev)
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Pic32czFlash_Deinit(whal_Flash *flashDev)
+whal_Error WHAL_DRV_FN(Pic32czFlash, deinit)(whal_Flash *flashDev)
 {
     const whal_Regmap *reg;
 
@@ -172,7 +172,7 @@ whal_Error whal_Pic32czFlash_Deinit(whal_Flash *flashDev)
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Pic32czFlash_Lock(whal_Flash *flashDev, size_t addr, size_t len)
+whal_Error WHAL_DRV_FN(Pic32czFlash, lock)(whal_Flash *flashDev, size_t addr, size_t len)
 {
     /*
      * TODO: Implement using FCW_PWP[0..7] region write-protect registers.
@@ -189,7 +189,7 @@ whal_Error whal_Pic32czFlash_Lock(whal_Flash *flashDev, size_t addr, size_t len)
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Pic32czFlash_Unlock(whal_Flash *flashDev, size_t addr, size_t len)
+whal_Error WHAL_DRV_FN(Pic32czFlash, unlock)(whal_Flash *flashDev, size_t addr, size_t len)
 {
     (void)addr;
     (void)len;
@@ -201,7 +201,7 @@ whal_Error whal_Pic32czFlash_Unlock(whal_Flash *flashDev, size_t addr, size_t le
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Pic32czFlash_Read(whal_Flash *flashDev, size_t addr, uint8_t *data,
+whal_Error WHAL_DRV_FN(Pic32czFlash, read)(whal_Flash *flashDev, size_t addr, uint8_t *data,
                              size_t dataSz)
 {
     const whal_Regmap *reg;
@@ -226,7 +226,7 @@ whal_Error whal_Pic32czFlash_Read(whal_Flash *flashDev, size_t addr, uint8_t *da
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Pic32czFlash_Write(whal_Flash *flashDev, size_t addr, const uint8_t *data,
+whal_Error WHAL_DRV_FN(Pic32czFlash, write)(whal_Flash *flashDev, size_t addr, const uint8_t *data,
                               size_t dataSz)
 {
     const whal_Regmap *reg;
@@ -294,7 +294,7 @@ whal_Error whal_Pic32czFlash_Write(whal_Flash *flashDev, size_t addr, const uint
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Pic32czFlash_Erase(whal_Flash *flashDev, size_t addr, size_t dataSz)
+whal_Error WHAL_DRV_FN(Pic32czFlash, erase)(whal_Flash *flashDev, size_t addr, size_t dataSz)
 {
     const whal_Regmap *reg;
     whal_Error err;
@@ -332,12 +332,3 @@ whal_Error whal_Pic32czFlash_Erase(whal_Flash *flashDev, size_t addr, size_t dat
     return WHAL_SUCCESS;
 }
 
-const whal_FlashDriver whal_Pic32czFlash_Driver = {
-    .Init = whal_Pic32czFlash_Init,
-    .Deinit = whal_Pic32czFlash_Deinit,
-    .Lock = whal_Pic32czFlash_Lock,
-    .Unlock = whal_Pic32czFlash_Unlock,
-    .Read = whal_Pic32czFlash_Read,
-    .Write = whal_Pic32czFlash_Write,
-    .Erase = whal_Pic32czFlash_Erase,
-};

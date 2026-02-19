@@ -79,7 +79,7 @@
 #define ST_RCC_CRRCR_HSI48ON_MASK  WHAL_MASK(0) /* HSI48 oscillator enable */
 #define ST_RCC_CRRCR_HSI48RDY_MASK WHAL_MASK(1) /* HSI48 oscillator ready */
 
-whal_Error whal_Stm32wbRccPll_Init(whal_Clock *clkDev)
+whal_Error WHAL_DRV_FN(Stm32wbRccPll, init)(whal_Clock *clkDev)
 {
     whal_Error err;
     whal_Stm32wbRcc_Cfg *cfg;
@@ -123,7 +123,7 @@ whal_Error whal_Stm32wbRccPll_Init(whal_Clock *clkDev)
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Stm32wbRccMsi_Init(whal_Clock *clkDev)
+whal_Error WHAL_DRV_FN(Stm32wbRccMsi, init)(whal_Clock *clkDev)
 {
     whal_Error err;
     whal_Stm32wbRcc_Cfg *cfg;
@@ -152,7 +152,7 @@ whal_Error whal_Stm32wbRccMsi_Init(whal_Clock *clkDev)
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Stm32wbRccPll_Deinit(whal_Clock *clkDev)
+whal_Error WHAL_DRV_FN(Stm32wbRccPll, deinit)(whal_Clock *clkDev)
 {
     whal_Stm32wbRcc_Cfg *cfg;
 
@@ -181,7 +181,7 @@ whal_Error whal_Stm32wbRccPll_Deinit(whal_Clock *clkDev)
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Stm32wbRccMsi_Deinit(whal_Clock *clkDev)
+whal_Error WHAL_DRV_FN(Stm32wbRccMsi, deinit)(whal_Clock *clkDev)
 {
     whal_Stm32wbRcc_Cfg *cfg;
 
@@ -202,7 +202,7 @@ whal_Error whal_Stm32wbRccMsi_Deinit(whal_Clock *clkDev)
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Stm32wbRcc_Enable(whal_Clock *clkDev, const void *clk)
+whal_Error WHAL_DRV_FN(Stm32wbRccPll, enable)(whal_Clock *clkDev, const void *clk)
 {
     whal_Stm32wbRcc_Clk *stClk = (whal_Stm32wbRcc_Clk *)clk;
 
@@ -213,7 +213,7 @@ whal_Error whal_Stm32wbRcc_Enable(whal_Clock *clkDev, const void *clk)
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Stm32wbRcc_Disable(whal_Clock *clkDev, const void *clk)
+whal_Error WHAL_DRV_FN(Stm32wbRccPll, disable)(whal_Clock *clkDev, const void *clk)
 {
     whal_Stm32wbRcc_Clk *stClk = (whal_Stm32wbRcc_Clk *)clk;
 
@@ -224,7 +224,7 @@ whal_Error whal_Stm32wbRcc_Disable(whal_Clock *clkDev, const void *clk)
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Stm32wbRccPll_GetRate(whal_Clock *clkDev, size_t *rateOut)
+whal_Error WHAL_DRV_FN(Stm32wbRccPll, getrate)(whal_Clock *clkDev, size_t *rateOut)
 {
     whal_Stm32wbRcc_Cfg *cfg;
 
@@ -256,7 +256,7 @@ whal_Error whal_Stm32wbRccPll_GetRate(whal_Clock *clkDev, size_t *rateOut)
     return WHAL_SUCCESS;
 }
 
-whal_Error whal_Stm32wbRccMsi_GetRate(whal_Clock *clkDev, size_t *rateOut)
+whal_Error WHAL_DRV_FN(Stm32wbRccMsi, getrate)(whal_Clock *clkDev, size_t *rateOut)
 {
     size_t msiRange;
 
@@ -330,18 +330,3 @@ whal_Error whal_Stm32wbRcc_Ext_EnableHsi48(whal_Clock *clkDev, uint8_t enable)
     return WHAL_SUCCESS;
 }
 
-const whal_ClockDriver whal_Stm32wbRccPll_Driver = {
-    .Init = whal_Stm32wbRccPll_Init,
-    .Deinit = whal_Stm32wbRccPll_Deinit,
-    .Enable = whal_Stm32wbRcc_Enable,
-    .Disable = whal_Stm32wbRcc_Disable,
-    .GetRate = whal_Stm32wbRccPll_GetRate,
-};
-
-const whal_ClockDriver whal_Stm32wbRccMsi_Driver = {
-    .Init = whal_Stm32wbRccMsi_Init,
-    .Deinit = whal_Stm32wbRccMsi_Deinit,
-    .Enable = whal_Stm32wbRcc_Enable,
-    .Disable = whal_Stm32wbRcc_Disable,
-    .GetRate = whal_Stm32wbRccMsi_GetRate,
-};

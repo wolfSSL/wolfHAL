@@ -30,27 +30,27 @@ static void test_clock_enable_disable(void)
 
     size_t val = 0;
 
-    WHAL_ASSERT_EQ(whal_Clock_Enable(&g_whalClock, &testClk), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(WHAL_CLOCK_ENABLE(clock, &testClk), WHAL_SUCCESS);
 
     /* Readback: GCLK PCHCTRL channel 25 CHEN bit should be set */
-    whal_Reg_Get(g_whalClock.regmap.base, GCLK_PCHCTRL_OFFSET(25),
+    whal_Reg_Get(whal_dev_clock.regmap.base, GCLK_PCHCTRL_OFFSET(25),
                  GCLK_PCHCTRL_CHEN, &val);
     WHAL_ASSERT_EQ(val, 1);
 
     /* Readback: MCLK CLKMSK1 bit 3 should be set */
-    whal_Reg_Get(g_whalClock.regmap.base, MCLK_CLKMSK_OFFSET(1),
+    whal_Reg_Get(whal_dev_clock.regmap.base, MCLK_CLKMSK_OFFSET(1),
                  WHAL_MASK(3), &val);
     WHAL_ASSERT_EQ(val, 1);
 
-    WHAL_ASSERT_EQ(whal_Clock_Disable(&g_whalClock, &testClk), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(WHAL_CLOCK_DISABLE(clock, &testClk), WHAL_SUCCESS);
 
     /* After disable: CHEN should be cleared */
-    whal_Reg_Get(g_whalClock.regmap.base, GCLK_PCHCTRL_OFFSET(25),
+    whal_Reg_Get(whal_dev_clock.regmap.base, GCLK_PCHCTRL_OFFSET(25),
                  GCLK_PCHCTRL_CHEN, &val);
     WHAL_ASSERT_EQ(val, 0);
 
     /* Re-enable so UART still works for remaining tests */
-    WHAL_ASSERT_EQ(whal_Clock_Enable(&g_whalClock, &testClk), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(WHAL_CLOCK_ENABLE(clock, &testClk), WHAL_SUCCESS);
 }
 
 void test_clock(void)

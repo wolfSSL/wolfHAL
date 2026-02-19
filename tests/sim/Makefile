@@ -6,22 +6,13 @@ CFLAGS = -Wall -Werror $(INCLUDE) -g3
 # Test sources
 TEST_SRC = test_main.c test_bitops.c test_dispatch.c
 
-# wolfHAL generic dispatch sources (no platform drivers)
-WHAL_SRC = $(WHAL_DIR)/src/clock/clock.c \
-           $(WHAL_DIR)/src/gpio/gpio.c \
-           $(WHAL_DIR)/src/uart/uart.c \
-           $(WHAL_DIR)/src/flash/flash.c \
-           $(WHAL_DIR)/src/timer/timer.c \
-           $(WHAL_DIR)/src/spi/spi.c \
-           $(WHAL_DIR)/src/rng/rng.c \
-           $(WHAL_DIR)/src/supply/supply.c
-
-SOURCE = $(TEST_SRC) $(WHAL_SRC)
+SOURCE = $(TEST_SRC)
 OBJECTS = $(patsubst %.c,%.o,$(SOURCE))
 
 TARGET = test_sim
+TARGET_RT = test_sim_rt
 
-all: $(TARGET)
+all: $(TARGET) $(TARGET_RT)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -29,10 +20,14 @@ all: $(TARGET)
 $(TARGET): $(OBJECTS)
 	$(CC) $(CFLAGS) -o $@ $(OBJECTS)
 
+$(TARGET_RT): $(SOURCE)
+	$(CC) $(CFLAGS) -DWHAL_RUNTIME_POLYMORPHISM -o $@ $(SOURCE)
+
 .PHONY: run clean
 
-run: $(TARGET)
+run: $(TARGET) $(TARGET_RT)
 	./$(TARGET)
+	./$(TARGET_RT)
 
 clean:
-	rm -f $(OBJECTS) $(TARGET)
+	rm -f $(OBJECTS) $(TARGET) $(TARGET_RT)

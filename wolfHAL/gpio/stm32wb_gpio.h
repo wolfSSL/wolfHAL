@@ -111,50 +111,9 @@ typedef struct {
     size_t pinCount;                  /* Number of pins to configure */
 } whal_Stm32wbGpio_Cfg;
 
-/*
- * @brief Driver instance for STM32 GPIO.
- */
-extern const whal_GpioDriver whal_Stm32wbGpio_Driver;
-
-/*
- * @brief Initialize the STM32 GPIO peripheral and configured pins.
- *
- * @param gpioDev GPIO device instance.
- *
- * @retval WHAL_SUCCESS Initialization completed.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Stm32wbGpio_Init(whal_Gpio *gpioDev);
-/*
- * @brief Deinitialize the STM32 GPIO peripheral.
- *
- * @param gpioDev GPIO device instance.
- *
- * @retval WHAL_SUCCESS Deinit completed.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Stm32wbGpio_Deinit(whal_Gpio *gpioDev);
-/*
- * @brief Read a GPIO pin value.
- *
- * @param gpioDev GPIO device instance.
- * @param pin     Pin index in the configured pin table.
- * @param value   Output for the sampled pin value.
- *
- * @retval WHAL_SUCCESS Pin value read.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Stm32wbGpio_Get(whal_Gpio *gpioDev, size_t pin, size_t *value);
-/*
- * @brief Set a GPIO pin value.
- *
- * @param gpioDev GPIO device instance.
- * @param pin     Pin index in the configured pin table.
- * @param value   Value to drive.
- *
- * @retval WHAL_SUCCESS Pin updated.
- * @retval WHAL_EINVAL  Invalid arguments.
- */
-whal_Error whal_Stm32wbGpio_Set(whal_Gpio *gpioDev, size_t pin, size_t value);
+whal_Error WHAL_DRV_FN(Stm32wbGpio, init)(whal_Gpio *gpioDev);
+whal_Error WHAL_DRV_FN(Stm32wbGpio, deinit)(whal_Gpio *gpioDev);
+whal_Error WHAL_DRV_FN(Stm32wbGpio, get)(whal_Gpio *gpioDev, size_t pin, size_t *value);
+whal_Error WHAL_DRV_FN(Stm32wbGpio, set)(whal_Gpio *gpioDev, size_t pin, size_t value);
 
 #endif /* WHAL_STM32WB_GPIO_H */
