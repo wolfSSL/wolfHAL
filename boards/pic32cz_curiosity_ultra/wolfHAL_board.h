@@ -86,7 +86,7 @@ extern volatile uint32_t g_tick;
     .base = WHAL_CORTEX_M7_SYSTICK_BASE, \
     /* .driver: direct API mapping */ \
     .cfg  = (void *)&(const whal_SysTick_Cfg){ \
-        .cyclesPerTick = 300000000 / 1000, \
+        .cyclesPerTick = (300000000 / 1000) - 1, /* SysTick reloads every LOAD+1 cycles */ \
         .clkSrc  = WHAL_SYSTICK_CLKSRC_SYSCLK, \
         .tickInt = WHAL_SYSTICK_TICKINT_ENABLED, \
     }, \
