@@ -159,12 +159,10 @@ void __attribute__((naked)) Reset_Handler()
             "mov sp, r0");
 
     /* Copy data section from flash to RAM */
-    uint32_t data_section_size = _edata - _sdata;
-    memcpy(_sdata, _sidata, data_section_size * 4);
+    memcpy(_sdata, _sidata, (uint8_t *)_edata - (uint8_t *)_sdata);
 
     /* Zero out bss */
-    uint32_t bss_section_size = _ebss - _sbss;
-    memset(_sbss, 0, bss_section_size * 4);
+    memset(_sbss, 0, (uint8_t *)_ebss - (uint8_t *)_sbss);
 
     /* Set Interrupt Vector Table Offset */
     uint32_t *vtor = (uint32_t *)0xE000ED08;
