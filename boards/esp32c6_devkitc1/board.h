@@ -40,13 +40,22 @@ extern volatile uint32_t g_tick;
 #define BOARD_UART_DEV  (&g_whalUart)
 #define BOARD_TIMER_DEV (&g_whalTimer)
 
-/* GPIO dev initializer. Pin table left empty. */
+/* GPIO dev initializer: GPIO8 (BOARD_LED_PIN) as a simple push-pull output. */
 #define WHAL_CFG_ESP32C6_GPIO_DEV { \
     .base = WHAL_ESP32C6_GPIO_BASE, \
     .driver = WHAL_ESP32C6_GPIO_DRIVER, \
     .cfg = (void *)&(const whal_Esp32c6_Gpio_Cfg){ \
-        .pinCfg = NULL, \
-        .pinCount = 0, \
+        .pinCfg = (const whal_Esp32c6_Gpio_PinCfg[]){ \
+            { .pin = 8, \
+              .outputEnable = 1, \
+              .gpioCfg  = WHAL_ESP32C6_GPIO_PINREG(0, GPIO_INT_DISABLE, 0, 0), \
+              .ioMuxCfg = WHAL_ESP32C6_GPIO_IOMUX(IO_MUX_FUNC_GPIO, 0, 0, 2) }, \
+        }, \
+        .pinCount = 1, \
+        .outputCfg = (const whal_Esp32c6_Gpio_OutputCfg[]){ \
+            { .gpioNum = 8, .cfg = WHAL_ESP32C6_GPIO_OUT(GPIO_SIG_GPIO) }, \
+        }, \
+        .outputCount = 1, \
     }, \
 }
 

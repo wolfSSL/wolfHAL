@@ -65,11 +65,6 @@ whal_Error Board_Init(void)
         return err;
     }
 
-    err = whal_Uart_Init(&g_whalUart);
-    if (err) {
-        return err;
-    }
-
     return WHAL_SUCCESS;
 }
 

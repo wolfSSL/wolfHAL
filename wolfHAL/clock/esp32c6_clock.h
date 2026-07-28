@@ -23,6 +23,8 @@
 #define WHAL_ESP32C6_CLOCK_H
 
 #include <wolfHAL/error.h>
+#include <wolfHAL/reg.h>
+#include <wolfHAL/bitops.h>
 
 /*
  * @file esp32c6_clock.h
@@ -35,6 +37,44 @@
  * PeriphClk enable/disable pair) is still to be designed; only Init is
  * scaffolded here.
  */
+
+#define WHAL_ESP32C6_CLOCK_BASE   0x60096000
+
+#define WHAL_PCR_UART0_CONF_REG       0x0000
+#define WHAL_PCR_UART0_CLK_EN_Pos     0
+#define WHAL_PCR_UART0_CLK_EN_Msk     (1UL << WHAL_PCR_UART0_CLK_EN_Pos)
+#define WHAL_PCR_UART0_RST_EN_Pos     1
+#define WHAL_PCR_UART0_RST_EN_Msk     (1UL << WHAL_PCR_UART0_RST_EN_Pos)
+
+#define WHAL_PCR_UART0_SCLK_CONF_REG  0x0004
+#define WHAL_PCR_UART0_SCLK_EN_Pos    22
+#define WHAL_PCR_UART0_SCLK_EN_Msk    (1UL << WHAL_PCR_UART0_SCLK_EN_Pos)
+
+#define WHAL_PCR_IOMUX_CONF_REG          0x00E8
+#define WHAL_PCR_IOMUX_CLK_EN_Pos        0
+#define WHAL_PCR_IOMUX_CLK_EN_Msk        (1UL << WHAL_PCR_IOMUX_CLK_EN_Pos)
+#define WHAL_PCR_IOMUX_RST_EN_Pos        1
+#define WHAL_PCR_IOMUX_RST_EN_Msk        (1UL << WHAL_PCR_IOMUX_RST_EN_Pos)
+
+#define WHAL_PCR_IOMUX_CLK_CONF_REG      0x00EC
+#define WHAL_PCR_IOMUX_FUNC_CLK_EN_Pos   22
+#define WHAL_PCR_IOMUX_FUNC_CLK_EN_Msk   (1UL << WHAL_PCR_IOMUX_FUNC_CLK_EN_Pos)
+
+/* CPU clock source select (PCR), TRM Reg 8.63.
+ * SOC_CLK_SEL[17:16]: 0 = XTAL, 1 = PLL, 2 = RC_FAST. */
+#define WHAL_PCR_SYSCLK_CONF_REG         0x0110
+#define WHAL_PCR_SOC_CLK_SEL_Pos         16
+#define WHAL_PCR_SOC_CLK_SEL_Msk         (WHAL_BITMASK(2) << WHAL_PCR_SOC_CLK_SEL_Pos)
+
+/* CPU frequency config (PCR), TRM Reg 8.65. The divider fields hold
+ * (divide factor - 1); HS_120M_FORCE is only valid when HS_DIV is /1. */
+#define WHAL_PCR_CPU_FREQ_CONF_REG       0x0118
+#define WHAL_PCR_LS_DIV_Pos              0
+#define WHAL_PCR_LS_DIV_Msk              (WHAL_BITMASK(8) << WHAL_PCR_LS_DIV_Pos)
+#define WHAL_PCR_HS_DIV_Pos              8
+#define WHAL_PCR_HS_DIV_Msk              (WHAL_BITMASK(8) << WHAL_PCR_HS_DIV_Pos)
+#define WHAL_PCR_HS_120M_FORCE_Pos       16
+#define WHAL_PCR_HS_120M_FORCE_Msk       (1UL << WHAL_PCR_HS_120M_FORCE_Pos)
 
 /*
  * @brief Initialize the ESP32-C6 clock tree.
@@ -90,7 +130,8 @@ typedef enum {
 static inline void whal_Esp32c6_Clock_SetSysClk(const whal_Esp32c6_Clock_HpSysClk sysClk)
 {
     whal_Reg_Update(WHAL_ESP32C6_CLOCK_BASE, WHAL_PCR_SYSCLK_CONF_REG, 
-                    WHAL_PCR_SOC_CLK_SEL_Msk, sysClk);
+                    WHAL_PCR_SOC_CLK_SEL_Msk,
+                    whal_SetBits(WHAL_PCR_SOC_CLK_SEL_Msk, WHAL_PCR_SOC_CLK_SEL_Pos, sysClk));
 }
 
 static inline void whal_Esp32c6_Clock_ConfigureCpuFreq(const whal_Esp32c6_Clock_CpuLsDiv cpuLsDiv,
@@ -104,16 +145,6 @@ static inline void whal_Esp32c6_Clock_ConfigureCpuFreq(const whal_Esp32c6_Clock_
                     whal_SetBits(WHAL_PCR_HS_120M_FORCE_Msk, WHAL_PCR_HS_120M_FORCE_Pos, hs120MForce));
 }
 
-/* UART0 clock gates (PCR), TRM Reg 8.1 / 8.2 */
-#define WHAL_PCR_UART0_CONF_REG       0x0000
-#define WHAL_PCR_UART0_CLK_EN_Pos     0
-#define WHAL_PCR_UART0_CLK_EN_Msk     (1UL << WHAL_PCR_UART0_CLK_EN_Pos)
-#define WHAL_PCR_UART0_RST_EN_Pos     1
-#define WHAL_PCR_UART0_RST_EN_Msk     (1UL << WHAL_PCR_UART0_RST_EN_Pos)
-
-#define WHAL_PCR_UART0_SCLK_CONF_REG  0x0004
-#define WHAL_PCR_UART0_SCLK_EN_Pos    22
-#define WHAL_PCR_UART0_SCLK_EN_Msk    (1UL << WHAL_PCR_UART0_SCLK_EN_Pos)
 
 static inline void whal_Esp32c6_Clock_EnableUart0Clk(void)
 {
@@ -135,17 +166,6 @@ static inline void whal_Esp32c6_Clock_DisableUart0Clk(void)
                     WHAL_PCR_UART0_CLK_EN_Msk,
                     whal_SetBits(WHAL_PCR_UART0_CLK_EN_Msk, WHAL_PCR_UART0_CLK_EN_Pos, 0));
 }
-
-/* IO MUX clock gates (PCR), TRM Reg 8.55 / 8.56 */
-#define WHAL_PCR_IOMUX_CONF_REG          0x00E8
-#define WHAL_PCR_IOMUX_CLK_EN_Pos        0
-#define WHAL_PCR_IOMUX_CLK_EN_Msk        (1UL << WHAL_PCR_IOMUX_CLK_EN_Pos)
-#define WHAL_PCR_IOMUX_RST_EN_Pos        1
-#define WHAL_PCR_IOMUX_RST_EN_Msk        (1UL << WHAL_PCR_IOMUX_RST_EN_Pos)
-
-#define WHAL_PCR_IOMUX_CLK_CONF_REG      0x00EC
-#define WHAL_PCR_IOMUX_FUNC_CLK_EN_Pos   22
-#define WHAL_PCR_IOMUX_FUNC_CLK_EN_Msk   (1UL << WHAL_PCR_IOMUX_FUNC_CLK_EN_Pos)
 
 static inline void whal_Esp32c6_Clock_EnableIomuxClk(void)
 {

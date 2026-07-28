@@ -29,9 +29,9 @@ LD      = $(GCC_PATH)$(GCC_PREFIX)gcc
 OBJCOPY = $(GCC_PATH)$(GCC_PREFIX)objcopy
 
 CFLAGS += -Wall -Werror $(INCLUDE) -g3 -Os -ffunction-sections -fdata-sections \
- -ffreestanding -nostdlib -march=rv32imac -mabi=ilp32 \
+ -ffreestanding -nostdlib -march=rv32imac_zicsr -mabi=ilp32 \
  -DPLATFORM_ESP32C6 -MMD -MP
-LDFLAGS = -march=rv32imac -mabi=ilp32 -ffreestanding -nostartfiles -nostdlib \
+LDFLAGS = -march=rv32imac_zicsr -mabi=ilp32 -ffreestanding -nostartfiles -nostdlib \
  -Wl,--gc-sections -static
 
 LINKER_SCRIPT ?= $(_BOARD_DIR)/linker.ld

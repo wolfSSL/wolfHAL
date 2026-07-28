@@ -19,20 +19,20 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
  */
 
-#include <stdint.h>
+#include "board.h"
 
 /*
  * Barebones ESP32-C6 (RV32IMAC) application.
  *
- * Reached from Reset_Handler() in ivt.c once the C runtime is up. Nothing is
- * wired yet, so just spin. The counter is `volatile` so the compiler keeps the
- * loop body, giving a live variable to watch on a debugger or over JTAG.
+ * Reached from Reset_Handler() in ivt.c once the C runtime is up. Bring up the
+ * board (clocks + GPIO), drive the GPIO8 output high, then spin.
  */
 void main(void)
 {
-    volatile uint32_t ticks = 0;
+    Board_Init();
+
+    whal_Gpio_Set(BOARD_GPIO_DEV, BOARD_LED_PIN, 1);
 
     while (1) {
-        ticks++;
     }
 }
