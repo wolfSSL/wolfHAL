@@ -215,7 +215,7 @@ extern uint8_t ethRxBufs[BOARD_ETH_RX_DESC_COUNT * BOARD_ETH_RX_BUF_SIZE];
     .base = WHAL_CORTEX_M33_SYSTICK_BASE, \
     /* .driver: direct API mapping */ \
     .cfg  = (void *)&(const whal_SysTick_Cfg){ \
-        .cyclesPerTick = 168000000 / 1000, \
+        .cyclesPerTick = (168000000 / 1000) - 1, /* SysTick reloads every LOAD+1 cycles */ \
         .clkSrc  = WHAL_SYSTICK_CLKSRC_SYSCLK, \
         .tickInt = WHAL_SYSTICK_TICKINT_ENABLED, \
     }, \
