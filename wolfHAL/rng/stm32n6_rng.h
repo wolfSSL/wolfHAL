@@ -44,8 +44,8 @@ typedef whal_Stm32wba_Rng_Cfg whal_Stm32n6_Rng_Cfg;
 #define whal_Stm32n6_Rng_Generate whal_Stm32wba_Rng_Generate
 #endif /* !WHAL_CFG_STM32N6_RNG_DIRECT_API_MAPPING */
 
-/* Config initializer macro alias. The N6 board.h supplies the body under
- * the N6-prefixed name; the WBA driver source consumes the WBA name. */
+/* Config initializer macro alias. The N6 wolfHAL_board.h supplies the body
+ * under the N6-prefixed name; the WBA driver source consumes the WBA name. */
 #define WHAL_CFG_STM32WBA_RNG_DEV WHAL_CFG_STM32N6_RNG_DEV
 
 #endif /* WHAL_STM32N6_RNG_H */

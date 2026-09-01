@@ -55,7 +55,7 @@ typedef whal_Stm32wb_AesCcm_State whal_Stm32u5_AesCcm_State;
 #define whal_Stm32u5_Aes_GmacDriver whal_Stm32wb_Aes_GmacDriver
 #define whal_Stm32u5_Aes_CcmDriver  whal_Stm32wb_Aes_CcmDriver
 
-/* Config initializer macro aliases. The U5 board.h supplies the bodies
+/* Config initializer macro aliases. The U5 wolfHAL_board.h supplies the bodies
  * under U5-prefixed names; the WB driver source consumes the WB names. */
 #define WHAL_CFG_STM32WB_AES_DEV      WHAL_CFG_STM32U5_AES_DEV
 #define WHAL_CFG_STM32WB_AES_ECB_DEV  WHAL_CFG_STM32U5_AES_ECB_DEV

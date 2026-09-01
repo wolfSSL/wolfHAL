@@ -83,9 +83,9 @@ typedef struct whal_SharpMemory_Display_Cfg {
 /**
  * @brief Fixed device instance for boards with a single on-board panel.
  * Defined in the driver TU from the WHAL_CFG_SHARPMEMORY_DISPLAY_DEV
- * initializer in board.h. When this macro is not defined, the driver instead
- * operates on the whal_Display passed to each call (e.g. an external panel
- * wired up under boards/peripheral/), like the SPI-NOR flash driver.
+ * initializer in wolfHAL_board.h. When this macro is not defined, the driver
+ * instead operates on the whal_Display passed to each call (e.g. an external
+ * panel wired up under boards/peripheral/), like the SPI-NOR flash driver.
  */
 extern const whal_Display whal_SharpMemory_Display_Dev;
 #endif

@@ -57,7 +57,7 @@ typedef struct {
 
 /*
  * @brief Platform-owned SysTick device singleton. Defined in the driver TU
- * from the WHAL_CFG_SYSTICK_DEV initializer in board.h.
+ * from the WHAL_CFG_SYSTICK_DEV initializer in wolfHAL_board.h.
  */
 extern const whal_Timer whal_SysTick_Dev;
 

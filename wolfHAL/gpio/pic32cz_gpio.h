@@ -112,7 +112,7 @@ typedef struct whal_Pic32cz_Gpio_Cfg {
 
 /*
  * @brief Platform-owned GPIO device singleton. Defined in the driver TU
- * from the WHAL_CFG_PIC32CZ_GPIO_DEV initializer in board.h.
+ * from the WHAL_CFG_PIC32CZ_GPIO_DEV initializer in wolfHAL_board.h.
  */
 extern const whal_Gpio whal_Pic32cz_Gpio_Dev;
 

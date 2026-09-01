@@ -48,7 +48,7 @@ LINKER_SCRIPT ?= $(_BOARD_DIR)/linker.ld
 INCLUDE += -I$(_BOARD_DIR) -I$(WHAL_DIR)/boards/peripheral
 
 BOARD_SOURCE = $(_BOARD_DIR)/ivt.c
-BOARD_SOURCE += $(_BOARD_DIR)/board.c
+BOARD_SOURCE += $(_BOARD_DIR)/wolfHAL_board.c
 BOARD_SOURCE += $(wildcard $(WHAL_DIR)/src/*.c)
 BOARD_SOURCE += $(wildcard $(WHAL_DIR)/src/*/flash.c)
 BOARD_SOURCE += $(wildcard $(WHAL_DIR)/src/*/rng.c)

@@ -52,7 +52,7 @@ typedef struct whal_Stm32h5_Flash_Cfg {
 extern const whal_FlashDriver whal_Stm32h5_Flash_Driver;
 /*
  * @brief Platform-owned device singleton. Defined in the driver TU
- * from the WHAL_CFG_STM32H5_FLASH_DEV initializer in board.h.
+ * from the WHAL_CFG_STM32H5_FLASH_DEV initializer in wolfHAL_board.h.
  */
 extern const whal_Flash whal_Stm32h5_Flash_Dev;
 

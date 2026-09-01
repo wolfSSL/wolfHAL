@@ -21,7 +21,7 @@
 
 #include <stdint.h>
 #ifdef WHAL_CFG_SDHC_SPI_SINGLE_INSTANCE
-#include "board.h"  /* provides whal_SdhcSpi_Dev singleton */
+#include "wolfHAL_board.h"  /* provides whal_SdhcSpi_Dev singleton */
 #endif
 #include <wolfHAL/block/sdhc_spi_block.h>
 #include <wolfHAL/block/block.h>

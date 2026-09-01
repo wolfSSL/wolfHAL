@@ -74,8 +74,8 @@ typedef whal_Stm32wb_Gpio_PinCfg whal_Stm32n6_Gpio_PinCfg;
 
 #define WHAL_STM32N6_GPIO_PIN WHAL_STM32WB_GPIO_PIN
 
-/* Config initializer macro alias. The N6 board.h supplies the body under
- * the N6-prefixed name; the WB driver source consumes the WB name. */
+/* Config initializer macro alias. The N6 wolfHAL_board.h supplies the body
+ * under the N6-prefixed name; the WB driver source consumes the WB name. */
 #define WHAL_CFG_STM32WB_GPIO_DEV WHAL_CFG_STM32N6_GPIO_DEV
 
 #endif /* WHAL_STM32N6_GPIO_H */

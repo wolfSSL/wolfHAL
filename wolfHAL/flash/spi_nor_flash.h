@@ -71,7 +71,7 @@ typedef struct whal_SpiNor_Cfg {
 
 /*
  * @brief Single-instance device struct. Defined in the driver TU
- * from the WHAL_CFG_SPI_NOR_DEV initializer in board.h.
+ * from the WHAL_CFG_SPI_NOR_DEV initializer in wolfHAL_board.h.
  */
 #ifdef WHAL_CFG_SPI_NOR_SINGLE_INSTANCE
 extern const whal_Flash whal_SpiNor_Dev;

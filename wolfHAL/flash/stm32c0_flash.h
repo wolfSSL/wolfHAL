@@ -69,7 +69,7 @@ extern const whal_FlashDriver whal_Stm32c0_Flash_Driver;
 
 /*
  * @brief Platform-owned flash device singleton. Defined in the driver TU
- * from the WHAL_CFG_STM32C0_FLASH_DEV initializer in board.h.
+ * from the WHAL_CFG_STM32C0_FLASH_DEV initializer in wolfHAL_board.h.
  */
 extern const whal_Flash whal_Stm32c0_Flash_Dev;
 

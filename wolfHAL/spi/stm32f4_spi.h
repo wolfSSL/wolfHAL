@@ -54,7 +54,7 @@ typedef struct whal_Stm32f4_Spi_Cfg {
 
 /*
  * @brief Single-instance device struct. Defined in the driver TU
- * from the WHAL_CFG_STM32F4_SPI_DEV initializer in board.h.
+ * from the WHAL_CFG_STM32F4_SPI_DEV initializer in wolfHAL_board.h.
  */
 #if defined(WHAL_CFG_STM32F4_SPI_SINGLE_INSTANCE) || \
     defined(WHAL_CFG_STM32L1_SPI_SINGLE_INSTANCE)

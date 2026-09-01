@@ -45,8 +45,9 @@
  *   - 2 MB U575/U585 variants: 1 MB per bank, 128 pages per bank.
  *   - 4 MB U59x/U5Ax/U5Fx/U5Gx variants: 2 MB per bank, 256 pages per bank.
  * Bank 2 lives immediately after bank 1 in the address space and is selected
- * with BKER=1. The board.h flash config provides the actual bank size for
- * the chip in use; the constants below are defaults used when bankSize is 0.
+ * with BKER=1. The wolfHAL_board.h flash config provides the actual bank
+ * size for the chip in use; the constants below are defaults used when
+ * bankSize is 0.
  */
 
 #define WHAL_STM32U5_FLASH_BANK_SIZE     0x00200000 /* 2 MB per bank on U5Ax */
@@ -69,7 +70,7 @@ extern const whal_FlashDriver whal_Stm32u5_Flash_Driver;
 
 /**
  * @brief Platform-owned device singleton. Defined in the driver TU
- *        from the WHAL_CFG_STM32U5_FLASH_DEV initializer in board.h.
+ *        from the WHAL_CFG_STM32U5_FLASH_DEV initializer in wolfHAL_board.h.
  */
 extern const whal_Flash whal_Stm32u5_Flash_Dev;
 

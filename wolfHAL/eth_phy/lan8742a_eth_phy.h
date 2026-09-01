@@ -43,7 +43,7 @@ typedef struct whal_Lan8742a_Cfg {
 
 /*
  * @brief Platform-owned LAN8742A PHY device singleton. Defined in the
- * driver TU from the WHAL_CFG_LAN8742A_DEV initializer in board.h.
+ * driver TU from the WHAL_CFG_LAN8742A_DEV initializer in wolfHAL_board.h.
  */
 extern const whal_EthPhy whal_Lan8742a_Dev;
 

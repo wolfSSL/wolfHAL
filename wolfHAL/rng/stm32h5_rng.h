@@ -45,7 +45,7 @@ typedef struct whal_Stm32h5_Rng_Cfg {
 
 /*
  * @brief Platform-owned RNG device singleton. Defined in the driver TU
- * from the WHAL_CFG_STM32H5_RNG_DEV initializer in board.h.
+ * from the WHAL_CFG_STM32H5_RNG_DEV initializer in wolfHAL_board.h.
  */
 extern const whal_Rng whal_Stm32h5_Rng_Dev;
 

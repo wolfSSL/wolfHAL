@@ -96,7 +96,7 @@ typedef struct {
 
 /*
  * @brief Single-instance device struct. Defined in the driver TU
- * from the WHAL_CFG_STM32WBA_GPDMA_DEV initializer in board.h.
+ * from the WHAL_CFG_STM32WBA_GPDMA_DEV initializer in wolfHAL_board.h.
  */
 #if defined(WHAL_CFG_STM32WBA_GPDMA_SINGLE_INSTANCE) || \
     defined(WHAL_CFG_STM32N6_GPDMA_SINGLE_INSTANCE)

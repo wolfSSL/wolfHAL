@@ -216,7 +216,7 @@ whal_Error whal_Stm32wb_Pka_RsaCrtExp(const uint8_t *A,    size_t ASz,
 
 /*
  * @brief Platform-owned PKA peripheral device. Defined in the driver TU
- * from the WHAL_CFG_STM32WB_PKA_DEV initializer in board.h.
+ * from the WHAL_CFG_STM32WB_PKA_DEV initializer in wolfHAL_board.h.
  */
 extern const whal_Crypto whal_Stm32wb_Pka_Dev;
 

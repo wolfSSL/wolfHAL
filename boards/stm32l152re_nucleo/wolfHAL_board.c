@@ -1,4 +1,4 @@
-/* board.c
+/* wolfHAL_board.c
  *
  * Copyright (C) 2026 wolfSSL Inc.
  *
@@ -21,9 +21,9 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "board.h"
+#include "wolfHAL_board.h"
 #include <wolfHAL/platform/st/stm32l152re.h>
-#include "peripheral.h"
+#include "wolfHAL_peripheral.h"
 
 volatile uint32_t g_tick = 0;
 volatile uint8_t g_waiting = 0;
@@ -69,7 +69,7 @@ static const whal_Stm32l1_Rcc_PeriphClk g_periphClks[] = {
 };
 #define PERIPH_CLK_COUNT (sizeof(g_periphClks) / sizeof(g_periphClks[0]))
 
-/* PWR singleton lives in board.h as `static const`. */
+/* PWR singleton lives in wolfHAL_board.h as `static const`. */
 
 /* UART -- USART2 at 115200 baud */
 whal_Uart g_whalUart = {

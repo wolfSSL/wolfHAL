@@ -20,7 +20,7 @@
  */
 
 #include <stdint.h>
-#include "board.h"  /* provides WHAL_CFG_STM32WB_GPIO_DEV initializer */
+#include "wolfHAL_board.h"  /* provides WHAL_CFG_STM32WB_GPIO_DEV initializer */
 #include <wolfHAL/error.h>
 #include <wolfHAL/gpio/gpio.h>
 #include <wolfHAL/gpio/stm32wb_gpio.h>

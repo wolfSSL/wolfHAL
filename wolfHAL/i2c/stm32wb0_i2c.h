@@ -47,8 +47,8 @@ typedef whal_Stm32wb_I2c_Cfg whal_Stm32wb0_I2c_Cfg;
 #define whal_Stm32wb0_I2c_Transfer whal_Stm32wb_I2c_Transfer
 #endif /* !WHAL_CFG_STM32WB0_I2C_DIRECT_API_MAPPING */
 
-/* Config initializer macro alias. The WB0 board.h supplies the body under
- * the WB0-prefixed name; the WB driver source consumes the WB name. */
+/* Config initializer macro alias. The WB0 wolfHAL_board.h supplies the body
+ * under the WB0-prefixed name; the WB driver source consumes the WB name. */
 #define WHAL_CFG_STM32WB_I2C_DEV WHAL_CFG_STM32WB0_I2C_DEV
 
 #endif /* WHAL_STM32WB0_I2C_H */

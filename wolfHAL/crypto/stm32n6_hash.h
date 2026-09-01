@@ -56,7 +56,7 @@ typedef whal_Stm32wba_HmacSha256_State  whal_Stm32n6_HmacSha256_State;
 #define whal_Stm32n6_Hash_HmacSha224Driver whal_Stm32wba_Hash_HmacSha224Driver
 #define whal_Stm32n6_Hash_HmacSha256Driver whal_Stm32wba_Hash_HmacSha256Driver
 
-/* Config initializer macro aliases. The N6 board.h supplies the bodies
+/* Config initializer macro aliases. The N6 wolfHAL_board.h supplies the bodies
  * under N6-prefixed names; the WBA driver source consumes the WBA names. */
 #define WHAL_CFG_STM32WBA_HASH_DEV             WHAL_CFG_STM32N6_HASH_DEV
 #define WHAL_CFG_STM32WBA_HASH_SHA1_DEV        WHAL_CFG_STM32N6_HASH_SHA1_DEV

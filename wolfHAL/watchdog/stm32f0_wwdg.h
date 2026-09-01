@@ -45,7 +45,7 @@ typedef struct {
 
 /*
  * @brief Platform-owned WWDG device singleton. Defined in the driver TU
- * from the WHAL_CFG_STM32F0_WWDG_DEV initializer in board.h.
+ * from the WHAL_CFG_STM32F0_WWDG_DEV initializer in wolfHAL_board.h.
  */
 extern const whal_Watchdog whal_Stm32f0_Wwdg_Dev;
 

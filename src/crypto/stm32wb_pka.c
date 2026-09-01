@@ -20,7 +20,7 @@
  */
 
 #include <stdint.h>
-#include "board.h"  /* provides WHAL_CFG_STM32WB_PKA_DEV initializer */
+#include "wolfHAL_board.h"  /* provides WHAL_CFG_STM32WB_PKA_DEV initializer */
 #include <wolfHAL/crypto/stm32wb_pka.h>
 #include <wolfHAL/crypto/crypto.h>
 #include <wolfHAL/crypto/pka.h>

@@ -21,7 +21,7 @@
 
 #include <stdint.h>
 #include <wolfHAL/wolfHAL.h>
-#include "board.h"
+#include "wolfHAL_board.h"
 #include "test.h"
 
 #ifdef WHAL_TEST_ENABLE_CLOCK_PLATFORM

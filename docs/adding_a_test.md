@@ -24,7 +24,7 @@ function returns early and the test is marked as failed.
 
 Generic tests exercise the wolfHAL API using only the public interface. They
 reach peripherals through the `BOARD_<PERIPH>_DEV` macros and board
-constants from `board.h` (e.g., `BOARD_GPIO_DEV`, `BOARD_LED_PIN`), so they
+constants from `wolfHAL_board.h` (e.g., `BOARD_GPIO_DEV`, `BOARD_LED_PIN`), so they
 run on any board that supports the device type without modification — the
 board decides whether `BOARD_<PERIPH>_DEV` resolves to `WHAL_INTERNAL_DEV` or
 to a pointer such as `&g_whalUart`.
@@ -38,7 +38,7 @@ Create `tests/<device>/test_<device>.c`:
 
 ```c
 #include <wolfHAL/wolfHAL.h>
-#include "board.h"
+#include "wolfHAL_board.h"
 #include "test.h"
 
 static void Test_Foo_BasicOperation(void)
@@ -75,7 +75,7 @@ Create `tests/<device>/test_<platform>_<device>.c`:
 #include <wolfHAL/wolfHAL.h>
 #include <wolfHAL/<device>/<platform>_<device>.h>
 #include <wolfHAL/bitops.h>
-#include "board.h"
+#include "wolfHAL_board.h"
 #include "test.h"
 
 static void Test_Foo_SomeRegister(void)
@@ -83,7 +83,7 @@ static void Test_Foo_SomeRegister(void)
     size_t val = 0;
     /* Read the register block base from the platform's singleton (extern-declared
      * in the driver header; defined in the driver .c from the WHAL_CFG_<PLAT>_<X>_DEV
-     * initializer in board.h). For vtable-dispatched drivers, use
+     * initializer in wolfHAL_board.h). For vtable-dispatched drivers, use
      * BOARD_FOO_DEV->base instead. */
     whal_Reg_Get(whal_<Platform>_Foo_Dev.base, REG_OFFSET, MASK, POS, &val);
     WHAL_ASSERT_EQ(val, EXPECTED);

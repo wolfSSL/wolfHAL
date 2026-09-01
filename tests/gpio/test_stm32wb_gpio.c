@@ -22,7 +22,7 @@
 #include <wolfHAL/wolfHAL.h>
 #include <wolfHAL/gpio/stm32wb_gpio.h>
 #include <wolfHAL/bitops.h>
-#include "board.h"
+#include "wolfHAL_board.h"
 #include "test.h"
 
 /*

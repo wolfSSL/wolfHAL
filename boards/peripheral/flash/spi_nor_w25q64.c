@@ -21,7 +21,7 @@
 
 #include "spi_nor_w25q64.h"
 #include <wolfHAL/flash/spi_nor_flash.h>
-#include "board.h"
+#include "wolfHAL_board.h"
 
 /*
  * Winbond W25Q64 — 64 Mbit (8 MB) SPI-NOR Flash

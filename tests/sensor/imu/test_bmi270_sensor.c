@@ -22,8 +22,8 @@
 #include <wolfHAL/wolfHAL.h>
 #include <wolfHAL/sensor/sensor.h>
 #include <wolfHAL/sensor/imu/bmi270_sensor.h>
-#include "board.h"
-#include "peripheral.h"
+#include "wolfHAL_board.h"
+#include "wolfHAL_peripheral.h"
 #include "test.h"
 
 /*

@@ -61,8 +61,8 @@ typedef whal_Stm32wb_Pka_Cfg whal_Stm32wb0_Pka_Cfg;
 #define whal_Stm32wb0_Pka_RsaCrtExp whal_Stm32wb_Pka_RsaCrtExp
 #endif /* !WHAL_CFG_STM32WB0_PKA_DIRECT_API_MAPPING */
 
-/* Config initializer macro alias. The WB0 board.h supplies the body under
- * the WB0-prefixed name; the WB driver source consumes the WB name. */
+/* Config initializer macro alias. The WB0 wolfHAL_board.h supplies the body
+ * under the WB0-prefixed name; the WB driver source consumes the WB name. */
 #define WHAL_CFG_STM32WB_PKA_DEV WHAL_CFG_STM32WB0_PKA_DEV
 
 #endif /* WHAL_STM32WB0_PKA_H */

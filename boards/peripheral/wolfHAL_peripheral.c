@@ -1,4 +1,4 @@
-/* peripheral.c
+/* wolfHAL_peripheral.c
  *
  * Copyright (C) 2026 wolfSSL Inc.
  *
@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
  */
 
-#include "peripheral.h"
+#include "wolfHAL_peripheral.h"
 
 #ifdef PERIPHERAL_SDHC_SPI_SDCARD32GB
 #include "block/sdhc_spi_sdcard32gb.h"

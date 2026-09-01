@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
  */
 
-#include "board.h"  /* provides WHAL_CFG_LAN8742A_DEV initializer */
+#include "wolfHAL_board.h"  /* provides WHAL_CFG_LAN8742A_DEV initializer */
 #include <wolfHAL/eth_phy/lan8742a_eth_phy.h>
 #include <wolfHAL/eth/eth.h>
 #include <wolfHAL/error.h>

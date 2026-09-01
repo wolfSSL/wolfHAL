@@ -52,8 +52,8 @@ typedef whal_Stm32wb_Uart_Cfg whal_Stm32wb0_Uart_Cfg;
 #define WHAL_STM32WB0_UART_BRR   WHAL_STM32WB_UART_BRR
 #define WHAL_STM32WB0_LPUART_BRR WHAL_STM32WB_LPUART_BRR
 
-/* Config initializer macro alias. The WB0 board.h supplies the body under
- * the WB0-prefixed name; the WB driver source consumes the WB name. */
+/* Config initializer macro alias. The WB0 wolfHAL_board.h supplies the body
+ * under the WB0-prefixed name; the WB driver source consumes the WB name. */
 #define WHAL_CFG_STM32WB_UART_DEV WHAL_CFG_STM32WB0_UART_DEV
 
 #endif /* WHAL_STM32WB0_UART_H */

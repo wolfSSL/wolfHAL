@@ -130,7 +130,7 @@ typedef struct {
 
 /*
  * @brief Platform-owned GPIO device singleton. Defined in the driver TU
- * from the WHAL_CFG_STM32WB_GPIO_DEV initializer in board.h.
+ * from the WHAL_CFG_STM32WB_GPIO_DEV initializer in wolfHAL_board.h.
  */
 extern const whal_Gpio whal_Stm32wb_Gpio_Dev;
 

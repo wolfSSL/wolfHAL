@@ -1,4 +1,4 @@
-/* board.c
+/* wolfHAL_board.c
  *
  * Copyright (C) 2026 wolfSSL Inc.
  *
@@ -23,10 +23,10 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "board.h"
+#include "wolfHAL_board.h"
 #include <wolfHAL/platform/st/stm32n657a0.h>
 #include <wolfHAL/eth_phy/lan8742a_eth_phy.h>
-#include "peripheral.h"
+#include "wolfHAL_peripheral.h"
 
 /* SysTick timing */
 volatile uint32_t g_tick = 0;
@@ -127,7 +127,7 @@ whal_Uart g_whalUart = {
     },
 };
 
-/* RNG, ETH, EthPhy, AES mode, HASH algorithm singletons live in board.h as
+/* RNG, ETH, EthPhy, AES mode, HASH algorithm singletons live in wolfHAL_board.h as
  * `static const`. */
 
 /* Crypto (CRYP hardware accelerator) — vtable dispatcher for whal_Crypto_Init/Deinit. */

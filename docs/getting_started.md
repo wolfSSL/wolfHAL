@@ -11,8 +11,8 @@ my_project/
   wolfHAL/                          wolfHAL repository (submodule, copy, etc.)
   boards/
     <board_name>/
-      board.h                       Per-peripheral DEV macros and config initializers
-      board.c                       Pointer-based device globals and Board_Init
+      wolfHAL_board.h               Per-peripheral DEV macros and config initializers
+      wolfHAL_board.c               Pointer-based device globals and Board_Init
       ivt.c                         Interrupt vector table and Reset_Handler
       linker.ld                     Linker script for your MCU
       board.mk                      Toolchain, source list, and feature flags
@@ -101,7 +101,7 @@ whal_Error whal_Stm32wb_Uart_Send(whal_Uart *dev, ...)
 }
 ```
 
-The board declares the device as a global in `board.c`. The
+The board declares the device as a global in `wolfHAL_board.c`. The
 caller passes it through the API.
 
 **Single-instance.** The driver reads `.base` and `.cfg` from a named
@@ -121,7 +121,7 @@ whal_Error whal_Stm32wb_Rng_Generate(whal_Rng *dev, ...)
 ```
 
 ```c
-/* board.h */
+/* wolfHAL_board.h */
 #define WHAL_CFG_STM32WB_RNG_DEV { \
     .base = WHAL_STM32WB_RNG_BASE, \
     .cfg = &(whal_Stm32wb_Rng_Cfg) {...} \ 
@@ -131,7 +131,7 @@ whal_Error whal_Stm32wb_Rng_Generate(whal_Rng *dev, ...)
 
 The single-instance device struct is *defined* in the driver `.c`,
 initialized from a `WHAL_CFG_<PLAT>_<X>_DEV` macro the board supplies
-in `board.h`. The driver `#include`s `board.h` to pull in the
+in `wolfHAL_board.h`. The driver `#include`s `wolfHAL_board.h` to pull in the
 initializer. Callers pass `WHAL_INTERNAL_DEV` (defined as `((void *)0)`)
 at the call site to make the intent explicit.
 
@@ -140,7 +140,7 @@ at the call site to make the intent explicit.
 Some boards only wire one instance of a multi-instance capable driver.
 In that case the driver can be compiled in its single-instance form by
 defining `WHAL_CFG_<PLAT>_<X>_SINGLE_INSTANCE` in `board.mk`. The board
-then supplies a `WHAL_CFG_<PLAT>_<X>_DEV` initializer in `board.h` and
+then supplies a `WHAL_CFG_<PLAT>_<X>_DEV` initializer in `wolfHAL_board.h` and
 points `BOARD_<X>_DEV` at `WHAL_INTERNAL_DEV`, exactly as it would for
 any unconditional single-instance driver.
 
@@ -152,7 +152,7 @@ CFLAGS += -DWHAL_CFG_STM32WB_UART_SINGLE_INSTANCE
 ```
 
 ```c
-/* board.h */
+/* wolfHAL_board.h */
 #define WHAL_CFG_STM32WB_UART_DEV { \
     .base = WHAL_STM32WB55_UART1_BASE, \
     /* .driver: direct API mapping */ \
@@ -190,7 +190,7 @@ const whal_UartDriver whal_Stm32wb_Uart_Driver = {
     ...
 };
 
-/* board.c — vtable dispatch */
+/* wolfHAL_board.c — vtable dispatch */
 whal_Flash g_whalFlash = {
     .base   = WHAL_STM32WB55_FLASH_BASE,
     .driver = &whal_Stm32wb_Uart_Driver,
@@ -209,7 +209,7 @@ CFLAGS += -DWHAL_CFG_STM32WB_UART_SINGLE_INSTANCE
 ```
 
 ```c
-/* board.c — direct API mapping */
+/* wolfHAL_board.c — direct API mapping */
 whal_Uart g_whalUart = {
     .base = WHAL_STM32WB55_UART1_BASE,
     /* .driver: direct API mapping */
@@ -246,7 +246,7 @@ the board calls in order. There is no generic `whal_Clock_Init` walker —
 clock-tree shape varies too much across vendors to abstract.
 
 ```c
-/* board.c */
+/* wolfHAL_board.c */
 
 static const whal_Myplatform_Clock_PeriphClk g_periphClks[] = {
     {WHAL_MYPLATFORM_GPIOB_GATE},
@@ -289,7 +289,7 @@ See the board examples in `boards/` for complete sequences.
 ```c
 /* Include the wolfHAL and board header */
 #include <wolfHAL/wolfHAL.h>
-#include "board.h"
+#include "wolfHAL_board.h"
 
 void main(void)
 {

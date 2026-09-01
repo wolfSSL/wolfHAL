@@ -21,7 +21,7 @@
 
 #include <stdint.h>
 #ifdef WHAL_CFG_BMI270_SINGLE_INSTANCE
-#include "board.h"  /* provides whal_Bmi270_Dev singleton */
+#include "wolfHAL_board.h"  /* provides whal_Bmi270_Dev singleton */
 #endif
 #include <wolfHAL/sensor/imu/bmi270_sensor.h>
 #include <wolfHAL/sensor/sensor.h>

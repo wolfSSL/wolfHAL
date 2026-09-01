@@ -66,7 +66,7 @@ typedef struct whal_Pic32cz_Uart_Cfg {
 
 /*
  * @brief Single-instance device struct. Defined in the driver TU
- * from the WHAL_CFG_PIC32CZ_UART_DEV initializer in board.h.
+ * from the WHAL_CFG_PIC32CZ_UART_DEV initializer in wolfHAL_board.h.
  */
 #ifdef WHAL_CFG_PIC32CZ_UART_SINGLE_INSTANCE
 extern const whal_Uart whal_Pic32cz_Uart_Dev;

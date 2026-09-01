@@ -22,7 +22,7 @@
 #include <wolfHAL/wolfHAL.h>
 #include <wolfHAL/clock/pic32cz_clock.h>
 #include <wolfHAL/bitops.h>
-#include "board.h"
+#include "wolfHAL_board.h"
 #include "test.h"
 
 #define GCLK_PCHCTRL_OFFSET(ch) (0x10000 + 0x80 + ((ch) * 4))

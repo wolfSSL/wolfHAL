@@ -20,7 +20,7 @@
  */
 
 #include <stdint.h>
-#include "board.h"  /* provides WHAL_CFG_PIC32CZ_FLASH_DEV initializer */
+#include "wolfHAL_board.h"  /* provides WHAL_CFG_PIC32CZ_FLASH_DEV initializer */
 #include <wolfHAL/flash/pic32cz_flash.h>
 #include <wolfHAL/flash/flash.h>
 #include <wolfHAL/error.h>

@@ -69,7 +69,7 @@ typedef struct {
 
 /*
  * @brief Single-instance device struct. Defined in the driver TU
- * from the WHAL_CFG_BMI270_DEV initializer in board.h.
+ * from the WHAL_CFG_BMI270_DEV initializer in wolfHAL_board.h.
  */
 #ifdef WHAL_CFG_BMI270_SINGLE_INSTANCE
 extern const whal_Sensor whal_Bmi270_Dev;

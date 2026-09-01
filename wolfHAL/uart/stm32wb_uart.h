@@ -53,7 +53,7 @@ typedef struct whal_Stm32wb_Uart_Cfg {
 
 /*
  * @brief Single-instance device struct. Defined in the driver TU
- * from the WHAL_CFG_STM32WB_UART_DEV initializer in board.h.
+ * from the WHAL_CFG_STM32WB_UART_DEV initializer in wolfHAL_board.h.
  */
 #if defined(WHAL_CFG_STM32WB_UART_SINGLE_INSTANCE) || \
     defined(WHAL_CFG_STM32H5_UART_SINGLE_INSTANCE) || \

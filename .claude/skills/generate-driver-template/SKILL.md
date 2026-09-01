@@ -16,7 +16,7 @@ chosen automatically from the device type in Step 0:
 - **Mode B — board-level header-only driver** (clock, power, …): emits a single `.h` with a
   fixed `_BASE` macro and stubbed `static inline` helpers. No `.c`, no vtable, no device handle.
 
-This skill **only scaffolds one driver**. It does not touch `board.h`, the platform header,
+This skill **only scaffolds one driver**. It does not touch `wolfHAL_board.h`, the platform header,
 the Makefile, or CI. For a full chip-family port use `port-stm32-platform`.
 
 ## Inputs
@@ -157,7 +157,7 @@ the `timeout` field — use a peripheral-appropriate placeholder instead.
   ```c
   /*
    * @brief Fixed device instance. Defined in the driver TU
-   * from the WHAL_CFG_<PLAT>_<TYPE>_DEV initializer in board.h.
+   * from the WHAL_CFG_<PLAT>_<TYPE>_DEV initializer in wolfHAL_board.h.
    */
   extern const whal_<Type> whal_<Plat>_<Type>_Dev;
   ```
@@ -165,7 +165,7 @@ the `timeout` field — use a peripheral-appropriate placeholder instead.
   ```c
   /*
    * @brief Fixed device instance. Defined in the driver TU
-   * from the WHAL_CFG_<PLAT>_<TYPE>_DEV initializer in board.h.
+   * from the WHAL_CFG_<PLAT>_<TYPE>_DEV initializer in wolfHAL_board.h.
    */
   #if defined(WHAL_CFG_<PLAT>_<TYPE>_SINGLE_INSTANCE)
   extern const whal_<Type> whal_<Plat>_<Type>_Dev;
@@ -210,11 +210,11 @@ const whal_<Type>Driver whal_<Plat>_<Type>_Driver = {
 ```
 
 `<BOARD_H_INCLUDE>`:
-- **single**: `#include "board.h"  /* provides WHAL_CFG_<PLAT>_<TYPE>_DEV initializer */`
+- **single**: `#include "wolfHAL_board.h"  /* provides WHAL_CFG_<PLAT>_<TYPE>_DEV initializer */`
 - **multi**:
   ```c
   #ifdef WHAL_CFG_<PLAT>_<TYPE>_SINGLE_INSTANCE
-  #include "board.h"  /* provides whal_<Plat>_<Type>_Dev device instance (possibly via platform alias macro) */
+  #include "wolfHAL_board.h"  /* provides whal_<Plat>_<Type>_Dev device instance (possibly via platform alias macro) */
   #endif
   ```
 
@@ -421,7 +421,7 @@ Print a short summary tailored to the mode:
 - The vtable members stubbed (so the user sees the surface they must implement).
 - What's intentionally left as TODO: register definitions, the `Cfg` fields, and each body.
 - That wiring this driver into a board still needs the platform-header base-address `#define`,
-  the `WHAL_CFG_<PLAT>_<TYPE>_DEV` initializer in `board.h`, and the Makefile/CI entries — point
+  the `WHAL_CFG_<PLAT>_<TYPE>_DEV` initializer in `wolfHAL_board.h`, and the Makefile/CI entries — point
   to `port-stm32-platform`.
 
 **Mode B:**

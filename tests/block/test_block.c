@@ -22,9 +22,9 @@
 #include <stdint.h>
 #include <wolfHAL/wolfHAL.h>
 #include <wolfHAL/block/block.h>
-#include "board.h"
+#include "wolfHAL_board.h"
 #include "test.h"
-#include "peripheral.h"
+#include "wolfHAL_peripheral.h"
 
 static whal_Block *g_testBlockDev;
 static uint8_t *g_testBuf;

@@ -21,7 +21,7 @@
 
 #include <stdint.h>
 #ifdef WHAL_CFG_SPI_NOR_SINGLE_INSTANCE
-#include "board.h"  /* provides whal_SpiNor_Dev singleton */
+#include "wolfHAL_board.h"  /* provides whal_SpiNor_Dev singleton */
 #endif
 #include <wolfHAL/flash/spi_nor_flash.h>
 #include <wolfHAL/flash/flash.h>

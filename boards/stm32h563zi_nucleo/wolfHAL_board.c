@@ -1,4 +1,4 @@
-/* board.c
+/* wolfHAL_board.c
  *
  * Copyright (C) 2026 wolfSSL Inc.
  *
@@ -23,10 +23,10 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "board.h"
+#include "wolfHAL_board.h"
 #include <wolfHAL/platform/st/stm32h563xx.h>
 #include <wolfHAL/eth_phy/lan8742a_eth_phy.h>
-#include "peripheral.h"
+#include "wolfHAL_peripheral.h"
 
 /* SysTick timing */
 volatile uint32_t g_tick = 0;
@@ -66,7 +66,7 @@ static const whal_Stm32h5_Rcc_PeriphClk g_ethClocks[] = {
 };
 #define ETH_CLOCK_COUNT (sizeof(g_ethClocks) / sizeof(g_ethClocks[0]))
 
-/* GPIO, RNG, ETH, EthPhy singletons live in board.h as `static const`. */
+/* GPIO, RNG, ETH, EthPhy singletons live in wolfHAL_board.h as `static const`. */
 
 /* UART */
 whal_Uart g_whalUart = {
@@ -91,7 +91,7 @@ whal_Spi g_whalSpi = {
 };
 
 /* Ethernet descriptor rings + buffer pool (referenced by the ETH singleton
- * cfg in board.h). */
+ * cfg in wolfHAL_board.h). */
 whal_Stm32h5_Eth_TxDesc ethTxDescs[BOARD_ETH_TX_DESC_COUNT]
     __attribute__((aligned(16)));
 whal_Stm32h5_Eth_RxDesc ethRxDescs[BOARD_ETH_RX_DESC_COUNT]

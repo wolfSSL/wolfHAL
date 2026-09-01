@@ -20,7 +20,7 @@
  */
 
 #include <wolfHAL/wolfHAL.h>
-#include "board.h"
+#include "wolfHAL_board.h"
 #include "test.h"
 
 /*

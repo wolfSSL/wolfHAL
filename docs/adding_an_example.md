@@ -19,14 +19,14 @@ Create `examples/<example_name>/` with two files:
 
 ```c
 #include <wolfHAL/wolfHAL.h>
-#include "board.h"
+#include "wolfHAL_board.h"
 
 void main(void)
 {
     if (Board_Init() != WHAL_SUCCESS)
         goto loop;
 
-    /* Application code using the BOARD_<PERIPH>_DEV macros from board.h */
+    /* Application code using the BOARD_<PERIPH>_DEV macros from wolfHAL_board.h */
     whal_Gpio_Set(BOARD_GPIO_DEV, BOARD_LED_PIN, 1);
     whal_Uart_Send(BOARD_UART_DEV, "Hello!\r\n", 8);
 
@@ -37,7 +37,7 @@ loop:
 
 Key points:
 - Include `wolfHAL/wolfHAL.h` for the wolfHAL API
-- Include `board.h` for peripheral device macros and board constants
+- Include `wolfHAL_board.h` for peripheral device macros and board constants
 - Call `Board_Init()` before using any peripherals
 - Use the `BOARD_<PERIPH>_DEV` macros (e.g., `BOARD_GPIO_DEV`,
   `BOARD_UART_DEV`) for the device handle. Each board defines these to

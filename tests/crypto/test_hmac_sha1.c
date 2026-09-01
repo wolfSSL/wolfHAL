@@ -21,7 +21,7 @@
 
 #include <stdint.h>
 #include <wolfHAL/wolfHAL.h>
-#include "board.h"
+#include "wolfHAL_board.h"
 #include "test.h"
 
 /* RFC 2202 / RFC 4231 Test Case 1: HMAC with 20-byte 0x0b key, "Hi There" */

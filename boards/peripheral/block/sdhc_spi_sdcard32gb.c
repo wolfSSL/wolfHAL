@@ -21,7 +21,7 @@
 
 #include "sdhc_spi_sdcard32gb.h"
 #include <wolfHAL/block/sdhc_spi_block.h>
-#include "board.h"
+#include "wolfHAL_board.h"
 
 static whal_Spi_ComCfg g_sdcardComCfg = {
     .freq = 25000000, /* 25 MHz */

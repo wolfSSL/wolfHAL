@@ -74,8 +74,8 @@ typedef whal_Stm32wb_Gpio_PinCfg whal_Stm32l1_Gpio_PinCfg;
 
 #define WHAL_STM32L1_GPIO_PIN WHAL_STM32WB_GPIO_PIN
 
-/* Config initializer macro alias. The L1 board.h supplies the body under
- * the L1-prefixed name; the WB driver source consumes the WB name. */
+/* Config initializer macro alias. The L1 wolfHAL_board.h supplies the body
+ * under the L1-prefixed name; the WB driver source consumes the WB name. */
 #define WHAL_CFG_STM32WB_GPIO_DEV WHAL_CFG_STM32L1_GPIO_DEV
 
 #endif /* WHAL_STM32L1_GPIO_H */

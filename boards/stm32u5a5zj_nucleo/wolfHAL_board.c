@@ -1,4 +1,4 @@
-/* board.c
+/* wolfHAL_board.c
  *
  * Copyright (C) 2026 wolfSSL Inc.
  *
@@ -23,9 +23,9 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "board.h"
+#include "wolfHAL_board.h"
 #include <wolfHAL/platform/st/stm32u5a5zj.h>
-#include "peripheral.h"
+#include "wolfHAL_peripheral.h"
 
 /* SysTick timing */
 volatile uint32_t g_tick = 0;
@@ -130,7 +130,7 @@ whal_Uart g_whalUart = {
 };
 
 /* RNG, AES + mode, HASH + algorithm singletons are defined in their driver TUs
- * from WHAL_CFG_* initializers in board.h. */
+ * from WHAL_CFG_* initializers in wolfHAL_board.h. */
 
 /* Hash (HASH hardware accelerator) — vtable dispatcher for whal_Crypto_Init/Deinit. */
 whal_Crypto g_whalHash = {

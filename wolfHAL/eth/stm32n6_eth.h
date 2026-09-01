@@ -78,7 +78,7 @@ typedef struct whal_Stm32n6_Eth_Cfg {
 
 /*
  * @brief Platform-owned Ethernet device singleton. Defined in the driver TU
- * from the WHAL_CFG_STM32N6_ETH_DEV initializer in board.h.
+ * from the WHAL_CFG_STM32N6_ETH_DEV initializer in wolfHAL_board.h.
  */
 extern const whal_Eth whal_Stm32n6_Eth_Dev;
 

@@ -20,7 +20,7 @@
  */
 
 #include <stdint.h>
-#include "board.h"  /* provides WHAL_CFG_STM32WBA_HASH*_DEV initializers */
+#include "wolfHAL_board.h"  /* provides WHAL_CFG_STM32WBA_HASH*_DEV initializers */
 #include <wolfHAL/crypto/stm32wba_hash.h>
 #include <wolfHAL/crypto/crypto.h>
 #include <wolfHAL/error.h>

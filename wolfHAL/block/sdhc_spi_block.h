@@ -58,7 +58,7 @@ typedef struct whal_SdhcSpi_Cfg {
 
 /*
  * @brief Single-instance device struct. Defined in the driver TU
- * from the WHAL_CFG_SDHC_SPI_DEV initializer in board.h.
+ * from the WHAL_CFG_SDHC_SPI_DEV initializer in wolfHAL_board.h.
  */
 #ifdef WHAL_CFG_SDHC_SPI_SINGLE_INSTANCE
 extern const whal_Block whal_SdhcSpi_Dev;

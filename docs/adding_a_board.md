@@ -10,17 +10,17 @@ directory under `boards/` named `<platform>_<board_name>/`.
 
 ## Required Files
 
-### board.h
+### wolfHAL_board.h
 
-`board.h` is where the board describes each peripheral to the rest of the
+`wolfHAL_board.h` is where the board describes each peripheral to the rest of the
 project. It contains four kinds of declaration:
 
 1. `extern` globals for vtable-dispatched drivers (`g_whalUart`,
-   `g_whalSpi`, `g_whalI2c`, ...) defined over in `board.c`.
+   `g_whalSpi`, `g_whalI2c`, ...) defined over in `wolfHAL_board.c`.
 2. `WHAL_CFG_<PLAT>_<X>_DEV` initializer macros that each single-instance
    driver `.c` uses to define its `whal_<Plat>_<X>_Dev` singleton. The
    driver header `extern`-declares the singleton; the `.c` `#include`s
-   `board.h` and writes `const whal_<X> whal_<Plat>_<X>_Dev = WHAL_CFG_<PLAT>_<X>_DEV;`.
+   `wolfHAL_board.h` and writes `const whal_<X> whal_<Plat>_<X>_Dev = WHAL_CFG_<PLAT>_<X>_DEV;`.
 3. `BOARD_<PERIPH>_DEV` macros that the application and tests use to
    reach each peripheral — these resolve to either `WHAL_INTERNAL_DEV`
    (driver ignores it) or to a cast pointer at the singleton
@@ -29,7 +29,7 @@ project. It contains four kinds of declaration:
    `Board_Init` / `Board_Deinit` / `Board_WaitMs` prototypes.
 
 ```c
-/* board.h */
+/* wolfHAL_board.h */
 #include <wolfHAL/wolfHAL.h>
 #include <wolfHAL/platform/vendor/myplatform.h>
 
@@ -51,7 +51,7 @@ extern whal_Timeout g_whalTimeout;
 /* Initializer for the GPIO single-instance device. The driver header extern-declares
  * whal_Myplatform_Gpio_Dev; the driver .c writes
  *     const whal_Gpio whal_Myplatform_Gpio_Dev = WHAL_CFG_MYPLATFORM_GPIO_DEV;
- * after #include "board.h". */
+ * after #include "wolfHAL_board.h". */
 #define WHAL_CFG_MYPLATFORM_GPIO_DEV { \
     .base = WHAL_MYPLATFORM_GPIO_BASE, \
     /* .driver: direct API mapping */ \
@@ -74,12 +74,12 @@ whal_Error Board_Deinit(void);
 void Board_WaitMs(size_t ms);
 ```
 
-### board.c
+### wolfHAL_board.c
 
-Defines the `extern` device instances declared in `board.h` (the
+Defines the `extern` device instances declared in `wolfHAL_board.h` (the
 vtable-dispatched ones) and implements `Board_Init()` / `Board_Deinit()`.
 Single-instance singletons are defined in their driver `.c` files from the
-`WHAL_CFG_<PLAT>_<X>_DEV` initializers in `board.h`; `board.c` does not
+`WHAL_CFG_<PLAT>_<X>_DEV` initializers in `wolfHAL_board.h`; `wolfHAL_board.c` does not
 need to declare or initialize them.
 
 `Board_Init()` is responsible for initializing all peripherals in
@@ -91,9 +91,9 @@ present) may need to come before the clock. It should return
 `Board_Deinit()` tears down peripherals in reverse order.
 
 ```c
-#include "board.h"
+#include "wolfHAL_board.h"
 #include <wolfHAL/platform/vendor/device.h>
-#include "peripheral.h"
+#include "wolfHAL_peripheral.h"
 
 whal_Uart g_whalUart = {
     .base = WHAL_MYPLATFORM_UART1_BASE,
@@ -134,7 +134,7 @@ whal_Error Board_Init(void)
     /* Initialize devices. Pass the corresponding BOARD_<DEVICE>_DEV
      * macro — it will be WHAL_INTERNAL_DEV for single-instance drivers or
      * &g_whal<X> for vtable-dispatched drivers, whichever this board
-     * declared in board.h. */
+     * declared in wolfHAL_board.h. */
     err = whal_Gpio_Init(BOARD_GPIO_DEV);
     if (err)
         return err;
@@ -169,7 +169,7 @@ calls (`whal_Flash_Read`, etc.) can vtable-dispatch through it.
 type so the dispatcher signature accepts it:
 
 ```c
-/* board.h */
+/* wolfHAL_board.h */
 #define WHAL_CFG_MYPLATFORM_FLASH_DEV { \
     .driver = WHAL_MYPLATFORM_FLASH_DRIVER, \
     .base   = WHAL_MYPLATFORM_FLASH_BASE, \
@@ -179,7 +179,7 @@ type so the dispatcher signature accepts it:
 #define BOARD_FLASH_DEV ((whal_Flash *)&whal_Myplatform_Flash_Dev)
 
 /* src/flash/myplatform_flash.c — driver TU owns the singleton. */
-#include "board.h"
+#include "wolfHAL_board.h"
 const whal_Flash whal_Myplatform_Flash_Dev = WHAL_CFG_MYPLATFORM_FLASH_DEV;
 ```
 
@@ -194,7 +194,7 @@ cause an unexpected reset. The application or test should call
 `whal_Watchdog_Init(BOARD_WATCHDOG_DEV)` directly when it is ready to begin
 refreshing. The board still declares the watchdog device (whether through
 a `WHAL_CFG_<PLAT>_<IWDG|WWDG>_DEV` initializer that the driver `.c`
-consumes or as `g_whalWatchdog` in `board.c`, depending on the driver),
+consumes or as `g_whalWatchdog` in `wolfHAL_board.c`, depending on the driver),
 points `BOARD_WATCHDOG_DEV` at it, and enables any required clocks
 (e.g., WWDG APB clock, IWDG LSI oscillator) in `Board_Init()` so the
 watchdog is ready to be started.
@@ -247,7 +247,7 @@ LINKER_SCRIPT = $(_BOARD_DIR)/linker.ld
 
 INCLUDE += -I$(_BOARD_DIR) -I$(WHAL_DIR)/boards/peripheral
 
-BOARD_SOURCE  = $(_BOARD_DIR)/board.c
+BOARD_SOURCE  = $(_BOARD_DIR)/wolfHAL_board.c
 BOARD_SOURCE += $(_BOARD_DIR)/ivt.c
 BOARD_SOURCE += $(wildcard $(WHAL_DIR)/src/*.c)
 # Dispatch sources for mapped types are excluded; keep dispatch sources
@@ -271,7 +271,7 @@ Two families of build-time knobs commonly appear in `board.mk`:
 - `WHAL_CFG_<PLAT>_<DRV>_SINGLE_INSTANCE` makes a conditionally
   single-instance driver read its `.base` and `.cfg` from the
   corresponding `whal_<Plat>_<Drv>_Dev` singleton (defined in the driver
-  `.c` from the `WHAL_CFG_<PLAT>_<DRV>_DEV` initializer in `board.h`)
+  `.c` from the `WHAL_CFG_<PLAT>_<DRV>_DEV` initializer in `wolfHAL_board.h`)
   instead of dereferencing the handle argument. The flag is per-driver
   per-platform; default builds keep the pointer-based path. Other
   drivers are unconditionally single-instance and need no flag — their
@@ -282,7 +282,7 @@ Two families of build-time knobs commonly appear in `board.mk`:
 Boards support optional external peripheral devices (e.g., SPI-NOR flash, SD
 cards) through the peripheral system in `boards/peripheral/`. To enable this:
 
-1. Include `peripheral.h` in `board.c` and add the peripheral include path
+1. Include `wolfHAL_peripheral.h` in `wolfHAL_board.c` and add the peripheral include path
    (`-I$(WHAL_DIR)/boards/peripheral`) in `board.mk`.
 
 2. Include `boards/peripheral/board.mk` at the end of the board's

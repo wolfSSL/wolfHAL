@@ -22,7 +22,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #ifdef WHAL_CFG_SHARPMEMORY_DISPLAY_SINGLE_INSTANCE
-#include "board.h"  /* provides WHAL_CFG_SHARPMEMORY_DISPLAY_DEV initializer */
+#include "wolfHAL_board.h"  /* provides WHAL_CFG_SHARPMEMORY_DISPLAY_DEV initializer */
 #endif
 #include <wolfHAL/display/sharp_memory_display.h>
 #include <wolfHAL/display/display.h>

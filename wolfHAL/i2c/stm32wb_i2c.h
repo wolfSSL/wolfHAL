@@ -50,7 +50,7 @@ typedef struct whal_Stm32wb_I2c_Cfg {
 
 /*
  * @brief Single-instance device struct. Defined in the driver TU
- * from the WHAL_CFG_STM32WB_I2C_DEV initializer in board.h.
+ * from the WHAL_CFG_STM32WB_I2C_DEV initializer in wolfHAL_board.h.
  */
 #if defined(WHAL_CFG_STM32WB_I2C_SINGLE_INSTANCE) || \
     defined(WHAL_CFG_STM32F0_I2C_SINGLE_INSTANCE) || \

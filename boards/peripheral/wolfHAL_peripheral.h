@@ -1,4 +1,4 @@
-/* peripheral.h
+/* wolfHAL_peripheral.h
  *
  * Copyright (C) 2026 wolfSSL Inc.
  *
@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
  */
 
-#ifndef BOARD_PERIPHERAL_H
-#define BOARD_PERIPHERAL_H
+#ifndef WOLFHAL_PERIPHERAL_H
+#define WOLFHAL_PERIPHERAL_H
 
 #include <wolfHAL/wolfHAL.h>
 #include <wolfHAL/block/block.h>
@@ -67,4 +67,4 @@ extern whal_PeripheralSensor_Cfg g_peripheralSensor[];
 whal_Error Peripheral_Init(void);
 whal_Error Peripheral_Deinit(void);
 
-#endif /* BOARD_PERIPHERAL_H */
+#endif /* WOLFHAL_PERIPHERAL_H */

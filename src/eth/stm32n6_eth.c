@@ -20,7 +20,7 @@
  */
 
 #include <stdint.h>
-#include "board.h"  /* provides WHAL_CFG_STM32N6_ETH_DEV initializer */
+#include "wolfHAL_board.h"  /* provides WHAL_CFG_STM32N6_ETH_DEV initializer */
 #include <wolfHAL/eth/stm32n6_eth.h>
 #include <wolfHAL/eth/eth.h>
 #include <wolfHAL/error.h>

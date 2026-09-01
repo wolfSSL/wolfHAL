@@ -1,4 +1,4 @@
-/* board.c
+/* wolfHAL_board.c
  *
  * Copyright (C) 2026 wolfSSL Inc.
  *
@@ -19,12 +19,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
  */
 
+/* Board configuration for the NUCLEO-C031C6 dev board */
+
 #include <stdint.h>
 #include <stddef.h>
-#include "board.h"
-#include <wolfHAL/platform/st/stm32f302r8.h>
-#include "peripheral.h"
+#include "wolfHAL_board.h"
+#include <wolfHAL/platform/st/stm32c031xx.h>
+#include "wolfHAL_peripheral.h"
 
+/* SysTick timing */
 volatile uint32_t g_tick = 0;
 volatile uint8_t g_waiting = 0;
 volatile uint8_t g_tickOverflow = 0;
@@ -44,78 +47,41 @@ uint32_t Board_GetTick(void)
 }
 
 whal_Timeout g_whalTimeout = {
-    .timeoutTicks = 1000,
+    .timeoutTicks = 1000, /* 1s timeout */
     .GetTick = Board_GetTick,
 };
 
-/* Clock — PLL at 48 MHz (HSI/2 * 12) */
-static const whal_Stm32f3_Rcc_PeriphClk g_periphClks[] = {
-    {WHAL_STM32F302_GPIOA_CLOCK},
-    {WHAL_STM32F302_GPIOB_CLOCK},
-    {WHAL_STM32F302_GPIOC_CLOCK},
-    {WHAL_STM32F302_USART2_CLOCK},
-    {WHAL_STM32F302_SPI3_CLOCK},
-    {WHAL_STM32F302_I2C1_CLOCK},
-#ifdef BOARD_WATCHDOG_WWDG
-    {WHAL_STM32F302_WWDG_CLOCK},
-#endif
+static const whal_Stm32c0_Rcc_PeriphClk g_periphClks[] = {
+    {WHAL_STM32C031_GPIOA_CLOCK},
+    {WHAL_STM32C031_GPIOB_CLOCK},
+    {WHAL_STM32C031_GPIOC_CLOCK},
+    {WHAL_STM32C031_USART2_CLOCK},
+    {WHAL_STM32C031_SPI1_CLOCK},
 };
 #define PERIPH_CLK_COUNT (sizeof(g_periphClks) / sizeof(g_periphClks[0]))
 
 
-/* UART — USART2 at 115200 baud */
+/* UART */
 whal_Uart g_whalUart = {
-    .base = WHAL_STM32F302_USART2_BASE,
+    .base = WHAL_STM32C031_USART2_BASE,
+    /* .driver: direct API mapping */
 
-    .cfg = &(whal_Stm32f3_Uart_Cfg) {
+    .cfg = &(whal_Stm32c0_Uart_Cfg) {
         .timeout = &g_whalTimeout,
-        .brr = WHAL_STM32F3_UART_BRR(48000000, 115200),
+        .brr = WHAL_STM32C0_UART_BRR(48000000, 115200),
     },
 };
 
-/* SPI — SPI3 */
+/* SPI */
 whal_Spi g_whalSpi = {
-    .base = WHAL_STM32F302_SPI3_BASE,
+    .base = WHAL_STM32C031_SPI1_BASE,
+    /* .driver: direct API mapping */
 
-    .cfg = &(whal_Stm32f3_Spi_Cfg) {
+    .cfg = &(whal_Stm32c0_Spi_Cfg) {
         .pclk = 48000000,
         .timeout = &g_whalTimeout,
     },
 };
-
-/* I2C — I2C1 (HSI at 8 MHz per RCC_CFGR3.I2C1SW reset default) */
-whal_I2c g_whalI2c = {
-    .base = WHAL_STM32F302_I2C1_BASE,
-
-    .cfg = &(whal_Stm32f3_I2c_Cfg) {
-        .pclk = 8000000,
-        .timeout = &g_whalTimeout,
-    },
-};
-
-#ifdef BOARD_WATCHDOG_IWDG
-whal_Watchdog g_whalWatchdog = {
-    .base = WHAL_STM32F302_IWDG_BASE,
-    .driver = WHAL_STM32F302_IWDG_DRIVER,
-
-    .cfg = &(whal_Stm32f3_Iwdg_Cfg) {
-        .prescaler = WHAL_STM32F3_IWDG_PR_64,
-        .reload = 500,
-        .timeout = &g_whalTimeout,
-    },
-};
-#elif defined(BOARD_WATCHDOG_WWDG)
-whal_Watchdog g_whalWatchdog = {
-    .base = WHAL_STM32F302_WWDG_BASE,
-    .driver = WHAL_STM32F302_WWDG_DRIVER,
-
-    .cfg = &(whal_Stm32f3_Wwdg_Cfg) {
-        .prescaler = 3,
-        .window = 0x7F,
-        .counter = 0x7F,
-    },
-};
-#endif
 
 void Board_WaitMs(size_t ms)
 {
@@ -128,32 +94,21 @@ whal_Error Board_Init(void)
 {
     whal_Error err;
 
-    /* Set flash latency before increasing clock speed.
-     * STM32F3: 0 WS for HCLK <= 24 MHz, 1 WS for 24 < HCLK <= 48 MHz,
-     * 2 WS for 48 < HCLK <= 72 MHz. */
-    err = whal_Stm32f3_Flash_Ext_SetLatency(BOARD_FLASH_DEV,
-                                             WHAL_STM32F3_FLASH_LATENCY_1);
+    /* Set flash latency before increasing clock speed */
+    err = whal_Stm32c0_Flash_Ext_SetLatency(BOARD_FLASH_DEV, WHAL_STM32C0_FLASH_LATENCY_1);
     if (err)
         return err;
 
-    /* HSI -> PLL (HSI/2 * 12 = 48 MHz) -> SYSCLK = PLL */
-    err = whal_Stm32f3_Rcc_EnableOsc(
-        &(whal_Stm32f3_Rcc_OscCfg){WHAL_STM32F3_RCC_HSI_CFG});
+    /* HSI48 / 1 = 48 MHz, then SYSCLK = HSISYS. */
+    err = whal_Stm32c0_Rcc_EnableHsi(WHAL_STM32C0_RCC_HSIDIV_1);
     if (err)
         return err;
-    err = whal_Stm32f3_Rcc_EnablePll(&(whal_Stm32f3_Rcc_PllCfg){
-        .clkSrc = WHAL_STM32F3_RCC_PLLSRC_HSI_DIV2,
-        .prediv = 1,
-        .pllmul = 12,
-    });
-    if (err)
-        return err;
-    err = whal_Stm32f3_Rcc_SetSysClock(WHAL_STM32F3_RCC_SYSCLK_SRC_PLL);
+    err = whal_Stm32c0_Rcc_SetSysClock(WHAL_STM32C0_RCC_SYSCLK_SRC_HSISYS);
     if (err)
         return err;
 
     for (size_t i = 0; i < PERIPH_CLK_COUNT; i++) {
-        err = whal_Stm32f3_Rcc_EnablePeriphClk(&g_periphClks[i]);
+        err = whal_Stm32c0_Rcc_EnablePeriphClk(&g_periphClks[i]);
         if (err)
             return err;
     }
@@ -167,10 +122,6 @@ whal_Error Board_Init(void)
         return err;
 
     err = whal_Spi_Init(&g_whalSpi);
-    if (err)
-        return err;
-
-    err = whal_I2c_Init(&g_whalI2c);
     if (err)
         return err;
 
@@ -209,10 +160,6 @@ whal_Error Board_Deinit(void)
     if (err)
         return err;
 
-    err = whal_I2c_Deinit(&g_whalI2c);
-    if (err)
-        return err;
-
     err = whal_Uart_Deinit(&g_whalUart);
     if (err)
         return err;
@@ -222,17 +169,10 @@ whal_Error Board_Deinit(void)
         return err;
 
     for (size_t i = PERIPH_CLK_COUNT; i-- > 0; ) {
-        err = whal_Stm32f3_Rcc_DisablePeriphClk(&g_periphClks[i]);
+        err = whal_Stm32c0_Rcc_DisablePeriphClk(&g_periphClks[i]);
         if (err)
             return err;
     }
-
-    err = whal_Stm32f3_Rcc_SetSysClock(WHAL_STM32F3_RCC_SYSCLK_SRC_HSI);
-    if (err)
-        return err;
-    err = whal_Stm32f3_Rcc_DisablePll();
-    if (err)
-        return err;
 
     return WHAL_SUCCESS;
 }

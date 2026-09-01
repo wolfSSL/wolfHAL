@@ -91,7 +91,7 @@ typedef whal_Stm32wba_HmacSha256_State whal_Stm32u5_HmacSha256_State;
 #define whal_Stm32u5_HmacSha256_Process  whal_Stm32wba_HmacSha256_Process
 #define whal_Stm32u5_HmacSha256_Finalize whal_Stm32wba_HmacSha256_Finalize
 
-/* Config initializer macro aliases. The U5 board.h supplies the bodies
+/* Config initializer macro aliases. The U5 wolfHAL_board.h supplies the bodies
  * under U5-prefixed names; the WBA driver source consumes the WBA names. */
 #define WHAL_CFG_STM32WBA_HASH_DEV             WHAL_CFG_STM32U5_HASH_DEV
 #define WHAL_CFG_STM32WBA_HASH_SHA1_DEV        WHAL_CFG_STM32U5_HASH_SHA1_DEV

@@ -72,8 +72,8 @@ typedef whal_Stm32wb_Gpio_PinCfg whal_Stm32f3_Gpio_PinCfg;
 
 #define WHAL_STM32F3_GPIO_PIN WHAL_STM32WB_GPIO_PIN
 
-/* Config initializer macro alias. The F3 board.h supplies the body under
- * the F3-prefixed name; the WB driver source consumes the WB name. */
+/* Config initializer macro alias. The F3 wolfHAL_board.h supplies the body
+ * under the F3-prefixed name; the WB driver source consumes the WB name. */
 #define WHAL_CFG_STM32WB_GPIO_DEV WHAL_CFG_STM32F3_GPIO_DEV
 
 #endif /* WHAL_STM32F3_GPIO_H */

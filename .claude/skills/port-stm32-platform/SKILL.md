@@ -55,11 +55,11 @@ The clock driver is almost always new per family. GPIO, I2C, and IWDG/WWDG are a
 
 **Clock is an architectural exception (2): no vtable, no device handle.** Unlike most driver types, the clock subsystem has no `whal_ClockDriver` vtable, no generic `whal_Clock_Init`/`Enable`/`Disable` API, and no `whal_Clock` handle at all. The chip's clock-controller `_BASE` macro lives at the top of the clock driver header (the platform header just includes the clock header and doesn't re-define `_BASE`). Chip clock drivers expose imperative `Enable*`/`Disable*`/`Set*` helpers (e.g. `whal_<Platform>_Rcc_EnableOsc`, `EnablePll`, `SetSysClock`, `EnablePeriphClk`) that take no device pointer; boards call them directly. The platform header does NOT define a `WHAL_<PLATFORM>_RCC_DRIVER` macro. Power follows the same shape — no handle, helpers take no device pointer, `_BASE` macro at the top of the power driver header.
 
-**Most other drivers are single-instance**, reading their cfg/base from a `whal_<Platform>_<Driver>_Dev` singleton that the driver `.c` defines from a `WHAL_CFG_<PLATFORM>_<DRIVER>_DEV` initializer macro in `board.h`. The driver header `extern`-declares the singleton. Two flavors:
+**Most other drivers are single-instance**, reading their cfg/base from a `whal_<Platform>_<Driver>_Dev` singleton that the driver `.c` defines from a `WHAL_CFG_<PLATFORM>_<DRIVER>_DEV` initializer macro in `wolfHAL_board.h`. The driver header `extern`-declares the singleton. Two flavors:
 - **Unconditional single-instance** for true singletons (one per chip): RNG, GPIO, NVIC, SysTick, Watchdog, Crypto, Hash, Ethernet, Flash. Driver body always reads from the singleton; NULL checks dropped. Examples: `src/rng/stm32wb_rng.c`, `src/eth/stm32n6_eth.c`.
 - **Conditional single-instance** gated on `WHAL_CFG_<PLATFORM>_<TYPE>_SINGLE_INSTANCE` for multi-instance peripherals (UART, SPI, I2C, DMA). Default builds keep the pointer-based path; boards opt in per device. Example: `src/uart/stm32wb_uart.c`.
 
-**Flash with peripheral coexistence (e.g. on-chip + SPI NOR W25Q64)**: the driver-owned singleton (defined in the driver `.c` from `WHAL_CFG_<PLATFORM>_FLASH_DEV` in `board.h`) carries `.driver`, `.base`, and `.cfg`. `BOARD_FLASH_DEV` casts its address (`((whal_Flash *)&whal_<Plat>_Flash_Dev)`) so generic `whal_Flash_*` calls can vtable-dispatch through it. There is no separate `g_whalFlash` stub. Reference: `boards/stm32wb55xx_nucleo/board.h` + `src/flash/stm32wb_flash.c`.
+**Flash with peripheral coexistence (e.g. on-chip + SPI NOR W25Q64)**: the driver-owned singleton (defined in the driver `.c` from `WHAL_CFG_<PLATFORM>_FLASH_DEV` in `wolfHAL_board.h`) carries `.driver`, `.base`, and `.cfg`. `BOARD_FLASH_DEV` casts its address (`((whal_Flash *)&whal_<Plat>_Flash_Dev)`) so generic `whal_Flash_*` calls can vtable-dispatch through it. There is no separate `g_whalFlash` stub. Reference: `boards/stm32wb55xx_nucleo/wolfHAL_board.h` + `src/flash/stm32wb_flash.c`.
 
 **Crypto is also an architectural exception.** Crypto uses per-algorithm device structs (`whal_AesGcm`, `whal_Sha256`, etc.) instead of a single `whal_Crypto` with generic dispatch. Each algo struct has `.crypto` (pointer to the hardware device), `.driver` (per-algo vtable with Oneshot/Start/Process/Finalize), and `.state` (driver-managed streaming state). `whal_Crypto` itself is a platform driver with just Init/Deinit for hardware lifecycle. Direct API mapping is per-algorithm (e.g. `WHAL_CFG_STM32WB_AES_GCM_DIRECT_API_MAPPING`), not per-device-type. See `docs/writing_a_driver.md` "Crypto" section. Reference: `wolfHAL/crypto/stm32wb_aes.h` and `wolfHAL/crypto/stm32wba_hash.h`.
 
@@ -84,7 +84,7 @@ Skeleton:
 #include <wolfHAL/uart/<platform>_uart.h>
 /* ...one include per device type... */
 
-/* Base addresses — referenced by board.h's WHAL_CFG_*_DEV initializers. */
+/* Base addresses — referenced by wolfHAL_board.h's WHAL_CFG_*_DEV initializers. */
 #define WHAL_<PLATFORM>_USART1_BASE  0x<addr>
 #define WHAL_<PLATFORM>_AES_BASE     0x<addr>
 #define WHAL_<PLATFORM>_FLASH_BASE   0x<addr>
@@ -139,7 +139,7 @@ typedef whal_<OrigPlatform><Type>_Cfg    whal_<NewPlatform><Type>_Cfg;
 typedef whal_<OrigPlatform><Type>_PinCfg whal_<NewPlatform><Type>_PinCfg;
 /* ...repeat for every exposed type... */
 
-/* Singleton alias — REQUIRED for any single-instance driver. board.h declares
+/* Singleton alias — REQUIRED for any single-instance driver. wolfHAL_board.h declares
  * the singleton using the new platform's name; this macro renames it at
  * preprocess time so the leaf driver's references resolve correctly. Place
  * unconditionally (not under any DIRECT_API_MAPPING guard). */
@@ -210,9 +210,9 @@ This is the same one-line pattern as the driver stub. The build system auto-disc
 
 Create `boards/<board_name>/` with:
 
-### `board.h`
+### `wolfHAL_board.h`
 
-Three concerns: extern declarations for pointer-based globals that still live in `board.c`, `WHAL_CFG_<PLAT>_<X>_DEV` initializer macros for each single-instance driver (the driver header `extern`-declares the singleton; the driver `.c` defines it from this initializer after `#include "board.h"`), and the `BOARD_<PERIPH>_DEV` macro block that lets tests/apps portably reach each peripheral. Follow `docs/adding_a_board.md`.
+Three concerns: extern declarations for pointer-based globals that still live in `wolfHAL_board.c`, `WHAL_CFG_<PLAT>_<X>_DEV` initializer macros for each single-instance driver (the driver header `extern`-declares the singleton; the driver `.c` defines it from this initializer after `#include "wolfHAL_board.h"`), and the `BOARD_<PERIPH>_DEV` macro block that lets tests/apps portably reach each peripheral. Follow `docs/adding_a_board.md`.
 
 Skeleton:
 
@@ -220,7 +220,7 @@ Skeleton:
 #include <wolfHAL/wolfHAL.h>
 #include <wolfHAL/platform/st/<chip>.h>
 
-/* Pointer-based globals — defined in board.c, declared here for reachability. */
+/* Pointer-based globals — defined in wolfHAL_board.c, declared here for reachability. */
 extern whal_Uart g_whalUart;
 
 extern whal_Timeout g_whalTimeout;
@@ -241,7 +241,7 @@ extern volatile uint32_t g_tick;
 /* Initializers for single-instance singletons. The driver header
  * extern-declares whal_<NewPlatform>_<X>_Dev; the driver .c writes
  *   const whal_<X> whal_<NewPlatform>_<X>_Dev = WHAL_CFG_<NEWPLATFORM>_<X>_DEV;
- * after #include "board.h". The board uses its own platform's prefix; if
+ * after #include "wolfHAL_board.h". The board uses its own platform's prefix; if
  * the driver is an alias of another platform's, the alias header bridges
  * the singleton name with a #define. */
 #define WHAL_CFG_<NEWPLATFORM>_GPIO_DEV { \
@@ -281,13 +281,13 @@ extern volatile uint32_t g_tick;
 }
 ```
 
-**Names follow the board's own platform.** `WHAL_CFG_STM32G4_IWDG_DEV` in a g4-board's board.h, with `whal_Stm32g4_Iwdg_Dev` as the singleton name. If the IWDG driver is an alias of wb's, the alias header bridges the singleton name (`#define whal_Stm32g4_Iwdg_Dev whal_Stm32wb_Iwdg_Dev`); the board supplies the initializer under the upstream platform's `WHAL_CFG_STM32WB_IWDG_DEV` name (because the leaf driver `.c` references that). Allowed cross-platform names: `whal_Nvic_Dev`, `whal_SysTick_Dev`, `whal_Lan8742a_Dev` (these are genuinely platform-agnostic).
+**Names follow the board's own platform.** `WHAL_CFG_STM32G4_IWDG_DEV` in a g4-board's wolfHAL_board.h, with `whal_Stm32g4_Iwdg_Dev` as the singleton name. If the IWDG driver is an alias of wb's, the alias header bridges the singleton name (`#define whal_Stm32g4_Iwdg_Dev whal_Stm32wb_Iwdg_Dev`); the board supplies the initializer under the upstream platform's `WHAL_CFG_STM32WB_IWDG_DEV` name (because the leaf driver `.c` references that). Allowed cross-platform names: `whal_Nvic_Dev`, `whal_SysTick_Dev`, `whal_Lan8742a_Dev` (these are genuinely platform-agnostic).
 
-**State for AEAD streaming** (AES GCM/CCM, HMAC) is a `static` variable in the driver `.c`. The `WHAL_CFG_<PLAT>_<ALGO>_DEV` initializer in board.h takes its address via the `.state` field.
+**State for AEAD streaming** (AES GCM/CCM, HMAC) is a `static` variable in the driver `.c`. The `WHAL_CFG_<PLAT>_<ALGO>_DEV` initializer in wolfHAL_board.h takes its address via the `.state` field.
 
-### `board.c`
+### `wolfHAL_board.c`
 
-Define remaining pointer-based globals (`g_whalUart` for the still-vtable-dispatched peripherals, `g_whalTimeout`, the SysTick handler) and implement `Board_Init`/`Board_Deinit`/`Board_WaitMs`. Single-instance singletons (flash included) live in their driver `.c` files, not here — `board.c` does not declare or initialize them.
+Define remaining pointer-based globals (`g_whalUart` for the still-vtable-dispatched peripherals, `g_whalTimeout`, the SysTick handler) and implement `Board_Init`/`Board_Deinit`/`Board_WaitMs`. Single-instance singletons (flash included) live in their driver `.c` files, not here — `wolfHAL_board.c` does not declare or initialize them.
 
 Init/Deinit call sites use `BOARD_<PERIPH>_DEV`, NOT the raw globals — this lets the board switch a peripheral between single-instance and pointer-based by flipping one macro:
 
@@ -300,10 +300,10 @@ err = whal_Timer_Init(BOARD_TIMER_DEV);
 
 Clock-tree bring-up is imperative — `whal_<Platform>_Rcc_EnableOsc(...)`, `EnablePll(...)`, `SetSysClock(...)`, `EnablePeriphClk(...)` take no device pointer (each reads the chip's fixed RCC base from the driver header).
 
-Implement `Board_Init` in dependency order: PWR → bring up clock tree imperatively (oscillator on, PLL configure+enable, sysclk switch) → enable peripheral clocks → GPIO → UART → Timer → the rest. Keep the watchdog out of `Board_Init` (the app starts it when ready to refresh) per `docs/adding_a_board.md`. Guard DMA-specific setup under `#ifdef BOARD_DMA`, matching `boards/stm32wba55cg_nucleo/board.c`.
+Implement `Board_Init` in dependency order: PWR → bring up clock tree imperatively (oscillator on, PLL configure+enable, sysclk switch) → enable peripheral clocks → GPIO → UART → Timer → the rest. Keep the watchdog out of `Board_Init` (the app starts it when ready to refresh) per `docs/adding_a_board.md`. Guard DMA-specific setup under `#ifdef BOARD_DMA`, matching `boards/stm32wba55cg_nucleo/wolfHAL_board.c`.
 
 ### GPIO pin conflict check
-After writing the `pinCfg` array in `board.c`, scan every entry pair and verify no two entries share the same physical port+pin. This is a common mistake when a pin serves double duty (e.g., PA5 used as both an LED and SPI1_SCK). If a conflict is found, consult the chip's alternate-function table in the datasheet and remap the conflicting peripheral to an alternate pin on a different port.
+After writing the `pinCfg` array in `wolfHAL_board.c`, scan every entry pair and verify no two entries share the same physical port+pin. This is a common mistake when a pin serves double duty (e.g., PA5 used as both an LED and SPI1_SCK). If a conflict is found, consult the chip's alternate-function table in the datasheet and remap the conflicting peripheral to an alternate pin on a different port.
 
 ### `board.mk`
 Model on `boards/stm32wba55cg_nucleo/board.mk`:
@@ -330,7 +330,7 @@ Add the new board to `.github/workflows/boards.yml` by appending it to the `boar
 
 1. `make BOARD=<board_name>` from the repo root. Fix errors in order. Typical failures:
    - Missing symbol for an aliased driver → the alias header is missing a `#define` for that function/type, or the stub `.c` isn't present.
-   - `'whal_Stm32<orig>_<Type>_Dev' undeclared` in a single-instance leaf driver → the alias header for the new platform is missing the `#define whal_Stm32<new>_<Type>_Dev whal_Stm32<orig>_<Type>_Dev` line, OR the board.h didn't provide `WHAL_CFG_STM32<ORIG>_<TYPE>_DEV` (the leaf `.c` defines the singleton from that name).
+   - `'whal_Stm32<orig>_<Type>_Dev' undeclared` in a single-instance leaf driver → the alias header for the new platform is missing the `#define whal_Stm32<new>_<Type>_Dev whal_Stm32<orig>_<Type>_Dev` line, OR the wolfHAL_board.h didn't provide `WHAL_CFG_STM32<ORIG>_<TYPE>_DEV` (the leaf `.c` defines the singleton from that name).
    - Duplicate symbol → the Makefile is picking up both `<newplatform>_*.c` and the original `<origplatform>_*.c`; restrict the wildcard to the new prefix only.
    - Implicit declaration warnings for `whal_Reg_*` / `whal_SetBits` in a stub include → you probably wrote `#include <wolfHAL/...>` with angle brackets in the stub instead of `#include "<origplatform>_<type>.c"` with quotes. The stub must use quoted include so the preprocessor finds the sibling `.c` in the same directory.
 2. Flash the binary (user runs this) and run the test suite. Each suite prints `PASS`, `FAIL`, or `SKIP`.

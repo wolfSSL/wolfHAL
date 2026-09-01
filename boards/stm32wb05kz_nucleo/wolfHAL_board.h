@@ -1,4 +1,4 @@
-/* board.h
+/* wolfHAL_board.h
  *
  * Copyright (C) 2026 wolfSSL Inc.
  *
@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
  */
 
-#ifndef BOARD_H
-#define BOARD_H
+#ifndef WOLFHAL_BOARD_H
+#define WOLFHAL_BOARD_H
 
 #include <stdint.h>
 #include <stddef.h>
@@ -63,8 +63,8 @@ enum {
 
 /* --- Single-instance device initializers ---
  * Each driver TU defines its singleton from these macros after #include
- * "board.h". Names are WB0-prefixed; the alias header bridges them to the
- * WB-prefixed names that the leaf drivers consume.
+ * "wolfHAL_board.h". Names are WB0-prefixed; the alias header bridges them
+ * to the WB-prefixed names that the leaf drivers consume.
  */
 
 /* GPIO dev initializer — singleton defined in stm32wb0_gpio.c. */
@@ -196,4 +196,4 @@ whal_Error Board_Init(void);
 whal_Error Board_Deinit(void);
 void Board_WaitMs(size_t ms);
 
-#endif /* BOARD_H */
+#endif /* WOLFHAL_BOARD_H */

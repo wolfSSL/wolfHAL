@@ -1,4 +1,4 @@
-/* board.h
+/* wolfHAL_board.h
  *
  * Copyright (C) 2026 wolfSSL Inc.
  *
@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
  */
 
-#ifndef BOARD_H
-#define BOARD_H
+#ifndef WOLFHAL_BOARD_H
+#define WOLFHAL_BOARD_H
 
 #include <stdint.h>
 #include <stddef.h>
@@ -266,4 +266,4 @@ whal_Error Board_Init(void);
 whal_Error Board_Deinit(void);
 void Board_WaitMs(size_t ms);
 
-#endif /* BOARD_H */
+#endif /* WOLFHAL_BOARD_H */

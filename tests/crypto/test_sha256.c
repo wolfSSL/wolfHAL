@@ -21,7 +21,7 @@
 
 #include <stdint.h>
 #include <wolfHAL/wolfHAL.h>
-#include "board.h"
+#include "wolfHAL_board.h"
 #include "test.h"
 
 static const uint8_t hashInput[] = { 'a', 'b', 'c' };

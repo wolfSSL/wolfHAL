@@ -55,8 +55,8 @@ typedef whal_Stm32wb_Iwdg_Cfg whal_Stm32wba_Iwdg_Cfg;
 #define WHAL_STM32WBA_IWDG_PR_128 WHAL_STM32WB_IWDG_PR_128
 #define WHAL_STM32WBA_IWDG_PR_256 WHAL_STM32WB_IWDG_PR_256
 
-/* Config initializer macro alias. The WBA board.h supplies the body under
- * the WBA-prefixed name; the WB driver source consumes the WB name. */
+/* Config initializer macro alias. The WBA wolfHAL_board.h supplies the body
+ * under the WBA-prefixed name; the WB driver source consumes the WB name. */
 #define WHAL_CFG_STM32WB_IWDG_DEV WHAL_CFG_STM32WBA_IWDG_DEV
 
 #endif /* WHAL_STM32WBA_IWDG_H */

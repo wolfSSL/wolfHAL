@@ -1,4 +1,4 @@
-/* board.c
+/* wolfHAL_board.c
  *
  * Copyright (C) 2026 wolfSSL Inc.
  *
@@ -23,9 +23,9 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "board.h"
+#include "wolfHAL_board.h"
 #include <wolfHAL/platform/microchip/pic32cz.h>
-#include "peripheral.h"
+#include "wolfHAL_peripheral.h"
 
 /* SysTick timing (must precede g_whalTimeout below) */
 volatile uint32_t g_tick = 0;
@@ -42,7 +42,7 @@ whal_Timeout g_whalTimeout = {
     .GetTick = Board_GetTick,
 };
 
-/* SUPC singleton lives in board.h as `static const`. */
+/* SUPC singleton lives in wolfHAL_board.h as `static const`. */
 
 /* Peripheral clocks */
 static const whal_Pic32cz_Clock_PeriphClk g_periphClks[] = {

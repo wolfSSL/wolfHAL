@@ -56,8 +56,8 @@ typedef whal_Stm32wb_Wwdg_Cfg whal_Stm32u5_Wwdg_Cfg;
 #define WHAL_STM32U5_WWDG_TB_64  WHAL_STM32WB_WWDG_TB_64
 #define WHAL_STM32U5_WWDG_TB_128 WHAL_STM32WB_WWDG_TB_128
 
-/* Config initializer macro alias. The U5 board.h supplies the body under
- * the U5-prefixed name; the WB driver source consumes the WB name. */
+/* Config initializer macro alias. The U5 wolfHAL_board.h supplies the body
+ * under the U5-prefixed name; the WB driver source consumes the WB name. */
 #define WHAL_CFG_STM32WB_WWDG_DEV WHAL_CFG_STM32U5_WWDG_DEV
 
 #endif /* WHAL_STM32U5_WWDG_H */

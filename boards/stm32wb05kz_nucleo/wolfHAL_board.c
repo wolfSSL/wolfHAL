@@ -1,4 +1,4 @@
-/* board.c
+/* wolfHAL_board.c
  *
  * Copyright (C) 2026 wolfSSL Inc.
  *
@@ -23,7 +23,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "board.h"
+#include "wolfHAL_board.h"
 #include <wolfHAL/platform/st/stm32wb05kz.h>
 
 /* Target SYSCLK 64 MHz from the HSI64M tree (PLL-locked onto the 32 MHz

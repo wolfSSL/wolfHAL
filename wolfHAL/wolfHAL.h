@@ -32,7 +32,7 @@
 
 /* Pass WHAL_INTERNAL_DEV as the dev argument when the driver has direct
  * API mapping enabled AND is single-instance. The driver reads its dev
- * struct (e.g. whal_Stm32wb_Iwdg_Dev) from board.h and ignores whatever
+ * struct (e.g. whal_Stm32wb_Iwdg_Dev) from wolfHAL_board.h and ignores whatever
  * gets passed in. */
 #define WHAL_INTERNAL_DEV  ((void *)0)
 
@@ -40,7 +40,7 @@
  * generic type on one board (e.g. on-chip flash + SPI NOR). The stub
  * carries only the vtable so the generic whal_<Type>_* dispatch can route
  * to the right driver; the driver itself reads .base and .cfg from its
- * own singleton in board.h, so they're left unset here. */
+ * own singleton in wolfHAL_board.h, so they're left unset here. */
 #define WHAL_DISPATCH_STUB(driver_ptr)  { .driver = (driver_ptr) }
 
 #include <wolfHAL/gpio/gpio.h>

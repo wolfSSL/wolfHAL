@@ -21,9 +21,9 @@
 
 #include <stdint.h>
 #include <wolfHAL/wolfHAL.h>
-#include "board.h"
+#include "wolfHAL_board.h"
 #include "test.h"
-#include "peripheral.h"
+#include "wolfHAL_peripheral.h"
 
 static whal_Flash *g_testFlashDev;
 static size_t g_testFlashAddr;

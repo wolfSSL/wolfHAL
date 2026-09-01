@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
  */
 
-#include "board.h"  /* provides WHAL_CFG_NVIC_DEV initializer */
+#include "wolfHAL_board.h"  /* provides WHAL_CFG_NVIC_DEV initializer */
 #include <wolfHAL/irq/cortex_m4_nvic.h>
 #include <wolfHAL/error.h>
 #include <wolfHAL/reg.h>

@@ -65,8 +65,8 @@ typedef whal_Stm32wb_Dma_Callback whal_Stm32wb0_Dma_Callback;
 #define WHAL_STM32WB0_DMA_INC_DISABLE       WHAL_STM32WB_DMA_INC_DISABLE
 #define WHAL_STM32WB0_DMA_INC_ENABLE        WHAL_STM32WB_DMA_INC_ENABLE
 
-/* Config initializer macro alias. The WB0 board.h supplies the body under
- * the WB0-prefixed name; the WB driver source consumes the WB name. */
+/* Config initializer macro alias. The WB0 wolfHAL_board.h supplies the body
+ * under the WB0-prefixed name; the WB driver source consumes the WB name. */
 #define WHAL_CFG_STM32WB_DMA_DEV WHAL_CFG_STM32WB0_DMA_DEV
 
 #endif /* WHAL_STM32WB0_DMA_H */

@@ -399,7 +399,7 @@ whal_Error whal_Stm32wb_AesCcm_Finalize(whal_AesCcm *dev,
 
 /*
  * @brief Platform-owned AES + mode singletons. Defined in the driver TU
- * from the WHAL_CFG_STM32WB_AES*_DEV initializers in board.h.
+ * from the WHAL_CFG_STM32WB_AES*_DEV initializers in wolfHAL_board.h.
  */
 extern const whal_Crypto  whal_Stm32wb_Aes_Dev;
 extern const whal_AesEcb  whal_Stm32wb_AesEcb_Dev;

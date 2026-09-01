@@ -8,7 +8,7 @@
 >
 > **In an actual application project**, you would not use this registry.
 > You would simply define the peripheral instances you need directly in
-> your `board.c` (the same way you define `g_whalUart`, `g_whalSpi`, etc.)
+> your `wolfHAL_board.c` (the same way you define `g_whalUart`, `g_whalSpi`, etc.)
 > and call them directly from your application. The registry adds a layer
 > of indirection that's only worth its cost when you're trying to
 > mix-and-match peripherals across many boards from a single test binary.
@@ -24,7 +24,7 @@ A peripheral consists of three parts:
 
 1. A **device configuration file** that instantiates the device with
    board-specific parameters (SPI bus, CS pin, clock speed, etc.)
-2. An **entry in the peripheral registry** (`peripheral.c`) so that board init
+2. An **entry in the peripheral registry** (`wolfHAL_peripheral.c`) so that board init
    and tests can discover the device
 3. A **board.mk entry** to conditionally compile the peripheral and its
    driver source
@@ -35,8 +35,8 @@ Peripherals are organized by device type under `boards/peripheral/`:
 
 ```
 boards/peripheral/
-  peripheral.h          # Registry structs and extern arrays
-  peripheral.c          # Registry arrays (g_peripheralBlock[], g_peripheralFlash[], g_peripheralSensor[])
+  wolfHAL_peripheral.h          # Registry structs and extern arrays
+  wolfHAL_peripheral.c          # Registry arrays (g_peripheralBlock[], g_peripheralFlash[], g_peripheralSensor[])
   board.mk          # Conditional build rules
   block/
     sdhc_spi_sdcard32gb.h
@@ -77,12 +77,12 @@ Define the device instance with its configuration. The device reaches its
 underlying bus (SPI here) and any other host-side peripherals through the
 board's `BOARD_<PERIPH>_DEV` macros so the same peripheral source works
 regardless of how each board has wired those drivers. Other board values
-(`SPI_CS_PIN`, `g_whalTimeout`) come from `board.h` directly:
+(`SPI_CS_PIN`, `g_whalTimeout`) come from `wolfHAL_board.h` directly:
 
 ```c
 #include "spi_nor_w25q64.h"
 #include <wolfHAL/flash/spi_nor_flash.h>
-#include "board.h"
+#include "wolfHAL_board.h"
 
 #define W25Q64_PAGE_SZ  256
 #define W25Q64_CAPACITY (8 * 1024 * 1024)
@@ -108,11 +108,11 @@ whal_Flash g_whalSpiNorW25q64 = {
 };
 ```
 
-## Step 2: Register in peripheral.c
+## Step 2: Register in wolfHAL_peripheral.c
 
 Add a conditional include and an entry in the appropriate registry array.
 
-In `peripheral.c`:
+In `wolfHAL_peripheral.c`:
 
 ```c
 #ifdef PERIPHERAL_SPI_NOR_W25Q64
@@ -135,7 +135,7 @@ whal_PeripheralFlash_Cfg g_peripheralFlash[] = {
 };
 ```
 
-The registry structs are defined in `peripheral.h`:
+The registry structs are defined in `wolfHAL_peripheral.h`:
 
 - `whal_PeripheralBlock_Cfg` for block devices (`g_peripheralBlock[]`)
 - `whal_PeripheralFlash_Cfg` for flash devices (`g_peripheralFlash[]`)

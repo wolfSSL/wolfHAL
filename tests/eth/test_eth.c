@@ -23,7 +23,7 @@
 #include <wolfHAL/wolfHAL.h>
 #include <wolfHAL/eth/eth.h>
 #include <wolfHAL/eth_phy/eth_phy.h>
-#include "board.h"
+#include "wolfHAL_board.h"
 #include "test.h"
 
 /*

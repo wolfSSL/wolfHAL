@@ -45,8 +45,8 @@ typedef whal_Stm32wba_Rng_Cfg whal_Stm32u5_Rng_Cfg;
 #define whal_Stm32u5_Rng_Generate whal_Stm32wba_Rng_Generate
 #endif /* !WHAL_CFG_STM32U5_RNG_DIRECT_API_MAPPING */
 
-/* Config initializer macro alias. The U5 board.h supplies the body under
- * the U5-prefixed name; the WBA driver source consumes the WBA name. */
+/* Config initializer macro alias. The U5 wolfHAL_board.h supplies the body
+ * under the U5-prefixed name; the WBA driver source consumes the WBA name. */
 #define WHAL_CFG_STM32WBA_RNG_DEV WHAL_CFG_STM32U5_RNG_DEV
 
 #endif /* WHAL_STM32U5_RNG_H */

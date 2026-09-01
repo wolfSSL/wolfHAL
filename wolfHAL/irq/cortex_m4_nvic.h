@@ -44,7 +44,7 @@ typedef struct {
 
 /*
  * @brief Platform-owned NVIC device singleton. Defined in the driver TU
- * from the WHAL_CFG_NVIC_DEV initializer in board.h.
+ * from the WHAL_CFG_NVIC_DEV initializer in wolfHAL_board.h.
  */
 extern const whal_Irq whal_Nvic_Dev;
 

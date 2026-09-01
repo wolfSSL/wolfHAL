@@ -23,7 +23,7 @@
 #include <stddef.h>
 #include <wolfHAL/wolfHAL.h>
 #include <wolfHAL/crypto/pka.h>
-#include "board.h"
+#include "wolfHAL_board.h"
 #include "test.h"
 
 /* RSA-1024 test key. Generated with `openssl genrsa 1024` for test use only.

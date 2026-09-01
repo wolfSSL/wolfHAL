@@ -21,7 +21,7 @@
 
 #include <stdint.h>
 #ifdef WHAL_CFG_STM32F4_SPI_SINGLE_INSTANCE
-#include "board.h"  /* provides whal_Stm32f4_Spi_Dev singleton (possibly via platform alias macro) */
+#include "wolfHAL_board.h"  /* provides whal_Stm32f4_Spi_Dev singleton (possibly via platform alias macro) */
 #endif
 #include <wolfHAL/spi/stm32f4_spi.h>
 #include <wolfHAL/spi/spi.h>

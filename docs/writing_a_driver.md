@@ -148,7 +148,7 @@ Single-instance device drivers must define the device struct within the driver
 extern const whal_Uart whal_Myplatform_Uart_Dev;
 
 /* src/uart/myplatform_uart.c */
-#include "board.h"  /* provides WHAL_CFG_MYPLATFORM_UART_DEV initializer */
+#include "wolfHAL_board.h"  /* provides WHAL_CFG_MYPLATFORM_UART_DEV initializer */
 const whal_Uart whal_Myplatform_Uart_Dev = WHAL_CFG_MYPLATFORM_UART_DEV;
 
 whal_Error whal_Myplatform_Uart_Init(whal_Uart *uartDev)
@@ -167,7 +167,7 @@ multi-instance device. For example: the STM32WB platform has multiple UART
 devices, each with their own register map offset.
 
 Since the user could use multiple instances of the device the user must define
-the device struct within the board.c and pass it in as a function argument. The
+the device struct within the wolfHAL_board.c and pass it in as a function argument. The
 driver must determine this at runtime like so:
 
 ```c
@@ -196,7 +196,7 @@ extern const whal_Uart whal_Myplatform_Uart_Dev;
 
 /* src/uart/myplatform_uart.c */
 #ifdef WHAL_CFG_MYPLATFORM_UART_SINGLE_INSTANCE
-#include "board.h"  /* provides WHAL_CFG_MYPLATFORM_UART_DEV initializer */
+#include "wolfHAL_board.h"  /* provides WHAL_CFG_MYPLATFORM_UART_DEV initializer */
 const whal_Uart whal_Myplatform_Uart_Dev = WHAL_CFG_MYPLATFORM_UART_DEV;
 #endif
 
@@ -440,7 +440,7 @@ devices without knowing the register addresses or driver symbols:
 The board uses these in device struct initializers:
 
 ```c
-/* board.c */
+/* wolfHAL_board.c */
 
 #include <wolfHAL/platform/myvendor/myplatform.h>
 whal_Uart g_whalUart = {
@@ -1297,7 +1297,7 @@ hardware retains all necessary context internally.
 Applications reach each algorithm through its `BOARD_<ALGO>_DEV` macro
 (`BOARD_AES_GCM_DEV`, `BOARD_SHA256_DEV`, etc.). Boards point those at
 `WHAL_INTERNAL_DEV` for the common single-instance case or at a
-`&g_whalAesGcm` pointer if they have kept the device in `board.c`.
+`&g_whalAesGcm` pointer if they have kept the device in `wolfHAL_board.c`.
 
 One-shot:
 
@@ -1587,12 +1587,12 @@ qualify, since the chip exposes one of each) follow the pattern in the
 "Single-instance drivers" section above: the driver header
 `extern`-declares each singleton (the `whal_Crypto` peripheral and each
 per-algorithm `whal_<Plat>_<Algo>_Dev`), the driver `.c` defines them
-from `WHAL_CFG_<PLAT>_<ALGO>_DEV` initializers in `board.h`, and any
+from `WHAL_CFG_<PLAT>_<ALGO>_DEV` initializers in `wolfHAL_board.h`, and any
 streaming state is a `static` variable in the driver `.c` whose address
 the initializer plumbs into the `.state` field. The per-algorithm
 initializer's `.crypto` is the cast address of the `whal_Crypto`
 singleton. The board's `BOARD_<ALGO>_DEV` macro is then
-`WHAL_INTERNAL_DEV`. See `boards/stm32wb55xx_nucleo/board.h` for a
+`WHAL_INTERNAL_DEV`. See `boards/stm32wb55xx_nucleo/wolfHAL_board.h` for a
 worked example.
 
 ### Reference Implementations

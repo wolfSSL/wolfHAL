@@ -43,8 +43,8 @@ typedef whal_Stm32f0_Wwdg_Cfg whal_Stm32f3_Wwdg_Cfg;
 #define whal_Stm32f3_Wwdg_Refresh whal_Stm32f0_Wwdg_Refresh
 #endif /* !WHAL_CFG_STM32F3_WWDG_DIRECT_API_MAPPING */
 
-/* Config initializer macro alias. The F3 board.h supplies the body under
- * the F3-prefixed name; the F0 driver source consumes the F0 name. */
+/* Config initializer macro alias. The F3 wolfHAL_board.h supplies the body
+ * under the F3-prefixed name; the F0 driver source consumes the F0 name. */
 #define WHAL_CFG_STM32F0_WWDG_DEV WHAL_CFG_STM32F3_WWDG_DEV
 
 #endif /* WHAL_STM32F3_WWDG_H */

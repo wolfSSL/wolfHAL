@@ -53,8 +53,8 @@ typedef whal_Stm32wb_Wwdg_Cfg whal_Stm32n6_Wwdg_Cfg;
 #define WHAL_STM32N6_WWDG_TB_64  WHAL_STM32WB_WWDG_TB_64
 #define WHAL_STM32N6_WWDG_TB_128 WHAL_STM32WB_WWDG_TB_128
 
-/* Config initializer macro alias. The N6 board.h supplies the body under
- * the N6-prefixed name; the WB driver source consumes the WB name. */
+/* Config initializer macro alias. The N6 wolfHAL_board.h supplies the body
+ * under the N6-prefixed name; the WB driver source consumes the WB name. */
 #define WHAL_CFG_STM32WB_WWDG_DEV WHAL_CFG_STM32N6_WWDG_DEV
 
 #endif /* WHAL_STM32N6_WWDG_H */

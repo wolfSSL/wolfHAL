@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
  */
 
-#include "board.h"  /* provides WHAL_CFG_STM32WB_IWDG_DEV initializer */
+#include "wolfHAL_board.h"  /* provides WHAL_CFG_STM32WB_IWDG_DEV initializer */
 #include <wolfHAL/watchdog/stm32wb_iwdg.h>
 #include <wolfHAL/watchdog/watchdog.h>
 #include <wolfHAL/error.h>

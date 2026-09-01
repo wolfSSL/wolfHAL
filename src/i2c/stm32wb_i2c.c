@@ -21,7 +21,7 @@
 
 #include <stdint.h>
 #ifdef WHAL_CFG_STM32WB_I2C_SINGLE_INSTANCE
-#include "board.h"  /* provides whal_Stm32wb_I2c_Dev singleton (possibly via platform alias macro) */
+#include "wolfHAL_board.h"  /* provides whal_Stm32wb_I2c_Dev singleton (possibly via platform alias macro) */
 #endif
 #include <wolfHAL/i2c/stm32wb_i2c.h>
 #include <wolfHAL/i2c/i2c.h>

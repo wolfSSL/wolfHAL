@@ -1,4 +1,4 @@
-/* board.h
+/* wolfHAL_board.h
  *
  * Copyright (C) 2026 wolfSSL Inc.
  *
@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
  */
 
-#ifndef BOARD_H
-#define BOARD_H
+#ifndef WOLFHAL_BOARD_H
+#define WOLFHAL_BOARD_H
 
 #include <stdint.h>
 #include <stddef.h>
@@ -171,7 +171,7 @@ enum {
     }, \
 }
 
-/* ETH descriptor rings + buffer pool — defined in board.c, addresses
+/* ETH descriptor rings + buffer pool — defined in wolfHAL_board.c, addresses
  * captured by the ETH singleton's cfg below at compile time. */
 #define BOARD_ETH_TX_DESC_COUNT 4
 #define BOARD_ETH_RX_DESC_COUNT 4
@@ -225,4 +225,4 @@ whal_Error Board_Init(void);
 whal_Error Board_Deinit(void);
 void Board_WaitMs(size_t ms);
 
-#endif /* BOARD_H */
+#endif /* WOLFHAL_BOARD_H */

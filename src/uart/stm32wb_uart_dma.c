@@ -21,7 +21,7 @@
 
 #include <stdint.h>
 #ifdef WHAL_CFG_STM32WB_UART_DMA_SINGLE_INSTANCE
-#include "board.h"  /* provides whal_Stm32wb_UartDma_Dev singleton */
+#include "wolfHAL_board.h"  /* provides whal_Stm32wb_UartDma_Dev singleton */
 #endif
 #include <wolfHAL/uart/stm32wb_uart_dma.h>
 #include <wolfHAL/uart/uart.h>

@@ -49,7 +49,7 @@ typedef struct whal_Stm32l1_I2c_Cfg {
 
 /*
  * @brief Single-instance device struct. Defined in the driver TU
- * from the WHAL_CFG_STM32L1_I2C_DEV initializer in board.h.
+ * from the WHAL_CFG_STM32L1_I2C_DEV initializer in wolfHAL_board.h.
  */
 #ifdef WHAL_CFG_STM32L1_I2C_SINGLE_INSTANCE
 extern const whal_I2c whal_Stm32l1_I2c_Dev;

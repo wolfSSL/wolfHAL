@@ -424,7 +424,7 @@ whal_Error whal_Stm32n6_CrypAesCcm_Finalize(whal_AesCcm *dev,
 
 /*
  * @brief Platform-owned CRYP + mode singletons. Defined in the driver TU
- * from the WHAL_CFG_STM32N6_CRYP*_DEV initializers in board.h.
+ * from the WHAL_CFG_STM32N6_CRYP*_DEV initializers in wolfHAL_board.h.
  */
 extern const whal_Crypto  whal_Stm32n6_Cryp_Dev;
 extern const whal_AesEcb  whal_Stm32n6_CrypEcb_Dev;

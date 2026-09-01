@@ -34,13 +34,13 @@ Each board directory contains:
 - **`board.mk`** - Build configuration: toolchain, CPU flags, platform
   drivers, and linker script. Included by application Makefiles via
   `include $(BOARD_DIR)/board.mk`.
-- **`board.h`** - Board-level declarations: `extern` globals for vtable-dispatched
+- **`wolfHAL_board.h`** - Board-level declarations: `extern` globals for vtable-dispatched
   peripherals, `WHAL_CFG_<PLAT>_<X>_DEV` initializer macros consumed by each
   driver TU to define its `whal_<Plat>_<X>_Dev` singleton, `BOARD_<PERIPH>_DEV`
   macros that resolve to `WHAL_INTERNAL_DEV`, `&g_whal<X>`, or a cast pointer
   at one of those singletons (depending on how each peripheral is wired), pin
   definitions, and `Board_Init()`/`Board_Deinit()` prototypes.
-- **`board.c`** - Peripheral instantiation for vtable-dispatched drivers and
+- **`wolfHAL_board.c`** - Peripheral instantiation for vtable-dispatched drivers and
   `Board_Init()` implementation (power, clock, GPIO, UART, flash, timer).
 - **`linker.ld`** - Linker script defining memory regions (flash, RAM).
 - Any additional board-specific source files (e.g. interrupt vector table,
@@ -65,7 +65,7 @@ the base `board.mk` and adding additional sources.
 Board `board.mk` populates `BOARD_SOURCE` with all of the sources
 required to build the wolfHAL tests and sample applications for that board:
 
-- Board files: `board.c` and any additional board-specific source files
+- Board files: `wolfHAL_board.c` and any additional board-specific source files
 - Platform / SoC drivers: e.g. `pic32cz_*.c`, `stm32wb_*.c`
 - Architecture support: `systick.c` and any related startup / vector code
 - Core wolfHAL modules and common sources: generic dispatch sources such as
@@ -80,6 +80,6 @@ application Makefile to select a different set of modules.
 
 1. Create a new directory: `boards/<vendor>_<board>/`
 2. Add `board.mk` following the `_BOARD_DIR` pattern above
-3. Implement `board.h`, `board.c`, and `linker.ld`
+3. Implement `wolfHAL_board.h`, `wolfHAL_board.c`, and `linker.ld`
 4. Set `PLATFORM`, `TESTS`, toolchain variables, `CFLAGS`, and `BOARD_SOURCE`
 5. Build with `make BOARD=<your_board>`

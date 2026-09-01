@@ -63,7 +63,7 @@ typedef struct {
 
 /*
  * @brief Single-instance device struct. Defined in the driver TU
- * from the WHAL_CFG_STM32WBA_UART_DMA_DEV initializer in board.h.
+ * from the WHAL_CFG_STM32WBA_UART_DMA_DEV initializer in wolfHAL_board.h.
  */
 #ifdef WHAL_CFG_STM32WBA_UART_DMA_SINGLE_INSTANCE
 extern const whal_Uart whal_Stm32wba_UartDma_Dev;

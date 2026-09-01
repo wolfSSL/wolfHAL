@@ -21,7 +21,7 @@
 
 _PERIPHERAL_DIR := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
 
-BOARD_SOURCE += $(_PERIPHERAL_DIR)/peripheral.c
+BOARD_SOURCE += $(_PERIPHERAL_DIR)/wolfHAL_peripheral.c
 
 ifneq ($(filter sdhc_spi_sdcard32gb,$(PERIPHERALS)),)
 CFLAGS += -DPERIPHERAL_SDHC_SPI_SDCARD32GB

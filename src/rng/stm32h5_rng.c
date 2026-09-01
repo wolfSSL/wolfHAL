@@ -20,7 +20,7 @@
  */
 
 #include <stdint.h>
-#include "board.h"  /* provides WHAL_CFG_STM32H5_RNG_DEV initializer */
+#include "wolfHAL_board.h"  /* provides WHAL_CFG_STM32H5_RNG_DEV initializer */
 #include <wolfHAL/rng/stm32h5_rng.h>
 #include <wolfHAL/rng/rng.h>
 #include <wolfHAL/error.h>

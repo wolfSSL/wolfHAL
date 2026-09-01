@@ -23,7 +23,7 @@
 #include <wolfHAL/wolfHAL.h>
 #include <wolfHAL/flash/stm32wb_flash.h>
 #include <wolfHAL/bitops.h>
-#include "board.h"
+#include "wolfHAL_board.h"
 #include "test.h"
 
 /* Flash CR register offset and LOCK bit */

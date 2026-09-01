@@ -21,7 +21,7 @@
 
 #include <stdint.h>
 #ifdef WHAL_CFG_PIC32CZ_UART_SINGLE_INSTANCE
-#include "board.h"  /* provides whal_Pic32cz_Uart_Dev singleton */
+#include "wolfHAL_board.h"  /* provides whal_Pic32cz_Uart_Dev singleton */
 #endif
 #include <wolfHAL/uart/pic32cz_uart.h>
 #include <wolfHAL/uart/uart.h>

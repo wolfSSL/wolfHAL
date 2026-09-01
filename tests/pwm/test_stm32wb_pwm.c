@@ -21,7 +21,7 @@
 
 #include <wolfHAL/wolfHAL.h>
 #include <wolfHAL/pwm/stm32wb_lptim_pwm.h>
-#include "board.h"
+#include "wolfHAL_board.h"
 #include "test.h"
 
 /* The LPTIM driver must enforce the same waveform contract when called

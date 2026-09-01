@@ -1,4 +1,4 @@
-/* board.h
+/* wolfHAL_board.h
  *
  * Copyright (C) 2026 wolfSSL Inc.
  *
@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
  */
 
-#ifndef BOARD_H
-#define BOARD_H
+#ifndef WOLFHAL_BOARD_H
+#define WOLFHAL_BOARD_H
 
 #include <stdint.h>
 #include <stddef.h>
@@ -56,8 +56,8 @@ enum {
 #define BOARD_SPI_DEV      (&g_whalSpi)
 #define BOARD_FLASH_DEV    ((whal_Flash *)&whal_Stm32f4_Flash_Dev)
 
-/* Flash sector layout (defined in board.c) — referenced by the flash singleton's
- * cfg below. */
+/* Flash sector layout (defined in wolfHAL_board.c), referenced by the flash
+ * singleton's cfg below. */
 #define FLASH_SECTOR_COUNT 8
 extern const whal_Stm32f4_Flash_Sector g_flashSectors[FLASH_SECTOR_COUNT];
 
@@ -129,4 +129,4 @@ whal_Error Board_Init(void);
 whal_Error Board_Deinit(void);
 void Board_WaitMs(size_t ms);
 
-#endif /* BOARD_H */
+#endif /* WOLFHAL_BOARD_H */

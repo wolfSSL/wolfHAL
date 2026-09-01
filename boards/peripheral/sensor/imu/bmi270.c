@@ -21,7 +21,7 @@
 
 #include "bmi270.h"
 #include <wolfHAL/sensor/imu/bmi270_sensor.h>
-#include "board.h"
+#include "wolfHAL_board.h"
 
 /*
  * Bosch BMI270 — 6-axis IMU (accelerometer + gyroscope)
@@ -31,7 +31,7 @@
  * - Requires 8192-byte config blob upload during init
  *
  * The config blob is not bundled with wolfHAL. Obtain it from the Bosch
- * Sensortec BMI270_SensorAPI repository and provide it from your board.h:
+ * Sensortec BMI270_SensorAPI repository and provide it from your wolfHAL_board.h:
  *
  *     extern const uint8_t whal_bmi270_config_data[];
  *     #define WHAL_BMI270_CONFIG_DATA_SZ 8192

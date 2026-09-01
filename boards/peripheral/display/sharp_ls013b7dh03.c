@@ -21,7 +21,7 @@
 
 #include "sharp_ls013b7dh03.h"
 #include <wolfHAL/display/sharp_memory_display.h>
-#include "board.h"
+#include "wolfHAL_board.h"
 
 /*
  * Sharp LS013B7DH03 - 128x128 monochrome memory LCD

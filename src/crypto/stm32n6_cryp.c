@@ -20,7 +20,7 @@
  */
 
 #include <stdint.h>
-#include "board.h"  /* provides WHAL_CFG_STM32N6_CRYP*_DEV initializers */
+#include "wolfHAL_board.h"  /* provides WHAL_CFG_STM32N6_CRYP*_DEV initializers */
 #include <wolfHAL/crypto/stm32n6_cryp.h>
 #include <wolfHAL/crypto/crypto.h>
 #include <wolfHAL/error.h>

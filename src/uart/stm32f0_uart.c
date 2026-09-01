@@ -21,7 +21,7 @@
 
 #include <stdint.h>
 #ifdef WHAL_CFG_STM32F0_UART_SINGLE_INSTANCE
-#include "board.h"  /* provides whal_Stm32f0_Uart_Dev singleton (possibly via platform alias macro) */
+#include "wolfHAL_board.h"  /* provides whal_Stm32f0_Uart_Dev singleton (possibly via platform alias macro) */
 #endif
 #include <wolfHAL/uart/stm32f0_uart.h>
 #include <wolfHAL/uart/uart.h>

@@ -22,7 +22,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #ifdef WHAL_CFG_STM32WBA_GPDMA_SINGLE_INSTANCE
-#include "board.h"  /* provides whal_Stm32wba_Gpdma_Dev singleton (possibly via platform alias macro) */
+#include "wolfHAL_board.h"  /* provides whal_Stm32wba_Gpdma_Dev singleton (possibly via platform alias macro) */
 #endif
 #include <wolfHAL/dma/stm32wba_gpdma.h>
 #include <wolfHAL/dma/dma.h>

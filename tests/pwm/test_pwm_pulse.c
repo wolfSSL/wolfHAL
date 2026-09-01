@@ -22,7 +22,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <wolfHAL/wolfHAL.h>
-#include "board.h"
+#include "wolfHAL_board.h"
 #include "test.h"
 
 /* Period in PWM ticks; the frequency depends on the board's PWM clock and prescaler. */

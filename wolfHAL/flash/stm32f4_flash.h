@@ -89,7 +89,7 @@ typedef enum whal_Stm32f4_Flash_Latency {
 extern const whal_FlashDriver whal_Stm32f4_Flash_Driver;
 /*
  * @brief Platform-owned device singleton. Defined in the driver TU
- * from the WHAL_CFG_STM32F4_FLASH_DEV initializer in board.h.
+ * from the WHAL_CFG_STM32F4_FLASH_DEV initializer in wolfHAL_board.h.
  */
 extern const whal_Flash whal_Stm32f4_Flash_Dev;
 
