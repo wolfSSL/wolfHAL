@@ -204,7 +204,8 @@ whal_Error whal_Stm32wb0_Flash_Read(whal_Flash *flashDev, size_t addr,
         return WHAL_EINVAL;
     if (dataSz == 0)
         return WHAL_SUCCESS;
-    if (addr < cfg->startAddr || addr + dataSz > cfg->startAddr + cfg->size)
+    if (addr < cfg->startAddr || dataSz > cfg->size ||
+        addr - cfg->startAddr > cfg->size - dataSz)
         return WHAL_EINVAL;
 
     /* Flash is memory-mapped; a simple byte copy is fine. */
@@ -228,7 +229,8 @@ whal_Error whal_Stm32wb0_Flash_Write(whal_Flash *flashDev, size_t addr,
         return WHAL_EINVAL;
     if (dataSz == 0)
         return WHAL_SUCCESS;
-    if (addr < cfg->startAddr || addr + dataSz > cfg->startAddr + cfg->size)
+    if (addr < cfg->startAddr || dataSz > cfg->size ||
+        addr - cfg->startAddr > cfg->size - dataSz)
         return WHAL_EINVAL;
     /* The WRITE command programs one 32-bit word at a time; address and
      * size must be word-aligned. */
@@ -266,7 +268,8 @@ whal_Error whal_Stm32wb0_Flash_Erase(whal_Flash *flashDev, size_t addr,
 
     if (dataSz == 0)
         return WHAL_SUCCESS;
-    if (addr < cfg->startAddr || addr + dataSz > cfg->startAddr + cfg->size)
+    if (addr < cfg->startAddr || dataSz > cfg->size ||
+        addr - cfg->startAddr > cfg->size - dataSz)
         return WHAL_EINVAL;
 
     /* Round to the page that contains addr, then erase all pages that

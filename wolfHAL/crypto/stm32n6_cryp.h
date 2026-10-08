@@ -30,8 +30,8 @@
  * @brief STM32N6 CRYP (cryptographic processor) driver.
  *
  * The CRYP peripheral on the STM32N6 supports AES-128/192/256 in ECB, CBC,
- * CTR, GCM, GMAC, and CCM chaining modes. Each algorithm is exposed through
- * a per-algorithm vtable with Oneshot/Start/Process/Finalize operations.
+ * CTR, GCM, GMAC, and CCM chaining modes. ECB/CBC/CTR expose
+ * Oneshot/Start/Process, GMAC exposes Oneshot, and GCM/CCM add Finalize.
  */
 
 /**
@@ -49,18 +49,22 @@ typedef struct {
 typedef struct {
     size_t aadSz;
     size_t dataSz;
+    uint8_t partial;    /* A partial block was processed; no further Process */
 } whal_Stm32n6_AesGcm_State;
 
 /**
  * @brief AES-CCM streaming state.
  *
  * @c ccmCtr0 is computed from the nonce in Start and replayed by Finalize for
- * the tag's final-phase counter. @c aadSz / @c dataSz feed the final-phase
- * length encoding.
+ * the tag's final-phase counter. @c msgSz and @c tagSz are the values Start
+ * encoded in B0; @c dataSz counts processed bytes so Finalize can check them.
  */
 typedef struct {
     size_t  aadSz;
     size_t  dataSz;
+    size_t  msgSz;
+    size_t  tagSz;
+    uint8_t partial;    /* A partial block was processed; no further Process */
     uint8_t ccmCtr0[16];
 } whal_Stm32n6_AesCcm_State;
 
@@ -223,7 +227,7 @@ whal_Error whal_Stm32n6_CrypAesCbc_Process(whal_AesCbc *dev,
  * @param key   Key buffer.
  * @param keySz Key size in bytes (16, 24, or 32).
  * @param iv    Initial counter block (16 bytes).
- * @param in    Input data.
+ * @param in    Input data (multiple of 16 bytes).
  * @param out   Output buffer.
  * @param sz    Data size in bytes.
  */
@@ -252,7 +256,7 @@ whal_Error whal_Stm32n6_CrypAesCtr_Start(whal_AesCtr *dev,
  * @brief Process data through an active AES-CTR session.
  *
  * @param dev AES-CTR device instance.
- * @param in  Input data.
+ * @param in  Input data (multiple of 16 bytes).
  * @param out Output buffer.
  * @param sz  Data size in bytes.
  */
@@ -312,7 +316,8 @@ whal_Error whal_Stm32n6_CrypAesGcm_Start(whal_AesGcm *dev,
  * @param dev AES-GCM device instance.
  * @param in  Input data.
  * @param out Output buffer.
- * @param sz  Data size in bytes.
+ * @param sz  Data size in bytes. Every call except the last must be a
+ *            multiple of 16 bytes.
  */
 whal_Error whal_Stm32n6_CrypAesGcm_Process(whal_AesGcm *dev,
                                            const void *in, void *out,
@@ -388,8 +393,9 @@ whal_Error whal_Stm32n6_CrypAesCcm_Oneshot(whal_AesCcm *dev,
  * @param nonceSz Nonce size in bytes (7-13).
  * @param aad     Additional authenticated data.
  * @param aadSz   AAD size in bytes.
- * @param tagSz   Tag size (needed for B0 block construction).
- * @param sz      Total payload size (needed for B0 block construction).
+ * @param tagSz   Tag size (encoded in B0); Finalize must pass the same value.
+ * @param sz      Total payload size (encoded in B0); the Process calls must
+ *                add up to exactly this many bytes.
  */
 whal_Error whal_Stm32n6_CrypAesCcm_Start(whal_AesCcm *dev,
                                          whal_Crypto_Dir dir,
@@ -404,7 +410,8 @@ whal_Error whal_Stm32n6_CrypAesCcm_Start(whal_AesCcm *dev,
  * @param dev AES-CCM device instance.
  * @param in  Input data.
  * @param out Output buffer.
- * @param sz  Data size in bytes.
+ * @param sz  Data size in bytes. Every call except the last must be a
+ *            multiple of 16 bytes.
  */
 whal_Error whal_Stm32n6_CrypAesCcm_Process(whal_AesCcm *dev,
                                            const void *in, void *out,
@@ -415,7 +422,7 @@ whal_Error whal_Stm32n6_CrypAesCcm_Process(whal_AesCcm *dev,
  *
  * @param dev   AES-CCM device instance.
  * @param tag   Authentication tag output.
- * @param tagSz Tag size in bytes.
+ * @param tagSz Tag size in bytes; must match the tagSz passed to Start.
  */
 whal_Error whal_Stm32n6_CrypAesCcm_Finalize(whal_AesCcm *dev,
                                             void *tag, size_t tagSz);

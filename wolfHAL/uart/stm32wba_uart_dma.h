@@ -33,8 +33,9 @@
  * @brief STM32WBA UART driver -- GPDMA-backed variant.
  *
  * Uses the STM32WBA GPDMA controller to move bytes between memory and the
- * USART TDR/RDR registers. Init/Deinit reuse the polled UART driver; Send/Recv
- * block using DMA; SendAsync/RecvAsync return immediately.
+ * USART TDR/RDR registers. Init reuses the polled UART driver; Deinit also
+ * stops the DMA channels; Send/Recv block using DMA; SendAsync/RecvAsync
+ * return immediately.
  *
  * The GPDMA request lines for USART are (RM0493 Table 208):
  *   REQSEL 11 = USART1_RX
@@ -59,6 +60,7 @@ typedef struct {
     whal_Stm32wba_Gpdma_ChCfg *rxChCfg;     /* RX channel cfg */
     volatile whal_Error txResult;           /* Set by TX completion callback */
     volatile whal_Error rxResult;           /* Set by RX completion callback */
+    volatile uint8_t txBounce;              /* SRAM copy for 1-byte TX */
 } whal_Stm32wba_UartDma_Cfg;
 
 /*
@@ -69,10 +71,25 @@ typedef struct {
 extern const whal_Uart whal_Stm32wba_UartDma_Dev;
 #endif
 
+#ifndef WHAL_CFG_STM32WBA_UART_DMA_DIRECT_API_MAPPING
 /*
  * @brief Driver instance for the GPDMA-backed STM32WBA UART.
  */
 extern const whal_UartDriver whal_Stm32wba_UartDma_Driver;
+
+/*
+ * @brief Deinitialize the UART, stopping both DMA channels.
+ *
+ * Clears the UART DMA requests, stops the TX and RX channels, resets the
+ * transfer state, then deinitializes the UART.
+ *
+ * @param uartDev UART device instance.
+ *
+ * @retval WHAL_SUCCESS  Deinit completed.
+ * @retval WHAL_EINVAL   Invalid arguments.
+ * @retval WHAL_ETIMEOUT A DMA channel did not stop within the timeout.
+ */
+whal_Error whal_Stm32wba_UartDma_Deinit(whal_Uart *uartDev);
 
 /*
  * @brief Send `dataSz` bytes via GPDMA. Blocks until the transfer completes.
@@ -133,6 +150,7 @@ whal_Error whal_Stm32wba_UartDma_SendAsync(whal_Uart *uartDev, const void *data,
  */
 whal_Error whal_Stm32wba_UartDma_RecvAsync(whal_Uart *uartDev, void *data,
                                            size_t dataSz);
+#endif /* !WHAL_CFG_STM32WBA_UART_DMA_DIRECT_API_MAPPING */
 
 /*
  * @brief GPDMA TX channel completion callback. Boards wire this into the

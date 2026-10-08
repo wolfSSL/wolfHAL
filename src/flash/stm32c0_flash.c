@@ -27,6 +27,7 @@
 #include <wolfHAL/error.h>
 #include <wolfHAL/bitops.h>
 #include <wolfHAL/timeout.h>
+#include <wolfHAL/endian.h>
 
 const whal_Flash whal_Stm32c0_Flash_Dev = WHAL_CFG_STM32C0_FLASH_DEV;
 
@@ -159,8 +160,13 @@ whal_Error whal_Stm32c0_Flash_Unlock(whal_Flash *flashDev, size_t addr, size_t l
      * Unlock sequence: write KEY1 then KEY2 to KEYR register.
      * Incorrect sequence or order will trigger a bus error.
      */
-    whal_Reg_Update(base, FLASH_KEYR_REG, FLASH_KEYR_KEY_Msk, 0x45670123);
-    whal_Reg_Update(base, FLASH_KEYR_REG, FLASH_KEYR_KEY_Msk, 0xCDEF89AB);
+    if (whal_Reg_Read(base, FLASH_CR_REG) & FLASH_CR_LOCK_Msk) {
+        whal_Reg_Update(base, FLASH_KEYR_REG, FLASH_KEYR_KEY_Msk, 0x45670123);
+        whal_Reg_Update(base, FLASH_KEYR_REG, FLASH_KEYR_KEY_Msk, 0xCDEF89AB);
+    }
+
+    if (whal_Reg_Read(base, FLASH_CR_REG) & FLASH_CR_LOCK_Msk)
+        return WHAL_EHARDWARE;
 
     return WHAL_SUCCESS;
 }
@@ -179,7 +185,8 @@ whal_Error whal_Stm32c0_Flash_Read(whal_Flash *flashDev, size_t addr, void *data
     if (dataSz == 0)
         return WHAL_SUCCESS;
 
-    if (addr < cfg->startAddr || addr + dataSz > cfg->startAddr + cfg->size)
+    if (addr < cfg->startAddr || dataSz > cfg->size ||
+        addr - cfg->startAddr > cfg->size - dataSz)
         return WHAL_EINVAL;
 
     /* Flash is memory-mapped, so reading is a simple memory copy */
@@ -205,7 +212,8 @@ static whal_Error whal_Stm32c0_Flash_WriteOrErase(whal_Flash *flashDev, size_t a
     size_t bsy;
     (void)flashDev;
 
-    if (addr < cfg->startAddr || addr + dataSz > cfg->startAddr + cfg->size)
+    if (addr < cfg->startAddr || dataSz > cfg->size ||
+        addr - cfg->startAddr > cfg->size - dataSz)
         return WHAL_EINVAL;
 
     /* Write requires 8-byte alignment (64-bit double-word programming) */
@@ -233,18 +241,24 @@ static whal_Error whal_Stm32c0_Flash_WriteOrErase(whal_Flash *flashDev, size_t a
 
         /* Program data in 64-bit (8 byte) double-word chunks */
         for (size_t i = 0; i < dataSz; i += 8) {
-            uint32_t *flashAddr = (uint32_t *)(addr + i);
-            uint32_t *dataAddr = (uint32_t *)(data + i);
+            volatile uint32_t *flashAddr = (volatile uint32_t *)(addr + i);
 
             /* Write both 32-bit words to trigger the 64-bit programming */
-            flashAddr[0] = dataAddr[0];
-            flashAddr[1] = dataAddr[1];
+            flashAddr[0] = whal_LoadLe32(data + i);
+            flashAddr[1] = whal_LoadLe32(data + i + 4);
 
             /* Wait for programming to complete */
             err = whal_Reg_ReadPoll(base, FLASH_SR_REG,
                                     FLASH_SR_CFGBSY_Msk, 0, cfg->timeout);
             if (err)
                 goto cleanup;
+
+            /* Check for errors */
+            if (whal_Reg_Read(base, FLASH_SR_REG) & FLASH_SR_ALL_ERR) {
+                whal_Reg_Update(base, FLASH_SR_REG, FLASH_SR_ALL_ERR, FLASH_SR_ALL_ERR);
+                err = WHAL_EHARDWARE;
+                goto cleanup;
+            }
         }
     }
     else {
@@ -272,6 +286,13 @@ static whal_Error whal_Stm32c0_Flash_WriteOrErase(whal_Flash *flashDev, size_t a
                                     FLASH_SR_CFGBSY_Msk, 0, cfg->timeout);
             if (err)
                 goto cleanup;
+
+            /* Check for errors */
+            if (whal_Reg_Read(base, FLASH_SR_REG) & FLASH_SR_ALL_ERR) {
+                whal_Reg_Update(base, FLASH_SR_REG, FLASH_SR_ALL_ERR, FLASH_SR_ALL_ERR);
+                err = WHAL_EHARDWARE;
+                goto cleanup;
+            }
         }
 
         /* Disable page erase mode */

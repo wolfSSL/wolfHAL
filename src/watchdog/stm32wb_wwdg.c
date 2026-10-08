@@ -61,7 +61,9 @@ whal_Error whal_Stm32wb_Wwdg_Init(whal_Watchdog *wdgDev)
     size_t base = whal_Stm32wb_Wwdg_Dev.base;
     (void)wdgDev;
 
-    if (cfg->prescaler > 7 || cfg->window > 0x7F || cfg->counter > 0x7F)
+    /* Counter and window must keep T6 set or the MCU resets immediately */
+    if (cfg->prescaler > 7 || cfg->window < 0x40 || cfg->window > 0x7F ||
+        cfg->counter < 0x40 || cfg->counter > 0x7F)
         return WHAL_EINVAL;
 
     /* Configure window and prescaler */

@@ -33,6 +33,7 @@ const whal_EthPhy whal_Lan8742a_Dev = WHAL_CFG_LAN8742A_DEV;
 #define PHY_BCR       0x00  /* Basic Control Register */
 #define PHY_BCR_RESET (1UL << 15)
 #define PHY_BCR_ANEN  (1UL << 12)
+#define PHY_BCR_PDOWN (1UL << 11)
 
 #define PHY_BSR       0x01  /* Basic Status Register */
 #define PHY_BSR_LINK  (1UL << 2)
@@ -64,7 +65,7 @@ whal_Error whal_Lan8742a_Init(whal_EthPhy *phyDev)
 #endif
 
     /* Software reset */
-    err = whal_Eth_MdioWrite(NULL, addr, PHY_BCR, PHY_BCR_RESET);
+    err = whal_Eth_MdioWrite(whal_Lan8742a_Dev.eth, addr, PHY_BCR, PHY_BCR_RESET);
     if (err)
         return err;
 
@@ -73,17 +74,17 @@ whal_Error whal_Lan8742a_Init(whal_EthPhy *phyDev)
     do {
         if (WHAL_TIMEOUT_EXPIRED(cfg->timeout))
             return WHAL_ETIMEOUT;
-        err = whal_Eth_MdioRead(NULL, addr, PHY_BCR, &val);
+        err = whal_Eth_MdioRead(whal_Lan8742a_Dev.eth, addr, PHY_BCR, &val);
         if (err)
             return err;
     } while (val & PHY_BCR_RESET);
 
     /* Enable autonegotiation */
-    err = whal_Eth_MdioRead(NULL, addr, PHY_BCR, &val);
+    err = whal_Eth_MdioRead(whal_Lan8742a_Dev.eth, addr, PHY_BCR, &val);
     if (err)
         return err;
     val |= PHY_BCR_ANEN;
-    err = whal_Eth_MdioWrite(NULL, addr, PHY_BCR, val);
+    err = whal_Eth_MdioWrite(whal_Lan8742a_Dev.eth, addr, PHY_BCR, val);
     if (err)
         return err;
 
@@ -92,8 +93,16 @@ whal_Error whal_Lan8742a_Init(whal_EthPhy *phyDev)
 
 whal_Error whal_Lan8742a_Deinit(whal_EthPhy *phyDev)
 {
+    uint8_t addr = whal_Lan8742a_Dev.addr;
+    whal_Error err;
+    uint16_t val;
     (void)phyDev;
-    return WHAL_SUCCESS;
+
+    err = whal_Eth_MdioRead(whal_Lan8742a_Dev.eth, addr, PHY_BCR, &val);
+    if (err)
+        return err;
+    val |= PHY_BCR_PDOWN;
+    return whal_Eth_MdioWrite(whal_Lan8742a_Dev.eth, addr, PHY_BCR, val);
 }
 
 whal_Error whal_Lan8742a_GetLinkState(whal_EthPhy *phyDev, uint8_t *up,
@@ -112,17 +121,17 @@ whal_Error whal_Lan8742a_GetLinkState(whal_EthPhy *phyDev, uint8_t *up,
      * BSR link bit is latching-low (IEEE 802.3). First read clears a
      * stale link-down event; second read gives current status.
      */
-    err = whal_Eth_MdioRead(NULL, addr, PHY_BSR, &bsr);
+    err = whal_Eth_MdioRead(whal_Lan8742a_Dev.eth, addr, PHY_BSR, &bsr);
     if (err)
         return err;
-    err = whal_Eth_MdioRead(NULL, addr, PHY_BSR, &bsr);
+    err = whal_Eth_MdioRead(whal_Lan8742a_Dev.eth, addr, PHY_BSR, &bsr);
     if (err)
         return err;
 
     *up = (bsr & PHY_BSR_LINK) ? 1 : 0;
 
     if (*up) {
-        err = whal_Eth_MdioRead(NULL, addr, PHY_PHYSCSR, &scsr);
+        err = whal_Eth_MdioRead(whal_Lan8742a_Dev.eth, addr, PHY_PHYSCSR, &scsr);
         if (err)
             return err;
         uint16_t spd = scsr & PHY_PHYSCSR_SPEED_Msk;

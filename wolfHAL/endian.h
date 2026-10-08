@@ -40,6 +40,15 @@ static inline uint32_t whal_LoadBe32(const uint8_t *p)
 }
 
 /*
+ * @brief Load a 32-bit value from a little-endian byte array.
+ */
+static inline uint32_t whal_LoadLe32(const uint8_t *p)
+{
+    return (uint32_t)p[0] | ((uint32_t)p[1] << 8) |
+           ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
+}
+
+/*
  * @brief Store a 32-bit value into a big-endian byte array.
  */
 static inline void whal_StoreBe32(uint8_t *p, uint32_t v)

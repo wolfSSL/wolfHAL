@@ -86,6 +86,10 @@
 
 #define SR1_ERR_Msk       (SR1_BERR_Msk | SR1_ARLO_Msk | SR1_AF_Msk)
 
+/* SR2 bits */
+#define SR2_BUSY_Pos      1
+#define SR2_BUSY_Msk      (1UL << SR2_BUSY_Pos)
+
 /* CCR bits */
 #define CCR_CCR_Msk       (WHAL_BITMASK(12))
 #define CCR_FS_Pos        15
@@ -382,6 +386,14 @@ whal_Error whal_Stm32l1_I2c_StartCom(whal_I2c *i2cDev, whal_I2c_ComCfg *comCfg)
     base = i2cDev->base;
 #endif
 
+    /* Let a pending STOP finish; a bus still busy after the timeout was left
+     * by an abandoned transfer and only a software reset clears it */
+    if (whal_Reg_ReadPoll(base, I2C_SR2, SR2_BUSY_Msk, 0,
+                          cfg->timeout) != WHAL_SUCCESS) {
+        whal_Reg_Update(base, I2C_CR1, CR1_SWRST_Msk, CR1_SWRST_Msk);
+        whal_Reg_Update(base, I2C_CR1, CR1_SWRST_Msk, 0);
+    }
+
     whal_Reg_Update(base, I2C_CR1, CR1_PE_Msk, 0);
 
     freqMhz = cfg->pclk / 1000000;
@@ -444,21 +456,23 @@ whal_Error whal_Stm32l1_I2c_Transfer(whal_I2c *i2cDev, whal_I2c_Msg *msgs,
 #endif
 
     for (size_t i = 0; i < numMsgs; i++) {
+        if (!msgs[i].data || msgs[i].dataSz == 0)
+            return WHAL_EINVAL;
+    }
+
+    for (size_t i = 0; i < numMsgs; i++) {
         uint8_t isRead = (msgs[i].flags & WHAL_I2C_MSG_READ) ? 1 : 0;
         uint8_t doStart = (msgs[i].flags & WHAL_I2C_MSG_START) ? 1 : 0;
         uint8_t doStop = (msgs[i].flags & WHAL_I2C_MSG_STOP) ? 1 : 0;
         uint8_t *buf = (uint8_t *)msgs[i].data;
         size_t len = msgs[i].dataSz;
 
-        if (len == 0)
-            return WHAL_EINVAL;
-
-        if (doStart) {
+        err = WHAL_SUCCESS;
+        if (doStart)
             err = Stm32l1_I2c_SendStart(base, cfg->_addr, cfg->_addrSz,
                                          isRead, cfg->timeout);
-            if (err)
-                return err;
-        }
+        if (err)
+            goto error;
 
         if (isRead) {
             err = Stm32l1_I2c_MasterRead(base, buf, len, doStop, cfg->timeout);
@@ -471,10 +485,16 @@ whal_Error whal_Stm32l1_I2c_Transfer(whal_I2c *i2cDev, whal_I2c_Msg *msgs,
         }
 
         if (err)
-            return err;
+            goto error;
     }
 
     return WHAL_SUCCESS;
+
+error:
+    whal_Reg_Update(base, I2C_CR1, CR1_ACK_Msk | CR1_POS_Msk, 0);
+    if (err == WHAL_ETIMEOUT)
+        whal_Reg_Update(base, I2C_CR1, CR1_STOP_Msk, CR1_STOP_Msk);
+    return err;
 }
 
 #if !defined(WHAL_CFG_STM32L1_I2C_DIRECT_API_MAPPING)

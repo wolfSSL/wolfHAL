@@ -57,6 +57,18 @@ static const uint8_t nistEcbCt[16] = {
     0x06, 0x4B, 0x5A, 0x7E, 0x3D, 0xB1, 0x81, 0xF8,
 };
 
+/* NIST SP 800-38A test vectors (AES-128, single block) */
+static const uint8_t nistKey128[16] = {
+    0x2B, 0x7E, 0x15, 0x16, 0x28, 0xAE, 0xD2, 0xA6,
+    0xAB, 0xF7, 0x15, 0x88, 0x09, 0xCF, 0x4F, 0x3C,
+};
+
+/* NIST SP 800-38A F.1.1 AES-128-ECB expected ciphertext */
+static const uint8_t nistEcbCt128[16] = {
+    0x3A, 0xD7, 0x7B, 0xB4, 0x0D, 0x7A, 0x36, 0x60,
+    0xA8, 0x9E, 0xCA, 0xF3, 0x24, 0x66, 0xEF, 0x97,
+};
+
 static void Test_AesEcb_Basic(void)
 {
     uint8_t ct[32] = {0};
@@ -86,10 +98,29 @@ static void Test_AesEcb_KnownAnswer(void)
     WHAL_ASSERT_MEM_EQ(ct, nistEcbCt, sizeof(nistEcbCt));
 }
 
+static void Test_AesEcb_KnownAnswer128(void)
+{
+    uint8_t ct[16] = {0};
+    uint8_t pt[16] = {0};
+
+    WHAL_ASSERT_EQ(whal_AesEcb_Oneshot(BOARD_AES_ECB_DEV, WHAL_CRYPTO_ENCRYPT,
+                                        nistKey128, 16, nistPt, ct,
+                                        sizeof(nistPt)),
+                   WHAL_SUCCESS);
+    WHAL_ASSERT_MEM_EQ(ct, nistEcbCt128, sizeof(nistEcbCt128));
+
+    WHAL_ASSERT_EQ(whal_AesEcb_Oneshot(BOARD_AES_ECB_DEV, WHAL_CRYPTO_DECRYPT,
+                                        nistKey128, 16, nistEcbCt128, pt,
+                                        sizeof(nistEcbCt128)),
+                   WHAL_SUCCESS);
+    WHAL_ASSERT_MEM_EQ(pt, nistPt, sizeof(nistPt));
+}
+
 void whal_Test_AesEcb(void)
 {
     WHAL_TEST_SUITE_START("aes_ecb");
     WHAL_TEST(Test_AesEcb_Basic);
     WHAL_TEST(Test_AesEcb_KnownAnswer);
+    WHAL_TEST(Test_AesEcb_KnownAnswer128);
     WHAL_TEST_SUITE_END();
 }

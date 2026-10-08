@@ -85,7 +85,7 @@ whal_Error whal_Stm32wb_Pka_Deinit(whal_Crypto *dev);
  * @param eSz       Size of e in bytes.
  * @param N         Modulus, big-endian (odd).
  * @param NSz       Size of N in bytes.
- * @param result    Output buffer (must be at least NSz bytes).
+ * @param result    Output buffer (must be exactly NSz bytes).
  * @param resultSz  Output size in bytes.
  *
  * @retval WHAL_SUCCESS    Result written to @p result.
@@ -195,7 +195,7 @@ whal_Error whal_Stm32wb_Pka_IntSub(const uint8_t *A, size_t ASz,
  * @param pSz       Size of p in bytes.
  * @param q         Prime q, big-endian.
  * @param qSz       Size of q in bytes.
- * @param result    Output buffer (must be at least pSz + qSz bytes).
+ * @param result    Output buffer (must be exactly pSz + qSz bytes).
  * @param resultSz  Output size in bytes.
  *
  * @retval WHAL_SUCCESS    Result written to @p result.

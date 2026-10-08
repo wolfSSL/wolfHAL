@@ -121,15 +121,12 @@ static whal_Error whal_Stm32wb0_Gpio_SetOrGet(whal_Gpio *gpioDev, size_t idx,
     size_t portBase, mask;
     (void)gpioDev;
 
-    if (!value)
+    if (!value || idx >= cfg->pinCount)
         return WHAL_EINVAL;
 
     pinCfg = cfg->pinCfg[idx];
     port = WHAL_STM32WB0_GPIO_GET_PORT(pinCfg);
     pin  = WHAL_STM32WB0_GPIO_GET_PIN(pinCfg);
-
-    if (pin > 15)
-        return WHAL_EINVAL;
 
     portBase = whal_Stm32wb0_Gpio_Dev.base + (port * GPIO_PORT_STRIDE);
     mask = 1UL << pin;

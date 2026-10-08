@@ -28,7 +28,9 @@ whal_Error whal_AesCcm_Oneshot(whal_AesCcm *dev, whal_Crypto_Dir dir,
                                const void *in, void *out, size_t sz,
                                void *tag, size_t tagSz)
 {
-    if (!dev || !dev->driver || !dev->driver->Oneshot)
+    if (!dev)
+        return WHAL_EINVAL;
+    if (!dev->driver || !dev->driver->Oneshot)
         return WHAL_ENOTSUP;
     return dev->driver->Oneshot(dev, dir, key, keySz, nonce, nonceSz,
                                 aad, aadSz, in, out, sz, tag, tagSz);
@@ -40,7 +42,9 @@ whal_Error whal_AesCcm_Start(whal_AesCcm *dev, whal_Crypto_Dir dir,
                              const void *aad, size_t aadSz,
                              size_t tagSz, size_t sz)
 {
-    if (!dev || !dev->driver || !dev->driver->Start)
+    if (!dev)
+        return WHAL_EINVAL;
+    if (!dev->driver || !dev->driver->Start)
         return WHAL_ENOTSUP;
     return dev->driver->Start(dev, dir, key, keySz, nonce, nonceSz,
                               aad, aadSz, tagSz, sz);
@@ -49,7 +53,9 @@ whal_Error whal_AesCcm_Start(whal_AesCcm *dev, whal_Crypto_Dir dir,
 whal_Error whal_AesCcm_Process(whal_AesCcm *dev,
                                const void *in, void *out, size_t sz)
 {
-    if (!dev || !dev->driver || !dev->driver->Process)
+    if (!dev)
+        return WHAL_EINVAL;
+    if (!dev->driver || !dev->driver->Process)
         return WHAL_ENOTSUP;
     return dev->driver->Process(dev, in, out, sz);
 }
@@ -57,7 +63,9 @@ whal_Error whal_AesCcm_Process(whal_AesCcm *dev,
 whal_Error whal_AesCcm_Finalize(whal_AesCcm *dev,
                                 void *tag, size_t tagSz)
 {
-    if (!dev || !dev->driver || !dev->driver->Finalize)
+    if (!dev)
+        return WHAL_EINVAL;
+    if (!dev->driver || !dev->driver->Finalize)
         return WHAL_ENOTSUP;
     return dev->driver->Finalize(dev, tag, tagSz);
 }

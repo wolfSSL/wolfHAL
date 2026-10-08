@@ -27,7 +27,9 @@ whal_Error whal_AesGmac_Oneshot(whal_AesGmac *dev,
                                 const void *aad, size_t aadSz,
                                 void *tag, size_t tagSz)
 {
-    if (!dev || !dev->driver || !dev->driver->Oneshot)
+    if (!dev)
+        return WHAL_EINVAL;
+    if (!dev->driver || !dev->driver->Oneshot)
         return WHAL_ENOTSUP;
     return dev->driver->Oneshot(dev, key, keySz, iv, ivSz,
                                 aad, aadSz, tag, tagSz);

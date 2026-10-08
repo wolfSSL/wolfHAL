@@ -142,6 +142,8 @@ static struct {
 /* --- RX descriptor bits (RDES3) --- */
 #define RDES3_OWN   (1UL << 31)
 #define RDES3_IOC   (1UL << 30)
+#define RDES3_FD    (1UL << 29)
+#define RDES3_LD    (1UL << 28)
 #define RDES3_BUF1V (1UL << 24)
 #define RDES3_ES    (1UL << 15)
 #define RDES3_PL_Msk 0x7FFFUL
@@ -250,6 +252,9 @@ whal_Error whal_Stm32h5_Eth_Init(whal_Eth *ethDev)
     eth_state.txHead = 0;
     eth_state.rxHead = 0;
 
+    /* Make the descriptor rings visible before Start() kicks the DMA */
+    __asm__ volatile ("dsb sy" ::: "memory");
+
     return WHAL_SUCCESS;
 }
 
@@ -269,6 +274,10 @@ whal_Error whal_Stm32h5_Eth_Start(whal_Eth *ethDev, uint8_t speed,
         (const whal_Stm32h5_Eth_Cfg *)whal_Stm32h5_Eth_Dev.cfg;
     size_t base = whal_Stm32h5_Eth_Dev.base;
     (void)ethDev;
+
+    if ((speed != WHAL_ETH_SPEED_10 && speed != WHAL_ETH_SPEED_100) ||
+        (duplex != WHAL_ETH_DUPLEX_HALF && duplex != WHAL_ETH_DUPLEX_FULL))
+        return WHAL_EINVAL;
 
     /* Configure MAC speed and duplex to match PHY */
     whal_Reg_Update(base, ETH_MACCR_REG,
@@ -348,6 +357,9 @@ whal_Error whal_Stm32h5_Eth_Send(whal_Eth *ethDev, const void *frame,
     /* Advance ring position */
     eth_state.txHead = (idx + 1) % cfg->txDescCount;
 
+    /* Order the descriptor writes before the tail-pointer kick */
+    __asm__ volatile ("dsb sy" ::: "memory");
+
     /* Kick DMA — tail pointer past the end of the ring */
     whal_Reg_Write(base, ETH_DMACTXDTPR_REG,
                    (uintptr_t)&cfg->txDescs[cfg->txDescCount]);
@@ -380,11 +392,15 @@ whal_Error whal_Stm32h5_Eth_Recv(whal_Eth *ethDev, void *frame,
     if (rdes3 & RDES3_OWN)
         return WHAL_ENOTREADY;
 
-    /* Check for errors */
-    if (rdes3 & RDES3_ES) {
+    /* Drop errored frames, frames spanning several buffers, and lengths
+     * larger than the buffer */
+    if ((rdes3 & RDES3_ES) ||
+        (rdes3 & (RDES3_FD | RDES3_LD)) != (RDES3_FD | RDES3_LD) ||
+        (rdes3 & RDES3_PL_Msk) > cfg->rxBufSize) {
         desc->des[0] = (uintptr_t)(cfg->rxBufs + idx * cfg->rxBufSize);
         desc->des[3] = RDES3_OWN | RDES3_IOC | RDES3_BUF1V;
         eth_state.rxHead = (idx + 1) % cfg->rxDescCount;
+        __asm__ volatile ("dsb sy" ::: "memory");
         whal_Reg_Write(base, ETH_DMACRXDTPR_REG,
                        (uintptr_t)&cfg->rxDescs[cfg->rxDescCount]);
         return WHAL_EHARDWARE;
@@ -411,6 +427,9 @@ whal_Error whal_Stm32h5_Eth_Recv(whal_Eth *ethDev, void *frame,
 
     /* Advance ring position */
     eth_state.rxHead = (idx + 1) % cfg->rxDescCount;
+
+    /* Order the OWN=1 re-arm write before the tail-pointer kick */
+    __asm__ volatile ("dsb sy" ::: "memory");
 
     /* Update RX tail pointer — always past end of ring */
     whal_Reg_Write(base, ETH_DMACRXDTPR_REG,

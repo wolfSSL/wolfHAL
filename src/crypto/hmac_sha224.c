@@ -26,7 +26,9 @@ whal_Error whal_HmacSha224_Oneshot(whal_HmacSha224 *dev,
                                    const void *in, size_t inSz,
                                    void *digest, size_t digestSz)
 {
-    if (!dev || !dev->driver || !dev->driver->Oneshot)
+    if (!dev)
+        return WHAL_EINVAL;
+    if (!dev->driver || !dev->driver->Oneshot)
         return WHAL_ENOTSUP;
     return dev->driver->Oneshot(dev, key, keySz, in, inSz, digest, digestSz);
 }
@@ -34,7 +36,9 @@ whal_Error whal_HmacSha224_Oneshot(whal_HmacSha224 *dev,
 whal_Error whal_HmacSha224_Start(whal_HmacSha224 *dev,
                                  const void *key, size_t keySz)
 {
-    if (!dev || !dev->driver || !dev->driver->Start)
+    if (!dev)
+        return WHAL_EINVAL;
+    if (!dev->driver || !dev->driver->Start)
         return WHAL_ENOTSUP;
     return dev->driver->Start(dev, key, keySz);
 }
@@ -42,7 +46,9 @@ whal_Error whal_HmacSha224_Start(whal_HmacSha224 *dev,
 whal_Error whal_HmacSha224_Process(whal_HmacSha224 *dev,
                                    const void *in, size_t inSz)
 {
-    if (!dev || !dev->driver || !dev->driver->Process)
+    if (!dev)
+        return WHAL_EINVAL;
+    if (!dev->driver || !dev->driver->Process)
         return WHAL_ENOTSUP;
     return dev->driver->Process(dev, in, inSz);
 }
@@ -50,7 +56,9 @@ whal_Error whal_HmacSha224_Process(whal_HmacSha224 *dev,
 whal_Error whal_HmacSha224_Finalize(whal_HmacSha224 *dev,
                                     void *digest, size_t digestSz)
 {
-    if (!dev || !dev->driver || !dev->driver->Finalize)
+    if (!dev)
+        return WHAL_EINVAL;
+    if (!dev->driver || !dev->driver->Finalize)
         return WHAL_ENOTSUP;
     return dev->driver->Finalize(dev, digest, digestSz);
 }

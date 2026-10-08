@@ -83,11 +83,13 @@ whal_Error whal_Flash_Init(whal_Flash *flashDev);
  */
 whal_Error whal_Flash_Deinit(whal_Flash *flashDev);
 /*
- * @brief Lock a region of flash to prevent modification.
+ * @brief Lock flash to prevent modification.
+ *
+ * Current drivers lock the whole device and ignore @p addr and @p len.
  *
  * @param flashDev Flash instance to lock.
- * @param addr     Byte address in flash to lock.
- * @param len      Number of bytes to lock.
+ * @param addr     Byte address of the region to lock (driver-defined).
+ * @param len      Number of bytes to lock (driver-defined).
  *
  * @retval WHAL_SUCCESS Lock applied.
  * @retval WHAL_EINVAL   Null pointer.
@@ -95,11 +97,13 @@ whal_Error whal_Flash_Deinit(whal_Flash *flashDev);
  */
 whal_Error whal_Flash_Lock(whal_Flash *flashDev, size_t addr, size_t len);
 /*
- * @brief Unlock a region of flash to allow modification.
+ * @brief Unlock flash to allow modification.
+ *
+ * Current drivers unlock the whole device and ignore @p addr and @p len.
  *
  * @param flashDev Flash instance to unlock.
- * @param addr     Byte address in flash to unlock.
- * @param len      Number of bytes to unlock.
+ * @param addr     Byte address of the region to unlock (driver-defined).
+ * @param len      Number of bytes to unlock (driver-defined).
  *
  * @retval WHAL_SUCCESS Unlock applied.
  * @retval WHAL_EINVAL   Null pointer.

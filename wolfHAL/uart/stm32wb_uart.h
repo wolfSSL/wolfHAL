@@ -121,4 +121,9 @@ whal_Error whal_Stm32wb_Uart_Send(whal_Uart *uartDev, const void *data, size_t d
 whal_Error whal_Stm32wb_Uart_Recv(whal_Uart *uartDev, void *data, size_t dataSz);
 #endif /* !WHAL_CFG_UART_API_MAPPING */
 
+#ifdef WHAL_CFG_STM32WB_UART_DMA_DIRECT_API_MAPPING
+/* Polled Deinit, wrapped by the DMA-backed driver's Deinit. */
+whal_Error whal_Stm32wb_Uart_Deinit(whal_Uart *uartDev);
+#endif
+
 #endif /* WHAL_STM32WB_UART_H */

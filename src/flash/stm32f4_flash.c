@@ -27,6 +27,7 @@
 #include <wolfHAL/error.h>
 #include <wolfHAL/bitops.h>
 #include <wolfHAL/timeout.h>
+#include <wolfHAL/endian.h>
 
 const whal_Flash whal_Stm32f4_Flash_Dev = WHAL_CFG_STM32F4_FLASH_DEV;
 
@@ -146,8 +147,13 @@ whal_Error whal_Stm32f4_Flash_Unlock(whal_Flash *flashDev, size_t addr, size_t l
     (void)addr;
     (void)len;
 
-    whal_Reg_Write(base, FLASH_KEYR_REG, FLASH_KEY1);
-    whal_Reg_Write(base, FLASH_KEYR_REG, FLASH_KEY2);
+    if (whal_Reg_Read(base, FLASH_CR_REG) & FLASH_CR_LOCK_Msk) {
+        whal_Reg_Write(base, FLASH_KEYR_REG, FLASH_KEY1);
+        whal_Reg_Write(base, FLASH_KEYR_REG, FLASH_KEY2);
+    }
+
+    if (whal_Reg_Read(base, FLASH_CR_REG) & FLASH_CR_LOCK_Msk)
+        return WHAL_EHARDWARE;
 
     return WHAL_SUCCESS;
 }
@@ -163,7 +169,8 @@ whal_Error whal_Stm32f4_Flash_Read(whal_Flash *flashDev, size_t addr,
     if (!data)
         return WHAL_EINVAL;
 
-    if (addr < cfg->startAddr || addr + dataSz > cfg->startAddr + cfg->size)
+    if (addr < cfg->startAddr || dataSz > cfg->size ||
+        addr - cfg->startAddr > cfg->size - dataSz)
         return WHAL_EINVAL;
 
     uint8_t *flashAddr = (uint8_t *)addr;
@@ -190,7 +197,8 @@ whal_Error whal_Stm32f4_Flash_Write(whal_Flash *flashDev, size_t addr,
     if ((addr & 0x3) || (dataSz & 0x3))
         return WHAL_EINVAL;
 
-    if (addr < cfg->startAddr || addr + dataSz > cfg->startAddr + cfg->size)
+    if (addr < cfg->startAddr || dataSz > cfg->size ||
+        addr - cfg->startAddr > cfg->size - dataSz)
         return WHAL_EINVAL;
 
     /* Wait for any ongoing operation */
@@ -210,10 +218,9 @@ whal_Error whal_Stm32f4_Flash_Write(whal_Flash *flashDev, size_t addr,
 
     /* Program data in 32-bit word chunks */
     for (size_t i = 0; i < dataSz; i += 4) {
-        uint32_t *flashAddr = (uint32_t *)(addr + i);
-        const uint32_t *dataAddr = (const uint32_t *)(dataBuf + i);
+        volatile uint32_t *flashAddr = (volatile uint32_t *)(addr + i);
 
-        *flashAddr = *dataAddr;
+        *flashAddr = whal_LoadLe32(dataBuf + i);
 
         /* Wait for programming to complete */
         err = whal_Reg_ReadPoll(base, FLASH_SR_REG, FLASH_SR_BSY_Msk,
@@ -248,7 +255,8 @@ whal_Error whal_Stm32f4_Flash_Erase(whal_Flash *flashDev, size_t addr,
     if (dataSz == 0)
         return WHAL_SUCCESS;
 
-    if (addr < cfg->startAddr || addr + dataSz > cfg->startAddr + cfg->size)
+    if (addr < cfg->startAddr || dataSz > cfg->size ||
+        addr - cfg->startAddr > cfg->size - dataSz)
         return WHAL_EINVAL;
 
     /* Wait for any ongoing operation */

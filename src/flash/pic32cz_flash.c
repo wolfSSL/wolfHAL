@@ -27,6 +27,7 @@
 #include <wolfHAL/reg.h>
 #include <wolfHAL/bitops.h>
 #include <wolfHAL/timeout.h>
+#include <wolfHAL/endian.h>
 
 const whal_Flash whal_Pic32cz_Flash_Dev = WHAL_CFG_PIC32CZ_FLASH_DEV;
 
@@ -197,7 +198,7 @@ static whal_Error whal_Pic32cz_Flash_ExecCmd(size_t base, size_t cmd,
         /* Clear error flags */
         whal_Reg_Update(base, FCW_INTFLAG_REG, FCW_INTFLAG_ALL_ERR,
                         FCW_INTFLAG_ALL_ERR);
-        return WHAL_EINVAL;
+        return WHAL_EHARDWARE;
     }
 
     return WHAL_SUCCESS;
@@ -276,6 +277,10 @@ whal_Error whal_Pic32cz_Flash_Read(whal_Flash *flashDev, size_t addr, void *data
         return WHAL_EINVAL;
     }
 
+    if (addr < cfg->startAddr || dataSz > cfg->size ||
+        addr - cfg->startAddr > cfg->size - dataSz)
+        return WHAL_EINVAL;
+
     err = whal_Pic32cz_Flash_MutexLock(base, cfg->timeout);
     if (err)
         return err;
@@ -297,7 +302,6 @@ whal_Error whal_Pic32cz_Flash_Write(whal_Flash *flashDev, size_t addr, const voi
         (const whal_Pic32cz_Flash_Cfg *)whal_Pic32cz_Flash_Dev.cfg;
     size_t base = whal_Pic32cz_Flash_Dev.base;
     const uint8_t *dataBuf = (const uint8_t *)data;
-    const uint32_t *src;
     whal_Error err;
     size_t offset = 0;
     (void)flashDev;
@@ -306,13 +310,14 @@ whal_Error whal_Pic32cz_Flash_Write(whal_Flash *flashDev, size_t addr, const voi
         return WHAL_EINVAL;
     }
 
+    if (addr < cfg->startAddr || dataSz > cfg->size ||
+        addr - cfg->startAddr > cfg->size - dataSz)
+        return WHAL_EINVAL;
+
     /* Require double-word alignment */
     if ((addr & 0x7) || (dataSz & 0x7)) {
         return WHAL_EINVAL;
     }
-
-    src = (const uint32_t *)dataBuf;
-
 
     err = whal_Pic32cz_Flash_MutexLock(base, cfg->timeout);
     if (err)
@@ -332,8 +337,8 @@ whal_Error whal_Pic32cz_Flash_Write(whal_Flash *flashDev, size_t addr, const voi
             /* Quad double word write (32 bytes) */
             size_t j;
             for (j = 0; j < 8; j++) {
-                whal_Reg_Update(base, FCW_DATA_REG(j),
-                                0xFFFFFFFF, src[offset / 4 + j]);
+                whal_Reg_Update(base, FCW_DATA_REG(j), 0xFFFFFFFF,
+                                whal_LoadLe32(dataBuf + offset + j * 4));
             }
             whal_Reg_Update(base, FCW_ADDR_REG, 0xFFFFFFFF, curAddr);
 
@@ -347,10 +352,10 @@ whal_Error whal_Pic32cz_Flash_Write(whal_Flash *flashDev, size_t addr, const voi
             offset += FCW_QDWORD_SIZE;
         } else {
             /* Single double word write (8 bytes) */
-            whal_Reg_Update(base, FCW_DATA_REG(0),
-                            0xFFFFFFFF, src[offset / 4]);
-            whal_Reg_Update(base, FCW_DATA_REG(1),
-                            0xFFFFFFFF, src[offset / 4 + 1]);
+            whal_Reg_Update(base, FCW_DATA_REG(0), 0xFFFFFFFF,
+                            whal_LoadLe32(dataBuf + offset));
+            whal_Reg_Update(base, FCW_DATA_REG(1), 0xFFFFFFFF,
+                            whal_LoadLe32(dataBuf + offset + 4));
             whal_Reg_Update(base, FCW_ADDR_REG, 0xFFFFFFFF, curAddr);
 
             err = whal_Pic32cz_Flash_ExecCmd(base,
@@ -379,6 +384,13 @@ whal_Error whal_Pic32cz_Flash_Erase(whal_Flash *flashDev, size_t addr, size_t da
     size_t pageAddr;
     size_t endAddr;
     (void)flashDev;
+
+    if (addr < cfg->startAddr || dataSz > cfg->size ||
+        addr - cfg->startAddr > cfg->size - dataSz)
+        return WHAL_EINVAL;
+
+    if (dataSz == 0)
+        return WHAL_SUCCESS;
 
     /* Align down to page boundary */
     pageAddr = addr & ~(FCW_PAGE_SIZE - 1);

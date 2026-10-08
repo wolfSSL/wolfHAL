@@ -64,13 +64,6 @@ const whal_Gpio whal_Stm32wb_Gpio_Dev = WHAL_CFG_STM32WB_GPIO_DEV;
 #endif /* WHAL_CFG_GPIO_API_MAPPING */
 
 /*
- * Configure alternate function for a pin.
- *
- * The AFRL (pins 0-7) and AFRH (pins 8-15) registers are combined into
- * a 64-bit value for easier manipulation. Each pin uses 4 bits to select
- * one of 16 alternate functions (AF0-AF15).
- */
-/*
  * Initialize a single GPIO pin with the specified configuration.
  */
 static inline whal_Error whal_Stm32wb_Gpio_InitPin(whal_Stm32wb_Gpio_PinCfg cfg)
@@ -154,17 +147,13 @@ static whal_Error whal_Stm32wb_Gpio_SetOrGet(whal_Gpio *gpioDev, size_t idx,
     size_t portBase, mask;
     (void)gpioDev;
 
-    if (!value) {
+    if (!value || idx >= cfg->pinCount) {
         return WHAL_EINVAL;
     }
 
     pinCfg = cfg->pinCfg[idx];
     port = WHAL_STM32WB_GPIO_GET_PORT(pinCfg);
     pin = WHAL_STM32WB_GPIO_GET_PIN(pinCfg);
-
-    if (pin > 15) {
-        return WHAL_EINVAL;
-    }
 
     portBase = whal_Stm32wb_Gpio_Dev.base + (port * GPIO_PORT_SIZE);
     mask = 1UL << pin;

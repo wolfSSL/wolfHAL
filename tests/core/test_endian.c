@@ -52,6 +52,36 @@ static void Test_Endian_LoadBe32_LsbOnly(void)
     WHAL_ASSERT_EQ(whal_LoadBe32(buf), 0x00000001ul);
 }
 
+static void Test_Endian_LoadLe32(void)
+{
+    const uint8_t buf[] = { 0xEF, 0xBE, 0xAD, 0xDE };
+    WHAL_ASSERT_EQ(whal_LoadLe32(buf), 0xDEADBEEFul);
+}
+
+static void Test_Endian_LoadLe32_Zero(void)
+{
+    const uint8_t buf[] = { 0x00, 0x00, 0x00, 0x00 };
+    WHAL_ASSERT_EQ(whal_LoadLe32(buf), 0x00000000ul);
+}
+
+static void Test_Endian_LoadLe32_AllOnes(void)
+{
+    const uint8_t buf[] = { 0xFF, 0xFF, 0xFF, 0xFF };
+    WHAL_ASSERT_EQ(whal_LoadLe32(buf), 0xFFFFFFFFul);
+}
+
+static void Test_Endian_LoadLe32_MsbOnly(void)
+{
+    const uint8_t buf[] = { 0x00, 0x00, 0x00, 0x80 };
+    WHAL_ASSERT_EQ(whal_LoadLe32(buf), 0x80000000ul);
+}
+
+static void Test_Endian_LoadLe32_LsbOnly(void)
+{
+    const uint8_t buf[] = { 0x01, 0x00, 0x00, 0x00 };
+    WHAL_ASSERT_EQ(whal_LoadLe32(buf), 0x00000001ul);
+}
+
 static void Test_Endian_StoreBe32(void)
 {
     uint8_t buf[4] = {0};
@@ -97,6 +127,11 @@ void whal_Test_Endian(void)
     WHAL_TEST(Test_Endian_LoadBe32_AllOnes);
     WHAL_TEST(Test_Endian_LoadBe32_MsbOnly);
     WHAL_TEST(Test_Endian_LoadBe32_LsbOnly);
+    WHAL_TEST(Test_Endian_LoadLe32);
+    WHAL_TEST(Test_Endian_LoadLe32_Zero);
+    WHAL_TEST(Test_Endian_LoadLe32_AllOnes);
+    WHAL_TEST(Test_Endian_LoadLe32_MsbOnly);
+    WHAL_TEST(Test_Endian_LoadLe32_LsbOnly);
     WHAL_TEST(Test_Endian_StoreBe32);
     WHAL_TEST(Test_Endian_StoreBe32_Zero);
     WHAL_TEST(Test_Endian_StoreBe32_MsbOnly);

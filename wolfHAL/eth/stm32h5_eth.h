@@ -115,7 +115,7 @@ whal_Error whal_Stm32h5_Eth_Deinit(whal_Eth *ethDev);
  * @param duplex Duplex mode: WHAL_ETH_DUPLEX_HALF or WHAL_ETH_DUPLEX_FULL.
  *
  * @retval WHAL_SUCCESS MAC started.
- * @retval WHAL_EINVAL  Invalid arguments.
+ * @retval WHAL_EINVAL  Unsupported speed or duplex value.
  */
 whal_Error whal_Stm32h5_Eth_Start(whal_Eth *ethDev, uint8_t speed,
                                   uint8_t duplex);

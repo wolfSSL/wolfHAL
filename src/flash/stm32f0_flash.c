@@ -103,10 +103,15 @@ whal_Error whal_Stm32f0_Flash_Unlock(whal_Flash *flashDev, size_t addr, size_t l
     (void)addr;
     (void)len;
 
-    whal_Reg_Update(base, FLASH_KEYR_REG,
-                    FLASH_KEYR_KEY_Msk, 0x45670123);
-    whal_Reg_Update(base, FLASH_KEYR_REG,
-                    FLASH_KEYR_KEY_Msk, 0xCDEF89AB);
+    if (whal_Reg_Read(base, FLASH_CR_REG) & FLASH_CR_LOCK_Msk) {
+        whal_Reg_Update(base, FLASH_KEYR_REG,
+                        FLASH_KEYR_KEY_Msk, 0x45670123);
+        whal_Reg_Update(base, FLASH_KEYR_REG,
+                        FLASH_KEYR_KEY_Msk, 0xCDEF89AB);
+    }
+
+    if (whal_Reg_Read(base, FLASH_CR_REG) & FLASH_CR_LOCK_Msk)
+        return WHAL_EHARDWARE;
 
     return WHAL_SUCCESS;
 }
@@ -125,7 +130,8 @@ whal_Error whal_Stm32f0_Flash_Read(whal_Flash *flashDev, size_t addr, void *data
     if (dataSz == 0)
         return WHAL_SUCCESS;
 
-    if (addr < cfg->startAddr || addr + dataSz > cfg->startAddr + cfg->size)
+    if (addr < cfg->startAddr || dataSz > cfg->size ||
+        addr - cfg->startAddr > cfg->size - dataSz)
         return WHAL_EINVAL;
 
     uint8_t *flashAddr = (uint8_t *)addr;
@@ -146,7 +152,8 @@ static whal_Error whal_Stm32f0_Flash_WriteOrErase(whal_Flash *flashDev,
     size_t bsy;
     (void)flashDev;
 
-    if (addr < cfg->startAddr || addr + dataSz > cfg->startAddr + cfg->size)
+    if (addr < cfg->startAddr || dataSz > cfg->size ||
+        addr - cfg->startAddr > cfg->size - dataSz)
         return WHAL_EINVAL;
 
     /* Write requires 2-byte alignment (16-bit half-word programming) */
@@ -182,6 +189,13 @@ static whal_Error whal_Stm32f0_Flash_WriteOrErase(whal_Flash *flashDev,
                                     FLASH_SR_BSY_Msk, 0, cfg->timeout);
             if (err)
                 goto cleanup;
+
+            /* Check for errors */
+            if (whal_Reg_Read(base, FLASH_SR_REG) & FLASH_SR_ALL_ERR) {
+                whal_Reg_Update(base, FLASH_SR_REG, FLASH_SR_ALL_ERR, FLASH_SR_ALL_ERR);
+                err = WHAL_EHARDWARE;
+                goto cleanup;
+            }
         }
     } else {
         /* Calculate page range (2 KB per page) */
@@ -205,6 +219,13 @@ static whal_Error whal_Stm32f0_Flash_WriteOrErase(whal_Flash *flashDev,
                                     FLASH_SR_BSY_Msk, 0, cfg->timeout);
             if (err)
                 goto cleanup;
+
+            /* Check for errors */
+            if (whal_Reg_Read(base, FLASH_SR_REG) & FLASH_SR_ALL_ERR) {
+                whal_Reg_Update(base, FLASH_SR_REG, FLASH_SR_ALL_ERR, FLASH_SR_ALL_ERR);
+                err = WHAL_EHARDWARE;
+                goto cleanup;
+            }
         }
 
         /* Disable page erase */

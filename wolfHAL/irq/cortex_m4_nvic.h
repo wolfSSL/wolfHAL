@@ -36,7 +36,8 @@
 /*
  * @brief Optional per-interrupt configuration.
  *
- * Pass to whal_Irq_Enable() to set priority, or pass NULL for default (0).
+ * Pass to whal_Irq_Enable() to set priority, or pass NULL to leave the
+ * current priority unchanged.
  */
 typedef struct {
     uint8_t priority;

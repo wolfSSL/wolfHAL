@@ -36,7 +36,8 @@
 /*
  * @brief DMA-backed UART configuration.
  *
- * Used with whal_Stm32wb_UartDma_Driver. Init/Deinit reuse the polled driver.
+ * Used with whal_Stm32wb_UartDma_Driver. Init reuses the polled driver;
+ * Deinit also stops the DMA channels.
  * Send/Recv block using DMA. SendAsync/RecvAsync return immediately.
  */
 typedef struct {
@@ -64,6 +65,19 @@ extern const whal_Uart whal_Stm32wb_UartDma_Dev;
  *        SendAsync, RecvAsync.
  */
 extern const whal_UartDriver whal_Stm32wb_UartDma_Driver;
+
+/*
+ * @brief Deinitialize the UART, stopping both DMA channels.
+ *
+ * Clears the UART DMA requests, stops the TX and RX channels, resets the
+ * transfer state, then deinitializes the UART.
+ *
+ * @param uartDev UART device instance.
+ *
+ * @retval WHAL_SUCCESS Deinit completed.
+ * @retval WHAL_EINVAL  Invalid arguments.
+ */
+whal_Error whal_Stm32wb_UartDma_Deinit(whal_Uart *uartDev);
 
 /*
  * @brief Transmit a buffer over UART using DMA (blocking).

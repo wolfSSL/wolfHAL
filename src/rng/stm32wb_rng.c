@@ -117,9 +117,9 @@ whal_Error whal_Stm32wb_Rng_Generate(whal_Rng *rngDev, void *rngData, size_t rng
             sr = whal_Reg_Read(base, RNG_SR_REG);
 
             /* Check for seed or clock error */
-            if (sr & RNG_SR_SECS_Msk) {
+            if (sr & (RNG_SR_SECS_Msk | RNG_SR_SEIS_Msk)) {
                 err = WHAL_EHARDWARE;
-                goto exit;
+                goto seed_error;
             }
             if (sr & RNG_SR_CECS_Msk) {
                 err = WHAL_EHARDWARE;
@@ -138,6 +138,13 @@ whal_Error whal_Stm32wb_Rng_Generate(whal_Rng *rngDev, void *rngData, size_t rng
             rngBuf[offset] = (uint8_t)(rnd >> (i * 8));
         }
     }
+    goto exit;
+
+seed_error:
+    /* Seed error recovery (RM0434 21.3.7): clear SEIS, then discard 12 words */
+    whal_Reg_Update(base, RNG_SR_REG, RNG_SR_SEIS_Msk, 0);
+    for (size_t i = 0; i < 12; i++)
+        (void)whal_Reg_Read(base, RNG_DR_REG);
 
 exit:
     /* Disable the RNG peripheral */

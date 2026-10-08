@@ -33,9 +33,11 @@ extern whal_Timeout g_whalTimeout;
 
 extern volatile uint32_t g_tick;
 
-#define BOARD_LED_PIN         0
-#define BOARD_FLASH_TEST_ADDR 0x0C000000
-#define BOARD_FLASH_SECTOR_SZ 0x1000
+#define BOARD_LED_PIN          0
+#define BOARD_FLASH_START_ADDR 0x0C000000
+#define BOARD_FLASH_SIZE       0x00800000
+#define BOARD_FLASH_TEST_ADDR  0x0C000000
+#define BOARD_FLASH_SECTOR_SZ  0x1000
 
 /* BOARD_*_DEV: how this board reaches each peripheral. */
 #define BOARD_GPIO_DEV     WHAL_INTERNAL_DEV

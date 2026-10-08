@@ -72,7 +72,8 @@ typedef enum {
  * @brief Per-channel transfer configuration.
  *
  * For hardware-paced transfers, reqSel selects the peripheral request line
- * (REQSEL[5:0] from TRM Table 208 - e.g. 11=USART1_RX, 12=USART1_TX).
+ * (REQSEL from the RM request table - e.g. WBA 11=USART1_RX, 12=USART1_TX;
+ * the field is 6 bits on WBA, 7 on U5, 8 on N6).
  */
 typedef struct {
     whal_Stm32wba_Gpdma_Dir dir;
@@ -83,7 +84,7 @@ typedef struct {
     whal_Stm32wba_Gpdma_Width dstWidth;
     whal_Stm32wba_Gpdma_Inc srcInc;
     whal_Stm32wba_Gpdma_Inc dstInc;
-    uint8_t reqSel;                  /* REQSEL[5:0] (ignored for MEM_TO_MEM) */
+    uint8_t reqSel;                  /* REQSEL (ignored for MEM_TO_MEM) */
 } whal_Stm32wba_Gpdma_ChCfg;
 
 /*

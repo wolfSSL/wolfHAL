@@ -78,7 +78,7 @@ whal_Error whal_Stm32f0_Uart_Init(whal_Uart *uartDev);
 whal_Error whal_Stm32f0_Uart_Deinit(whal_Uart *uartDev);
 
 /*
- * @brief Send `dataSz` bytes from `data`, polling TXE between bytes.
+ * @brief Send `dataSz` bytes from `data`, polling TC after each byte.
  *
  * @param uartDev UART device instance.
  * @param data    Buffer to send.
@@ -86,7 +86,7 @@ whal_Error whal_Stm32f0_Uart_Deinit(whal_Uart *uartDev);
  *
  * @retval WHAL_SUCCESS All bytes sent.
  * @retval WHAL_EINVAL  Null pointer.
- * @retval WHAL_ETIMEOUT Hardware did not assert TXE within the configured timeout.
+ * @retval WHAL_ETIMEOUT Hardware did not assert TC within the configured timeout.
  */
 whal_Error whal_Stm32f0_Uart_Send(whal_Uart *uartDev, const void *data,
                                   size_t dataSz);

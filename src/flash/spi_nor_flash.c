@@ -256,6 +256,7 @@ whal_Error whal_SpiNor_Lock(whal_Flash *flashDev, size_t addr, size_t len)
 {
     whal_SpiNor_Cfg *cfg;
     uint8_t frame[2];
+    uint8_t sr;
     whal_Error err;
 
     (void)addr;
@@ -279,13 +280,17 @@ whal_Error whal_SpiNor_Lock(whal_Flash *flashDev, size_t addr, size_t len)
     if (err)
         goto cleanup;
 
-    /* Set all block protect bits to lock entire device */
+    /* Lock the entire device: set all block protect bits, keep the other SR1 bits */
+    err = SpiNor_ReadSR1(cfg, &sr);
+    if (err)
+        goto cleanup;
+
     err = SpiNor_WriteEnable(cfg);
     if (err)
         goto cleanup;
 
     frame[0] = CMD_WRITE_SR;
-    frame[1] = SR1_BP_MASK;
+    frame[1] = (sr & ~(SR1_WIP | SR1_WEL)) | SR1_BP_MASK;
     err = SpiNor_CsAssert(cfg);
     if (err)
         goto cleanup;
@@ -303,6 +308,7 @@ whal_Error whal_SpiNor_Unlock(whal_Flash *flashDev, size_t addr, size_t len)
 {
     whal_SpiNor_Cfg *cfg;
     uint8_t frame[2];
+    uint8_t sr;
     whal_Error err;
 
     (void)addr;
@@ -326,13 +332,17 @@ whal_Error whal_SpiNor_Unlock(whal_Flash *flashDev, size_t addr, size_t len)
     if (err)
         goto cleanup;
 
-    /* Clear all block protect bits to unlock entire device */
+    /* Unlock the entire device: clear the block protect bits, keep the other SR1 bits */
+    err = SpiNor_ReadSR1(cfg, &sr);
+    if (err)
+        goto cleanup;
+
     err = SpiNor_WriteEnable(cfg);
     if (err)
         goto cleanup;
 
     frame[0] = CMD_WRITE_SR;
-    frame[1] = 0x00;
+    frame[1] = sr & ~(SR1_WIP | SR1_WEL | SR1_BP_MASK);
     err = SpiNor_CsAssert(cfg);
     if (err)
         goto cleanup;
@@ -367,8 +377,8 @@ whal_Error whal_SpiNor3b_Read(whal_Flash *flashDev, size_t addr, void *data,
     cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
 #endif
 
-    if (addr & ~0xFFFFFF || addr >= cfg->capacity ||
-        dataSz > cfg->capacity - addr)
+    if (addr & ~0xFFFFFF || dataSz > 0x1000000 - addr ||
+        addr >= cfg->capacity || dataSz > cfg->capacity - addr)
         return WHAL_EINVAL;
 
     err = whal_Spi_StartCom(cfg->spiDev, cfg->spiComCfg);
@@ -417,8 +427,8 @@ whal_Error whal_SpiNor3b_Write(whal_Flash *flashDev, size_t addr,
     cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
 #endif
 
-    if (addr & ~0xFFFFFF || addr >= cfg->capacity ||
-        dataSz > cfg->capacity - addr)
+    if (addr & ~0xFFFFFF || dataSz > 0x1000000 - addr ||
+        addr >= cfg->capacity || dataSz > cfg->capacity - addr)
         return WHAL_EINVAL;
 
     err = whal_Spi_StartCom(cfg->spiDev, cfg->spiComCfg);
@@ -489,8 +499,8 @@ whal_Error whal_SpiNor3b_Erase4k(whal_Flash *flashDev, size_t addr,
     cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
 #endif
 
-    if (addr & ~0xFFFFFF || addr >= cfg->capacity ||
-        dataSz > cfg->capacity - addr)
+    if (addr & ~0xFFFFFF || dataSz > 0x1000000 - addr ||
+        addr >= cfg->capacity || dataSz > cfg->capacity - addr)
         return WHAL_EINVAL;
 
     if ((addr | dataSz) & (ERASE_SZ_4K - 1))
@@ -553,8 +563,8 @@ whal_Error whal_SpiNor3b_Erase32k(whal_Flash *flashDev, size_t addr,
     cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
 #endif
 
-    if (addr & ~0xFFFFFF || addr >= cfg->capacity ||
-        dataSz > cfg->capacity - addr)
+    if (addr & ~0xFFFFFF || dataSz > 0x1000000 - addr ||
+        addr >= cfg->capacity || dataSz > cfg->capacity - addr)
         return WHAL_EINVAL;
 
     if ((addr | dataSz) & (ERASE_SZ_32K - 1))
@@ -617,8 +627,8 @@ whal_Error whal_SpiNor3b_Erase64k(whal_Flash *flashDev, size_t addr,
     cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
 #endif
 
-    if (addr & ~0xFFFFFF || addr >= cfg->capacity ||
-        dataSz > cfg->capacity - addr)
+    if (addr & ~0xFFFFFF || dataSz > 0x1000000 - addr ||
+        addr >= cfg->capacity || dataSz > cfg->capacity - addr)
         return WHAL_EINVAL;
 
     if ((addr | dataSz) & (ERASE_SZ_64K - 1))
@@ -717,8 +727,8 @@ whal_Error whal_SpiNor3b_ReadFast(whal_Flash *flashDev, size_t addr,
     cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
 #endif
 
-    if (addr & ~0xFFFFFF || addr >= cfg->capacity ||
-        dataSz > cfg->capacity - addr)
+    if (addr & ~0xFFFFFF || dataSz > 0x1000000 - addr ||
+        addr >= cfg->capacity || dataSz > cfg->capacity - addr)
         return WHAL_EINVAL;
 
     err = whal_Spi_StartCom(cfg->spiDev, cfg->spiComCfg);

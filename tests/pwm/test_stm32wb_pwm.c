@@ -59,10 +59,24 @@ static void Test_Stm32wb_Lptim_Pwm_Reject(void)
     wave.pulseCount = 3; /* LPTIM has no pulse counter */
     WHAL_ASSERT_EQ(whal_Stm32wb_Lptim_Pwm_Start(BOARD_PWM_DEV,
                        WHAL_STM32WB_LPTIM_PWM_CHANNEL, &wave), WHAL_ENOTSUP);
+    wave.pulseCount = WHAL_PWM_PULSE_COUNT_CONTINUOUS;
+
+    /* ARR must exceed CMP: 0% and 100% duty and periods below 2 */
+    wave.pulseCycles = 0;
+    WHAL_ASSERT_EQ(whal_Stm32wb_Lptim_Pwm_Start(BOARD_PWM_DEV,
+                       WHAL_STM32WB_LPTIM_PWM_CHANNEL, &wave), WHAL_ENOTSUP);
+    wave.pulseCycles = wave.periodCycles;
+    WHAL_ASSERT_EQ(whal_Stm32wb_Lptim_Pwm_Start(BOARD_PWM_DEV,
+                       WHAL_STM32WB_LPTIM_PWM_CHANNEL, &wave), WHAL_ENOTSUP);
+    wave.periodCycles = 1;
+    wave.pulseCycles = 1;
+    WHAL_ASSERT_EQ(whal_Stm32wb_Lptim_Pwm_Start(BOARD_PWM_DEV,
+                       WHAL_STM32WB_LPTIM_PWM_CHANNEL, &wave), WHAL_ENOTSUP);
 }
 
-/* Accepted boundaries: the largest representable period and 100% duty. Each
- * programs the LPTIM, so the channel is stopped again afterwards. */
+/* Accepted boundaries: the largest representable period and the highest and
+ * lowest representable duty. Each programs the LPTIM, so the channel is
+ * stopped again afterwards. */
 static void Test_Stm32wb_Lptim_Pwm_Accept(void)
 {
     whal_Pwm_ChannelCfg wave = {
@@ -78,9 +92,16 @@ static void Test_Stm32wb_Lptim_Pwm_Accept(void)
     WHAL_ASSERT_EQ(whal_Stm32wb_Lptim_Pwm_Stop(BOARD_PWM_DEV,
                        WHAL_STM32WB_LPTIM_PWM_CHANNEL), WHAL_SUCCESS);
 
-    /* Maximum duty: pulse == period exercises the CMP = 0 branch. */
+    /* Maximum duty: pulse == period - 1 gives CMP = 0. */
     wave.periodCycles = 1000;
-    wave.pulseCycles  = 1000;
+    wave.pulseCycles  = 999;
+    WHAL_ASSERT_EQ(whal_Stm32wb_Lptim_Pwm_Start(BOARD_PWM_DEV,
+                       WHAL_STM32WB_LPTIM_PWM_CHANNEL, &wave), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(whal_Stm32wb_Lptim_Pwm_Stop(BOARD_PWM_DEV,
+                       WHAL_STM32WB_LPTIM_PWM_CHANNEL), WHAL_SUCCESS);
+
+    /* Minimum duty: pulse == 1 gives CMP = ARR - 1. */
+    wave.pulseCycles = 1;
     WHAL_ASSERT_EQ(whal_Stm32wb_Lptim_Pwm_Start(BOARD_PWM_DEV,
                        WHAL_STM32WB_LPTIM_PWM_CHANNEL, &wave), WHAL_SUCCESS);
     WHAL_ASSERT_EQ(whal_Stm32wb_Lptim_Pwm_Stop(BOARD_PWM_DEV,

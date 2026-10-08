@@ -33,8 +33,7 @@ const whal_Rng whal_Stm32h5_Rng_Dev = WHAL_CFG_STM32H5_RNG_DEV;
  * STM32H5 RNG Register Definitions
  *
  * The STM32H5 RNG has a 4-word output FIFO and requires a CONDRST
- * sequence to apply configuration. NIST-certified values from AN4230
- * are used for the STM32H563/573/562 family.
+ * sequence to apply configuration.
  */
 
 /* Control Register */
@@ -44,13 +43,6 @@ const whal_Rng whal_Stm32h5_Rng_Dev = WHAL_CFG_STM32H5_RNG_DEV;
 
 #define RNG_CR_CONDRST_Pos 30
 #define RNG_CR_CONDRST_Msk (1UL << RNG_CR_CONDRST_Pos)
-
-/*
- * NIST-certified RNG_CR configuration for STM32H563/573/562 (from AN4230).
- * This value encodes CONFIG1=0x0F, CONFIG2=0x0, CONFIG3=0xE, NISTC=1,
- * CLKDIV=0, ARDIS=0, CED=0.
- */
-#define RNG_CR_NIST_CFG  0x00F01E00UL
 
 /* Status Register */
 #define RNG_SR_REG      0x04
@@ -63,6 +55,9 @@ const whal_Rng whal_Stm32h5_Rng_Dev = WHAL_CFG_STM32H5_RNG_DEV;
 #define RNG_SR_SECS_Pos 2
 #define RNG_SR_SECS_Msk (1UL << RNG_SR_SECS_Pos)
 
+#define RNG_SR_SEIS_Pos 6
+#define RNG_SR_SEIS_Msk (1UL << RNG_SR_SEIS_Pos)
+
 /* Data Register - 32-bit random value */
 #define RNG_DR_REG      0x08
 
@@ -71,10 +66,6 @@ const whal_Rng whal_Stm32h5_Rng_Dev = WHAL_CFG_STM32H5_RNG_DEV;
 
 /* Health Test Control Register */
 #define RNG_HTCR_REG    0x10
-
-/* NIST-certified HTCR and NSCR values for STM32H563/573/562 (from AN4230) */
-#define RNG_HTCR_NIST_VAL  0x00006A91UL
-#define RNG_NSCR_NIST_VAL  0x0003AF66UL
 
 /* Magic value required to unlock HTCR writes */
 #define RNG_HTCR_MAGIC     0x17590ABCUL
@@ -94,21 +85,21 @@ whal_Error whal_Stm32h5_Rng_Init(whal_Rng *rngDev)
     (void)rngDev;
 
     /*
-     * Apply NIST-certified configuration via CONDRST sequence:
+     * Apply the configuration via CONDRST sequence:
      * 1. Write CONDRST=1 with configuration bits, RNGEN=0
      * 2. Write HTCR magic key then HTCR value (while CONDRST=1)
      * 3. Write NSCR value (while CONDRST=1)
      * 4. Write CONDRST=0 with RNGEN=1 to start
      */
     whal_Reg_Write(base, RNG_CR_REG,
-                   RNG_CR_NIST_CFG | RNG_CR_CONDRST_Msk);
+                   cfg->cr | RNG_CR_CONDRST_Msk);
 
     whal_Reg_Write(base, RNG_HTCR_REG, RNG_HTCR_MAGIC);
-    whal_Reg_Write(base, RNG_HTCR_REG, RNG_HTCR_NIST_VAL);
-    whal_Reg_Write(base, RNG_NSCR_REG, RNG_NSCR_NIST_VAL);
+    whal_Reg_Write(base, RNG_HTCR_REG, cfg->htcr);
+    whal_Reg_Write(base, RNG_NSCR_REG, cfg->nscr);
 
     whal_Reg_Write(base, RNG_CR_REG,
-                   RNG_CR_NIST_CFG | RNG_CR_RNGEN_Msk);
+                   cfg->cr | RNG_CR_RNGEN_Msk);
 
     /* Wait for CONDRST to clear (reset complete) */
     err = whal_Reg_ReadPoll(base, RNG_CR_REG,
@@ -156,7 +147,10 @@ whal_Error whal_Stm32h5_Rng_Generate(whal_Rng *rngDev, void *rngData,
 
             sr = whal_Reg_Read(base, RNG_SR_REG);
 
-            if (sr & RNG_SR_SECS_Msk) {
+            /* With auto-reset enabled SECS clears on its own; SEIS latches
+             * the error so the value around it is never returned */
+            if (sr & (RNG_SR_SECS_Msk | RNG_SR_SEIS_Msk)) {
+                whal_Reg_Update(base, RNG_SR_REG, RNG_SR_SEIS_Msk, 0);
                 err = WHAL_EHARDWARE;
                 goto exit;
             }

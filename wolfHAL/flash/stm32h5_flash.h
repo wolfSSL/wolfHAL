@@ -96,8 +96,9 @@ whal_Error whal_Stm32h5_Flash_Lock(whal_Flash *flashDev, size_t addr,
  * @param addr     Unused.
  * @param len      Unused.
  *
- * @retval WHAL_SUCCESS Unlock applied.
- * @retval WHAL_EINVAL  Invalid arguments.
+ * @retval WHAL_SUCCESS   Unlock applied.
+ * @retval WHAL_EINVAL    Invalid arguments.
+ * @retval WHAL_EHARDWARE LOCK still set after the key sequence.
  */
 whal_Error whal_Stm32h5_Flash_Unlock(whal_Flash *flashDev, size_t addr,
                                      size_t len);

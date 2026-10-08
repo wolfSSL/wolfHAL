@@ -70,10 +70,12 @@ extern const whal_TimerDriver whal_SysTick_Driver;
 /*
  * @brief Initialize the SysTick timer with the configured clock and reload values.
  *
+ * Programs RELOAD with cyclesPerTick - 1 and clears the current counter.
+ *
  * @param timerDev Timer device instance to initialize.
  *
  * @retval WHAL_SUCCESS Initialization completed.
- * @retval WHAL_EINVAL  Invalid arguments.
+ * @retval WHAL_EINVAL  cyclesPerTick is below 2 or exceeds the 24-bit counter (2^24).
  */
 whal_Error whal_SysTick_Init(whal_Timer *timerDev);
 /*
@@ -105,6 +107,8 @@ whal_Error whal_SysTick_Start(whal_Timer *timerDev);
 whal_Error whal_SysTick_Stop(whal_Timer *timerDev);
 /*
  * @brief Reset the SysTick counter state.
+ *
+ * Clears the current counter value so the next period starts from RELOAD.
  *
  * @param timerDev Timer device instance.
  *

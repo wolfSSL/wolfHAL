@@ -76,7 +76,6 @@
 
 #ifdef WHAL_CFG_STM32WB_UART_DMA_DIRECT_API_MAPPING
 #define whal_Stm32wb_Uart_Init   whal_Uart_Init
-#define whal_Stm32wb_Uart_Deinit whal_Uart_Deinit
 #endif /* WHAL_CFG_STM32WB_UART_DMA_DIRECT_API_MAPPING */
 
 #ifdef WHAL_CFG_STM32WB_UART_SINGLE_INSTANCE

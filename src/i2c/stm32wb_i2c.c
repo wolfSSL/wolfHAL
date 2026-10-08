@@ -159,26 +159,33 @@ const whal_I2c whal_Stm32wb_I2c_Dev = WHAL_CFG_STM32WB_I2C_DEV;
 
 static uint32_t Stm32wb_I2c_CalcTimingr(uint32_t pclk, uint32_t freq)
 {
-    uint32_t tLowNs, tHighNs;
+    uint32_t tLowNs, tHighNs, modeMax;
     uint32_t presc, scll, sclh, sdadel, scldel;
     uint32_t tPrescNs;
 
     if (freq <= 100000) {
         tLowNs  = I2C_SM_TLOW_NS;
         tHighNs = I2C_SM_THIGH_NS;
+        modeMax = 100000;
         sdadel  = 2;
         scldel  = 4;
     } else if (freq <= 400000) {
         tLowNs  = I2C_FM_TLOW_NS;
         tHighNs = I2C_FM_THIGH_NS;
+        modeMax = 400000;
         sdadel  = 1;
         scldel  = 3;
     } else {
         tLowNs  = I2C_FMP_TLOW_NS;
         tHighNs = I2C_FMP_THIGH_NS;
+        modeMax = 1000000;
         sdadel  = 0;
         scldel  = 1;
     }
+
+    /* Stretch the mode's minimum low/high times to the requested frequency */
+    tLowNs  = tLowNs * modeMax / freq;
+    tHighNs = tHighNs * modeMax / freq;
 
     for (presc = 0; presc < 16; presc++) {
         tPrescNs = ((presc + 1) * 1000) / (pclk / 1000000);
@@ -328,8 +335,9 @@ static whal_Error Stm32wb_I2c_TransferChunk(size_t base, uint8_t *buf,
  *   WHAL_I2C_MSG_READ  — master read
  *   WHAL_I2C_MSG_WRITE — master write
  *
- * When STOP is not set, the function waits for TC (transfer complete) which
- * stretches SCL low, holding the bus for the next message's START.
+ * Unless the last chunk uses RELOAD, the function waits for TC (transfer
+ * complete), which stretches SCL low and holds the bus for the STOP or the
+ * next message's repeated START.
  */
 /*
  * @param reloadLast  If true, use RELOAD on the last chunk so the next
@@ -373,13 +381,14 @@ static whal_Error Stm32wb_I2c_TransferMsg(size_t base, whal_I2c_Msg *msg,
     if (err)
         return err;
 
-    if (doStop) {
-        /* Wait for TC, then issue STOP */
+    if (!reloadLast) {
         err = Stm32wb_I2c_WaitFlag(base, I2C_ISR_TC_Msk,
                                    I2C_ISR_TC_Msk, timeout);
         if (err)
             return err;
+    }
 
+    if (doStop) {
         whal_Reg_Update(base, I2C_CR2_REG, I2C_CR2_STOP_Msk,
                         whal_SetBits(I2C_CR2_STOP_Msk, I2C_CR2_STOP_Pos, 1));
 
@@ -469,7 +478,8 @@ whal_Error whal_Stm32wb_I2c_StartCom(whal_I2c *i2cDev, whal_I2c_ComCfg *comCfg)
     }
 #endif
 
-    if ((comCfg->addrSz != 7 && comCfg->addrSz != 10) || comCfg->freq == 0) {
+    if ((comCfg->addrSz != 7 && comCfg->addrSz != 10) || comCfg->freq == 0 ||
+        comCfg->freq > 1000000) {
         return WHAL_EINVAL;
     }
 

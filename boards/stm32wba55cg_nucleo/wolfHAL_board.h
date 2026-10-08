@@ -81,9 +81,9 @@ enum {
     }, \
 }
 
-/* AES + mode dev initializers — singletons defined in stm32wb_aes.c
- * (stm32wba is an include alias). Mutable GCM/CCM state buffers
- * (g_stm32wbAesGcm/CcmDevState) are static in the driver TU. */
+/* AES + mode dev initializers — singletons defined in stm32wba_aes.c.
+ * Mutable GCM/CCM state buffers (g_stm32wbaAesGcm/CcmDevState) are static
+ * in the driver TU. */
 #define WHAL_CFG_STM32WBA_AES_DEV { \
     .base = WHAL_STM32WBA55_AES_BASE, \
     .cfg  = (void *)&(const whal_Stm32wba_Aes_Cfg){ \
@@ -92,35 +92,39 @@ enum {
 }
 
 #define WHAL_CFG_STM32WBA_AES_ECB_DEV { \
-    .crypto = (whal_Crypto *)&whal_Stm32wb_Aes_Dev, \
+    .crypto = (whal_Crypto *)&whal_Stm32wba_Aes_Dev, \
 }
 
 #define WHAL_CFG_STM32WBA_AES_CBC_DEV { \
-    .crypto = (whal_Crypto *)&whal_Stm32wb_Aes_Dev, \
+    .crypto = (whal_Crypto *)&whal_Stm32wba_Aes_Dev, \
 }
 
 #define WHAL_CFG_STM32WBA_AES_CTR_DEV { \
-    .crypto = (whal_Crypto *)&whal_Stm32wb_Aes_Dev, \
+    .crypto = (whal_Crypto *)&whal_Stm32wba_Aes_Dev, \
 }
 
 #define WHAL_CFG_STM32WBA_AES_GCM_DEV { \
-    .crypto = (whal_Crypto *)&whal_Stm32wb_Aes_Dev, \
-    .state  = &g_stm32wbAesGcmDevState, \
+    .crypto = (whal_Crypto *)&whal_Stm32wba_Aes_Dev, \
+    .state  = &g_stm32wbaAesGcmDevState, \
 }
 
 #define WHAL_CFG_STM32WBA_AES_GMAC_DEV { \
-    .crypto = (whal_Crypto *)&whal_Stm32wb_Aes_Dev, \
+    .crypto = (whal_Crypto *)&whal_Stm32wba_Aes_Dev, \
 }
 
 #define WHAL_CFG_STM32WBA_AES_CCM_DEV { \
-    .crypto = (whal_Crypto *)&whal_Stm32wb_Aes_Dev, \
-    .state  = &g_stm32wbAesCcmDevState, \
+    .crypto = (whal_Crypto *)&whal_Stm32wba_Aes_Dev, \
+    .state  = &g_stm32wbaAesCcmDevState, \
 }
 
 /* RNG dev initializer — singleton defined in stm32wba_rng.c. */
+/* RNG cr/htcr/nscr: AN4230 Table 3, STM32WBA5x */
 #define WHAL_CFG_STM32WBA_RNG_DEV { \
     .base = WHAL_STM32WBA55_RNG_BASE, \
     .cfg  = (void *)&(const whal_Stm32wba_Rng_Cfg){ \
+        .cr      = 0x08F01F00UL, \
+        .htcr    = 0x00006688UL, \
+        .nscr    = 0x00000FFFUL, \
         .timeout = &g_whalTimeout, \
     }, \
 }

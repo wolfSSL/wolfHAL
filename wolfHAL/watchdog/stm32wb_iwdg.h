@@ -72,8 +72,9 @@ extern const whal_WatchdogDriver whal_Stm32wb_Iwdg_Driver;
 /*
  * @brief Configure and start the STM32WB IWDG.
  *
- * Sets the prescaler and reload value, then starts the watchdog.
- * Once started, the IWDG cannot be stopped.
+ * Starts the IWDG, unlocks the prescaler and reload registers, programs them,
+ * waits for the update to complete, then reloads the counter. Once started,
+ * the IWDG cannot be stopped.
  *
  * @param wdgDev Watchdog device instance.
  *

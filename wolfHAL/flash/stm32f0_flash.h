@@ -106,7 +106,7 @@ whal_Error whal_Stm32f0_Flash_Lock(whal_Flash *flashDev, size_t addr, size_t len
  *
  * @retval WHAL_SUCCESS Flash is unlocked.
  * @retval WHAL_EINVAL  Null pointer.
- * @retval WHAL_EHARDWARE Key sequence rejected (already unlocked or option-byte locked).
+ * @retval WHAL_EHARDWARE LOCK still set after the key sequence.
  */
 whal_Error whal_Stm32f0_Flash_Unlock(whal_Flash *flashDev, size_t addr, size_t len);
 

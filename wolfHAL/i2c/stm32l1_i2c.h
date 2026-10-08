@@ -88,8 +88,10 @@ whal_Error whal_Stm32l1_I2c_Deinit(whal_I2c *i2cDev);
 /**
  * @brief Begin a communication session on the STM32L1 I2C peripheral.
  *
- * Computes CCR and TRISE from the configured pclk and the requested
- * frequency, then stores the target address for use by Transfer.
+ * Waits for a pending STOP to clear the bus, software-resetting the
+ * peripheral if it is still busy after the timeout. Then computes CCR and
+ * TRISE from the configured pclk and the requested frequency and stores
+ * the target address for use by Transfer.
  *
  * @param i2cDev  I2C device instance.
  * @param comCfg  Per-session communication parameters.

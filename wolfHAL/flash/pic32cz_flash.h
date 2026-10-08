@@ -83,13 +83,13 @@ whal_Error whal_Pic32cz_Flash_Init(whal_Flash *flashDev);
  */
 whal_Error whal_Pic32cz_Flash_Deinit(whal_Flash *flashDev);
 /*
- * @brief Lock a flash range (stub, not yet implemented).
+ * @brief Lock flash (stub; no write protection is applied yet).
  *
  * @param flashDev Flash device instance.
- * @param addr     Flash address to lock.
- * @param len      Number of bytes to lock.
+ * @param addr     Unused.
+ * @param len      Unused.
  *
- * @retval WHAL_SUCCESS Lock applied.
+ * @retval WHAL_SUCCESS Always; flash remains writable.
  * @retval WHAL_EINVAL  Invalid arguments.
  */
 whal_Error whal_Pic32cz_Flash_Lock(whal_Flash *flashDev, size_t addr, size_t len);
@@ -113,7 +113,7 @@ whal_Error whal_Pic32cz_Flash_Unlock(whal_Flash *flashDev, size_t addr, size_t l
  * @param dataSz   Number of bytes to read.
  *
  * @retval WHAL_SUCCESS Read completed.
- * @retval WHAL_EINVAL  Invalid arguments.
+ * @retval WHAL_EINVAL  Invalid arguments or range outside the flash region.
  */
 whal_Error whal_Pic32cz_Flash_Read(whal_Flash *flashDev, size_t addr, void *data,
                              size_t dataSz);
@@ -129,8 +129,9 @@ whal_Error whal_Pic32cz_Flash_Read(whal_Flash *flashDev, size_t addr, void *data
  * @param data     Buffer to program (8-byte aligned).
  * @param dataSz   Number of bytes to program (multiple of 8).
  *
- * @retval WHAL_SUCCESS Program completed.
- * @retval WHAL_EINVAL  Invalid arguments or alignment.
+ * @retval WHAL_SUCCESS   Program completed.
+ * @retval WHAL_EINVAL    Invalid arguments, alignment, or range outside the flash region.
+ * @retval WHAL_EHARDWARE Flash controller reported an error.
  */
 whal_Error whal_Pic32cz_Flash_Write(whal_Flash *flashDev, size_t addr, const void *data,
                               size_t dataSz);
@@ -143,8 +144,9 @@ whal_Error whal_Pic32cz_Flash_Write(whal_Flash *flashDev, size_t addr, const voi
  * @param addr     Flash address to start erasing.
  * @param dataSz   Number of bytes to erase.
  *
- * @retval WHAL_SUCCESS Erase completed.
- * @retval WHAL_EINVAL  Invalid arguments.
+ * @retval WHAL_SUCCESS   Erase completed.
+ * @retval WHAL_EINVAL    Invalid arguments or range outside the flash region.
+ * @retval WHAL_EHARDWARE Flash controller reported an error.
  */
 whal_Error whal_Pic32cz_Flash_Erase(whal_Flash *flashDev, size_t addr, size_t dataSz);
 #endif /* !WHAL_CFG_PIC32CZ_FLASH_DIRECT_API_MAPPING */

@@ -25,7 +25,11 @@
 
 static void Test_Gpio_Api(void)
 {
+    size_t val;
+
     WHAL_ASSERT_EQ(whal_Gpio_Get(BOARD_GPIO_DEV, 0, NULL), WHAL_EINVAL);
+    /* Index past the end of every board's pin table */
+    WHAL_ASSERT_EQ(whal_Gpio_Get(BOARD_GPIO_DEV, 0xFFFF, &val), WHAL_EINVAL);
 }
 
 static void Test_Gpio_SetGetHighLow(void)

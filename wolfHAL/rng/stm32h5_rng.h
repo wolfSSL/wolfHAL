@@ -33,13 +33,17 @@
  * The STM32H5 true random number generator provides 32-bit random values
  * from an analog noise source with NIST SP800-90B conditioning. It features
  * a 4-word output FIFO and requires a CONDRST sequence to apply configuration
- * changes. This driver uses the NIST-certified configuration from AN4230.
+ * changes. The cr, htcr and nscr values are device specific. Use the NIST
+ * compliant values for the part from AN4230 Table 3.
  */
 
 /*
  * @brief RNG device configuration.
  */
 typedef struct whal_Stm32h5_Rng_Cfg {
+    uint32_t cr;            /* RNG_CR configuration bits [29:4] */
+    uint32_t htcr;          /* RNG_HTCR value */
+    uint32_t nscr;          /* RNG_NSCR value */
     whal_Timeout *timeout;
 } whal_Stm32h5_Rng_Cfg;
 

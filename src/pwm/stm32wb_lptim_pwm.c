@@ -121,13 +121,16 @@ whal_Error whal_Stm32wb_Lptim_Pwm_Start(whal_Pwm *dev, uint8_t channel,
         return WHAL_ENOTSUP;
     }
 
-    /* ARR = period - 1; output is high while CNT > CMP, so CMP = ARR - pulse (0 when full-on). */
-    arr = channelCfg->periodCycles - 1;
-    if (channelCfg->pulseCycles >= channelCfg->periodCycles) {
-        cmp = 0;
-    } else {
-        cmp = arr - channelCfg->pulseCycles;
+    /* The output clears on the ARR match and ARR must exceed CMP, so 0% and
+     * 100% duty and periods below 2 cannot be produced. */
+    if (channelCfg->periodCycles < 2 || channelCfg->pulseCycles == 0 ||
+        channelCfg->pulseCycles == channelCfg->periodCycles) {
+        return WHAL_ENOTSUP;
     }
+
+    /* ARR = period - 1; output is high while CNT > CMP, so CMP = ARR - pulse. */
+    arr = channelCfg->periodCycles - 1;
+    cmp = arr - channelCfg->pulseCycles;
 
     /* Disable so CFGR/ARR/CMP are writable, then set this call's polarity via WAVPOL. */
     whal_Reg_Write(base, LPTIM_CR_REG, 0);

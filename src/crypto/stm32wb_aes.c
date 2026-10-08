@@ -899,6 +899,7 @@ whal_Error whal_Stm32wb_AesGcm_Start(whal_AesGcm *dev, whal_Crypto_Dir dir,
             (whal_Stm32wb_AesGcm_State *)whal_Stm32wb_AesGcm_Dev.state;
         st->aadSz = aadSz;
         st->dataSz = 0;
+        st->partial = 0;
     }
 
     return WHAL_SUCCESS;
@@ -928,6 +929,13 @@ whal_Error whal_Stm32wb_AesGcm_Process(whal_AesGcm *dev,
         return WHAL_SUCCESS;
 
     if (!in || !out) {
+        whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
+        ZeroKeyIv(base);
+        return WHAL_EINVAL;
+    }
+
+    /* Only the last Process call may end in a partial block */
+    if (st->partial) {
         whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
         ZeroKeyIv(base);
         return WHAL_EINVAL;
@@ -974,6 +982,8 @@ whal_Error whal_Stm32wb_AesGcm_Process(whal_AesGcm *dev,
     }
 
     st->dataSz += sz;
+    if (sz & 0xF)
+        st->partial = 1;
 
     return WHAL_SUCCESS;
 }
@@ -1209,6 +1219,10 @@ whal_Error whal_Stm32wb_AesCcm_Oneshot(whal_AesCcm *dev, whal_Crypto_Dir dir,
     if (nonceSz < 7 || nonceSz > 13)
         return WHAL_EINVAL;
 
+    /* The payload length must fit in the q = 15 - nonceSz bytes of B0 */
+    if (15 - nonceSz < sizeof(size_t) && (sz >> (8 * (15 - nonceSz))) != 0)
+        return WHAL_EINVAL;
+
     if (sz > 0 && (!in || !out))
         return WHAL_EINVAL;
 
@@ -1285,9 +1299,20 @@ whal_Error whal_Stm32wb_AesCcm_Oneshot(whal_AesCcm *dev, whal_Crypto_Dir dir,
             size_t aadOff = 0;
             size_t j;
 
-            hdrBuf[0] = (uint8_t)(aadSz >> 8);
-            hdrBuf[1] = (uint8_t)(aadSz);
-            hdrOff = 2;
+            /* SP 800-38C A.2.2: 2-byte length below 0xFF00, else 0xFFFE + 4 bytes */
+            if (aadSz < 0xFF00) {
+                hdrBuf[0] = (uint8_t)(aadSz >> 8);
+                hdrBuf[1] = (uint8_t)(aadSz);
+                hdrOff = 2;
+            } else {
+                hdrBuf[0] = 0xFF;
+                hdrBuf[1] = 0xFE;
+                hdrBuf[2] = (uint8_t)((uint32_t)aadSz >> 24);
+                hdrBuf[3] = (uint8_t)((uint32_t)aadSz >> 16);
+                hdrBuf[4] = (uint8_t)((uint32_t)aadSz >> 8);
+                hdrBuf[5] = (uint8_t)(aadSz);
+                hdrOff = 6;
+            }
 
             while (hdrOff < 16 && aadOff < aadSz) {
                 hdrBuf[hdrOff++] = aadBytes[aadOff++];
@@ -1422,6 +1447,10 @@ whal_Error whal_Stm32wb_AesCcm_Start(whal_AesCcm *dev, whal_Crypto_Dir dir,
     if (nonceSz < 7 || nonceSz > 13)
         return WHAL_EINVAL;
 
+    /* The payload length must fit in the q = 15 - nonceSz bytes of B0 */
+    if (15 - nonceSz < sizeof(size_t) && (sz >> (8 * (15 - nonceSz))) != 0)
+        return WHAL_EINVAL;
+
     if (aadSz > 0 && !aad)
         return WHAL_EINVAL;
 
@@ -1495,9 +1524,20 @@ whal_Error whal_Stm32wb_AesCcm_Start(whal_AesCcm *dev, whal_Crypto_Dir dir,
             size_t aadOff = 0;
             size_t j;
 
-            hdrBuf[0] = (uint8_t)(aadSz >> 8);
-            hdrBuf[1] = (uint8_t)(aadSz);
-            hdrOff = 2;
+            /* SP 800-38C A.2.2: 2-byte length below 0xFF00, else 0xFFFE + 4 bytes */
+            if (aadSz < 0xFF00) {
+                hdrBuf[0] = (uint8_t)(aadSz >> 8);
+                hdrBuf[1] = (uint8_t)(aadSz);
+                hdrOff = 2;
+            } else {
+                hdrBuf[0] = 0xFF;
+                hdrBuf[1] = 0xFE;
+                hdrBuf[2] = (uint8_t)((uint32_t)aadSz >> 24);
+                hdrBuf[3] = (uint8_t)((uint32_t)aadSz >> 16);
+                hdrBuf[4] = (uint8_t)((uint32_t)aadSz >> 8);
+                hdrBuf[5] = (uint8_t)(aadSz);
+                hdrOff = 6;
+            }
 
             while (hdrOff < 16 && aadOff < aadSz) {
                 hdrBuf[hdrOff++] = aadBytes[aadOff++];
@@ -1540,6 +1580,9 @@ whal_Error whal_Stm32wb_AesCcm_Start(whal_AesCcm *dev, whal_Crypto_Dir dir,
             (whal_Stm32wb_AesCcm_State *)whal_Stm32wb_AesCcm_Dev.state;
         st->aadSz = aadSz;
         st->dataSz = 0;
+        st->msgSz = sz;
+        st->tagSz = tagSz;
+        st->partial = 0;
     }
 
     return WHAL_SUCCESS;
@@ -1569,6 +1612,14 @@ whal_Error whal_Stm32wb_AesCcm_Process(whal_AesCcm *dev,
         return WHAL_SUCCESS;
 
     if (!in || !out) {
+        whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
+        ZeroKeyIv(base);
+        return WHAL_EINVAL;
+    }
+
+    /* Only the last Process call may end in a partial block, and the
+     * total may not exceed the payload length declared at Start */
+    if (st->partial || sz > st->msgSz - st->dataSz) {
         whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
         ZeroKeyIv(base);
         return WHAL_EINVAL;
@@ -1615,6 +1666,8 @@ whal_Error whal_Stm32wb_AesCcm_Process(whal_AesCcm *dev,
     }
 
     st->dataSz += sz;
+    if (sz & 0xF)
+        st->partial = 1;
 
     return WHAL_SUCCESS;
 }
@@ -1634,7 +1687,9 @@ whal_Error whal_Stm32wb_AesCcm_Finalize(whal_AesCcm *dev,
 
     (void)dev;
 
-    if (!tag || tagSz < 4 || tagSz > 16 || (tagSz & 1) != 0) {
+    /* Tag length and payload length must match what Start encoded in B0 */
+    if (!tag || tagSz < 4 || tagSz > 16 || (tagSz & 1) != 0 ||
+        tagSz != st->tagSz || st->dataSz != st->msgSz) {
         whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
         ZeroKeyIv(base);
         return WHAL_EINVAL;

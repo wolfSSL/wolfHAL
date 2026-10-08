@@ -26,8 +26,11 @@
  * @file stm32n6_eth.h
  * @brief STM32N6 Ethernet MAC driver configuration.
  *
- * The STM32N6 Ethernet peripheral uses the same Synopsys DWC EQOS GMAC IP
- * as the STM32H5, with these differences:
+ * The STM32N6 Ethernet peripheral is the gigabit (GMAC) configuration of the
+ * Synopsys DWC EQOS family; the STM32H5 uses the 10/100 MAC configuration.
+ * Differences relevant to this driver include:
+ * - MACCR bit 15 is PS (port select) on the N6 and reserved on the H5
+ * - MTL RX queue 0 must be enabled (MACRXQC0R.RXQ0EN)
  * - AXI 64-bit bus (vs AHB 32-bit) with ACE coherency registers
  * - 2 DMA channels with 0x80 stride (this driver uses channel 0 only)
  * - Descriptor alignment: bits 2:0 reserved (8-byte aligned)
@@ -120,7 +123,7 @@ whal_Error whal_Stm32n6_Eth_Deinit(whal_Eth *ethDev);
  * @param duplex 0 = half duplex, 1 = full duplex.
  *
  * @retval WHAL_SUCCESS  TX/RX enabled.
- * @retval WHAL_EINVAL   Null pointer or unsupported speed.
+ * @retval WHAL_EINVAL   Unsupported speed or duplex value.
  */
 whal_Error whal_Stm32n6_Eth_Start(whal_Eth *ethDev, uint8_t speed,
                                   uint8_t duplex);
@@ -139,7 +142,7 @@ whal_Error whal_Stm32n6_Eth_Stop(whal_Eth *ethDev);
  * @brief Send a single Ethernet frame via DMA.
  *
  * @param ethDev Ethernet device instance.
- * @param frame  Pointer to the frame to send (DMA-accessible memory).
+ * @param frame  Frame to send; copied into the TX DMA buffer, so any memory works.
  * @param len    Frame length in bytes.
  *
  * @retval WHAL_SUCCESS  Frame queued for transmission.

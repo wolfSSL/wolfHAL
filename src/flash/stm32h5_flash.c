@@ -27,6 +27,7 @@
 #include <wolfHAL/error.h>
 #include <wolfHAL/bitops.h>
 #include <wolfHAL/timeout.h>
+#include <wolfHAL/endian.h>
 
 const whal_Flash whal_Stm32h5_Flash_Dev = WHAL_CFG_STM32H5_FLASH_DEV;
 
@@ -177,8 +178,13 @@ whal_Error whal_Stm32h5_Flash_Unlock(whal_Flash *flashDev, size_t addr,
     (void)addr;
     (void)len;
 
-    whal_Reg_Write(base, FLASH_NSKEYR_REG, FLASH_KEY1);
-    whal_Reg_Write(base, FLASH_NSKEYR_REG, FLASH_KEY2);
+    if (whal_Reg_Read(base, FLASH_NSCR_REG) & FLASH_NSCR_LOCK_Msk) {
+        whal_Reg_Write(base, FLASH_NSKEYR_REG, FLASH_KEY1);
+        whal_Reg_Write(base, FLASH_NSKEYR_REG, FLASH_KEY2);
+    }
+
+    if (whal_Reg_Read(base, FLASH_NSCR_REG) & FLASH_NSCR_LOCK_Msk)
+        return WHAL_EHARDWARE;
 
     return WHAL_SUCCESS;
 }
@@ -194,7 +200,8 @@ whal_Error whal_Stm32h5_Flash_Read(whal_Flash *flashDev, size_t addr,
     if (!data)
         return WHAL_EINVAL;
 
-    if (addr < cfg->startAddr || addr + dataSz > cfg->startAddr + cfg->size)
+    if (addr < cfg->startAddr || dataSz > cfg->size ||
+        addr - cfg->startAddr > cfg->size - dataSz)
         return WHAL_EINVAL;
 
     uint8_t *flashAddr = (uint8_t *)addr;
@@ -238,7 +245,8 @@ whal_Error whal_Stm32h5_Flash_Write(whal_Flash *flashDev, size_t addr,
     if ((addr & 0xF) || (dataSz & 0xF))
         return WHAL_EINVAL;
 
-    if (addr < cfg->startAddr || addr + dataSz > cfg->startAddr + cfg->size)
+    if (addr < cfg->startAddr || dataSz > cfg->size ||
+        addr - cfg->startAddr > cfg->size - dataSz)
         return WHAL_EINVAL;
 
     /* Wait for any ongoing operation */
@@ -255,13 +263,12 @@ whal_Error whal_Stm32h5_Flash_Write(whal_Flash *flashDev, size_t addr,
 
     /* Program data in 128-bit (16 byte) flash-word chunks */
     for (size_t i = 0; i < dataSz; i += 16) {
-        uint32_t *flashAddr = (uint32_t *)(addr + i);
-        const uint32_t *dataAddr = (const uint32_t *)(dataBuf + i);
+        volatile uint32_t *flashAddr = (volatile uint32_t *)(addr + i);
 
-        flashAddr[0] = dataAddr[0];
-        flashAddr[1] = dataAddr[1];
-        flashAddr[2] = dataAddr[2];
-        flashAddr[3] = dataAddr[3];
+        flashAddr[0] = whal_LoadLe32(dataBuf + i);
+        flashAddr[1] = whal_LoadLe32(dataBuf + i + 4);
+        flashAddr[2] = whal_LoadLe32(dataBuf + i + 8);
+        flashAddr[3] = whal_LoadLe32(dataBuf + i + 12);
 
         err = WaitNotBusy(base, cfg->timeout);
         if (err)
@@ -293,7 +300,8 @@ whal_Error whal_Stm32h5_Flash_Erase(whal_Flash *flashDev, size_t addr,
     if (dataSz == 0)
         return WHAL_SUCCESS;
 
-    if (addr < cfg->startAddr || addr + dataSz > cfg->startAddr + cfg->size)
+    if (addr < cfg->startAddr || dataSz > cfg->size ||
+        addr - cfg->startAddr > cfg->size - dataSz)
         return WHAL_EINVAL;
 
     /* Wait for any ongoing operation */

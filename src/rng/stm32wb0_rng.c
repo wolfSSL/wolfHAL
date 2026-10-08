@@ -108,6 +108,12 @@ whal_Error whal_Stm32wb0_Rng_Generate(whal_Rng *rngDev, void *rngData,
         }
     }
 
+    /* FAULT latches a bad bit sequence from the noise source; write 1 to clear */
+    if (whal_Reg_Read(base, RNG_SR_REG) & RNG_SR_FAULT_Msk) {
+        whal_Reg_Write(base, RNG_SR_REG, RNG_SR_FAULT_Msk);
+        return WHAL_EHARDWARE;
+    }
+
     return WHAL_SUCCESS;
 }
 

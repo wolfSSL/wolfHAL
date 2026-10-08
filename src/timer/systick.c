@@ -45,6 +45,8 @@ const whal_Timer whal_SysTick_Dev = WHAL_CFG_SYSTICK_DEV;
 #define SYSTICK_RVR_RELOAD_Pos 0
 #define SYSTICK_RVR_RELOAD_Msk (WHAL_BITMASK(24) << SYSTICK_RVR_RELOAD_Pos)
 
+#define SYSTICK_CVR_REG 0x08
+
 #ifdef WHAL_CFG_SYSTICK_TIMER_DIRECT_API_MAPPING
 #define whal_SysTick_Init   whal_Timer_Init
 #define whal_SysTick_Deinit whal_Timer_Deinit
@@ -60,6 +62,10 @@ whal_Error whal_SysTick_Init(whal_Timer *timerDev)
     size_t base = whal_SysTick_Dev.base;
     (void)timerDev;
 
+    /* RELOAD is 24 bits and holds the period minus one */
+    if (cfg->cyclesPerTick < 2 || cfg->cyclesPerTick > 0x1000000)
+        return WHAL_EINVAL;
+
     whal_Reg_Update(base, SYSTICK_CSR_REG,
                           SYSTICK_CSR_CLKSOURCE_Msk | SYSTICK_CSR_TICKINT_Msk,
                           whal_SetBits(SYSTICK_CSR_CLKSOURCE_Msk, SYSTICK_CSR_CLKSOURCE_Pos, cfg->clkSrc) |
@@ -67,7 +73,10 @@ whal_Error whal_SysTick_Init(whal_Timer *timerDev)
 
     whal_Reg_Update(base, SYSTICK_RVR_REG,
                     SYSTICK_RVR_RELOAD_Msk,
-                    whal_SetBits(SYSTICK_RVR_RELOAD_Msk, SYSTICK_RVR_RELOAD_Pos, cfg->cyclesPerTick));
+                    whal_SetBits(SYSTICK_RVR_RELOAD_Msk, SYSTICK_RVR_RELOAD_Pos, cfg->cyclesPerTick - 1));
+
+    /* Any write clears the counter so the first period starts from RELOAD */
+    whal_Reg_Write(base, SYSTICK_CVR_REG, 0);
 
     return WHAL_SUCCESS;
 }
@@ -103,6 +112,7 @@ whal_Error whal_SysTick_Stop(whal_Timer *timerDev)
 whal_Error whal_SysTick_Reset(whal_Timer *timerDev)
 {
     (void)timerDev;
+    whal_Reg_Write(whal_SysTick_Dev.base, SYSTICK_CVR_REG, 0);
     return WHAL_SUCCESS;
 }
 

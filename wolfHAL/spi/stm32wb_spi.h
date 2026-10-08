@@ -36,7 +36,7 @@
  * - Master and slave modes (this driver supports master only)
  * - Configurable clock polarity and phase (SPI modes 0-3)
  * - Programmable baud rate prescaler (fPCLK/2 to fPCLK/256)
- * - 4 to 16-bit data frame (this driver uses 8-bit)
+ * - 4 to 16-bit data frames (frames wider than 8 bits use two buffer bytes)
  * - Software slave management (chip select via GPIO)
  */
 

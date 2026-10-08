@@ -41,7 +41,8 @@
  * @param base   Base address of the register block.
  * @param offset Byte offset from @p base to the register.
  * @param mask   Bit mask selecting the field to update.
- * @param value  Value to write, which will be masked and shifted.
+ * @param value  Value already positioned within @p mask; it is masked but
+ *               not shifted.
  *
  * @note No return value. Callers are responsible for passing valid inputs.
  */

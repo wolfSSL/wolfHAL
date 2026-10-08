@@ -217,9 +217,13 @@ enum {
 
 /* RNG dev initializer — singleton defined in stm32wba_rng.c (stm32n6 is
  * an include alias). */
+/* RNG cr/htcr/nscr: AN4230 Table 3, STM32N6; NSCR "default" is the reset value */
 #define WHAL_CFG_STM32N6_RNG_DEV { \
     .base = WHAL_STM32N657_RNG_BASE, \
     .cfg  = (void *)&(const whal_Stm32n6_Rng_Cfg){ \
+        .cr      = 0x08F00D00UL, \
+        .htcr    = 0x00006A93UL, \
+        .nscr    = 0x0003FFFFUL, \
         .timeout = &g_whalTimeout, \
     }, \
 }

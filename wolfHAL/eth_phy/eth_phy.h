@@ -42,7 +42,7 @@ typedef struct whal_EthPhy whal_EthPhy;
  * @brief Driver vtable for Ethernet PHY devices.
  */
 typedef struct {
-    /* Reset PHY, configure autonegotiation, and wait for link. */
+    /* Reset PHY and enable autonegotiation; does not wait for link. */
     whal_Error (*Init)(whal_EthPhy *phyDev);
     /* Power down the PHY. */
     whal_Error (*Deinit)(whal_EthPhy *phyDev);
@@ -67,11 +67,14 @@ struct whal_EthPhy {
 /*
  * @brief Initialize an Ethernet PHY.
  *
+ * Resets the PHY and enables autonegotiation. Does not wait for link; poll
+ * whal_EthPhy_GetLinkState() for that.
+ *
  * @param phyDev PHY device instance.
  *
- * @retval WHAL_SUCCESS   PHY initialized and link established.
+ * @retval WHAL_SUCCESS   PHY reset and autonegotiation enabled.
  * @retval WHAL_EINVAL    Invalid arguments.
- * @retval WHAL_ETIMEOUT  Link did not come up within timeout.
+ * @retval WHAL_ETIMEOUT  PHY reset did not complete within timeout.
  */
 whal_Error whal_EthPhy_Init(whal_EthPhy *phyDev);
 /*

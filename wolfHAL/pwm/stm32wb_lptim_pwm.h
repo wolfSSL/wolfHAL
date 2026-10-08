@@ -112,7 +112,8 @@ whal_Error whal_Stm32wb_Lptim_Pwm_Deinit(whal_Pwm *dev);
  *
  * Because the LPTIM asserts its output while LPTIM_CNT exceeds LPTIM_CMP
  * (and clears it on the ARR match), the compare value is derived as
- * (ARR - pulseCycles).
+ * (ARR - pulseCycles). ARR must exceed CMP, so pulseCycles must be between 1
+ * and periodCycles - 1.
  *
  * @param dev     Pointer to the PWM instance.
  * @param channel Must be WHAL_STM32WB_LPTIM_PWM_CHANNEL (0).
@@ -121,8 +122,9 @@ whal_Error whal_Stm32wb_Lptim_Pwm_Deinit(whal_Pwm *dev);
  * @retval WHAL_SUCCESS Output started.
  * @retval WHAL_EINVAL  Null pointer, missing configuration, zero period, or
  *                      pulse exceeding period.
- * @retval WHAL_ENOTSUP Unsupported channel, period out of the 16-bit range,
- *                      or a non-continuous pulse count.
+ * @retval WHAL_ENOTSUP Unsupported channel, period out of the 16-bit range or
+ *                      below 2, pulse of 0 or equal to the period, or a
+ *                      non-continuous pulse count.
  * @retval WHAL_ETIMEOUT ARR/CMP update did not synchronize before timeout.
  */
 whal_Error whal_Stm32wb_Lptim_Pwm_Start(whal_Pwm *dev, uint8_t channel,

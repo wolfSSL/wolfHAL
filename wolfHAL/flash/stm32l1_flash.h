@@ -186,7 +186,8 @@ whal_Error whal_Stm32l1_Flash_Erase(whal_Flash *flashDev, size_t addr,
  *
  * @param latency Desired latency (LATENCY_0 or LATENCY_1).
  *
- * @retval WHAL_SUCCESS Latency updated.
+ * @retval WHAL_SUCCESS  Latency updated.
+ * @retval WHAL_ETIMEOUT ACC64 or LATENCY did not read back in time.
  */
 whal_Error whal_Stm32l1_Flash_Ext_SetLatency(whal_Stm32l1_Flash_Latency latency);
 

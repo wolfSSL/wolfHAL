@@ -92,8 +92,9 @@ whal_Error whal_Stm32wb0_Rng_Deinit(whal_Rng *rngDev);
  * @param rngData   Destination buffer.
  * @param rngDataSz Number of random bytes to generate.
  *
- * @retval WHAL_SUCCESS  Buffer filled with random data.
- * @retval WHAL_EINVAL   Null destination buffer.
+ * @retval WHAL_SUCCESS   Buffer filled with random data.
+ * @retval WHAL_EINVAL    Null destination buffer.
+ * @retval WHAL_EHARDWARE RNG_SR.FAULT reported a faulty noise-source sequence.
  */
 whal_Error whal_Stm32wb0_Rng_Generate(whal_Rng *rngDev, void *rngData,
                                       size_t rngDataSz);

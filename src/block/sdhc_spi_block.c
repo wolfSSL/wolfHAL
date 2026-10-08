@@ -82,7 +82,10 @@ static whal_Error SdhcSpi_CsAssert(whal_SdhcSpi_Cfg *cfg)
         return err;
 
     /* Dummy byte gives card time to recognize CS transition */
-    return whal_Spi_SendRecv(cfg->spiDev, &dummy, 1, NULL, 0);
+    err = whal_Spi_SendRecv(cfg->spiDev, &dummy, 1, NULL, 0);
+    if (err)
+        whal_Gpio_Set(cfg->gpioDev, cfg->csPin, 1);
+    return err;
 }
 
 static whal_Error SdhcSpi_CsDeassert(whal_SdhcSpi_Cfg *cfg)
@@ -378,12 +381,20 @@ whal_Error whal_SdhcSpi_Read(whal_Block *blockDev, uint32_t block,
             break;
     }
 
-    /* Stop multi-block read */
+    /* Stop multi-block read. A stuff byte can precede R1 after CMD12, so
+     * only transport errors and the busy wait are reported. */
     if (blockCount > 1) {
-        SdhcSpi_SendCmd(cfg, CMD12, 0x00000000, 0x01);
-        SdhcSpi_RecvResp(cfg, &r1);
-        whal_Spi_SendRecv(cfg->spiDev, &dummy, 1, NULL, 0);
-        SdhcSpi_WaitReady(cfg);
+        whal_Error stopErr;
+
+        stopErr = SdhcSpi_SendCmd(cfg, CMD12, 0x00000000, 0x01);
+        if (!stopErr)
+            stopErr = SdhcSpi_RecvResp(cfg, &r1);
+        if (!stopErr)
+            stopErr = whal_Spi_SendRecv(cfg->spiDev, &dummy, 1, NULL, 0);
+        if (!stopErr)
+            stopErr = SdhcSpi_WaitReady(cfg);
+        if (!err)
+            err = stopErr;
     }
 
 cleanup:
@@ -468,10 +479,16 @@ whal_Error whal_SdhcSpi_Write(whal_Block *blockDev, uint32_t block,
 
     /* Stop multi-block write */
     if (blockCount > 1) {
+        whal_Error stopErr;
+
         token = TOKEN_STOP_TRAN;
-        whal_Spi_SendRecv(cfg->spiDev, &token, 1, NULL, 0);
-        whal_Spi_SendRecv(cfg->spiDev, &dummy, 1, NULL, 0);
-        SdhcSpi_WaitReady(cfg);
+        stopErr = whal_Spi_SendRecv(cfg->spiDev, &token, 1, NULL, 0);
+        if (!stopErr)
+            stopErr = whal_Spi_SendRecv(cfg->spiDev, &dummy, 1, NULL, 0);
+        if (!stopErr)
+            stopErr = SdhcSpi_WaitReady(cfg);
+        if (!err)
+            err = stopErr;
     }
 
 cleanup:

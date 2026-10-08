@@ -78,13 +78,55 @@ static void Test_Flash_WriteReadErase(void)
                                     g_testFlashSectorSz), WHAL_SUCCESS);
 }
 
-static void run_flash_tests(const char *name)
+static void Test_Flash_OutOfBounds(void)
+{
+    const size_t start = BOARD_FLASH_START_ADDR;
+    const size_t end = BOARD_FLASH_START_ADDR + BOARD_FLASH_SIZE;
+    const size_t wrapSz = (size_t)0 - (end - 16) + 16;
+    static uint8_t buf[32];
+
+    /* Below the region */
+    WHAL_ASSERT_EQ(whal_Flash_Read(g_testFlashDev, start - 16, buf, 16),
+                   WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Flash_Write(g_testFlashDev, start - 16, buf, 16),
+                   WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Flash_Erase(g_testFlashDev, start - 16, 16),
+                   WHAL_EINVAL);
+
+    /* Starting at the end of the region */
+    WHAL_ASSERT_EQ(whal_Flash_Read(g_testFlashDev, end, buf, 16),
+                   WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Flash_Write(g_testFlashDev, end, buf, 16),
+                   WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Flash_Erase(g_testFlashDev, end, 16),
+                   WHAL_EINVAL);
+
+    /* Starting inside the region and running past the end */
+    WHAL_ASSERT_EQ(whal_Flash_Read(g_testFlashDev, end - 16, buf, 32),
+                   WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Flash_Write(g_testFlashDev, end - 16, buf, 32),
+                   WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Flash_Erase(g_testFlashDev, end - 16, 32),
+                   WHAL_EINVAL);
+
+    /* Size large enough that addr + dataSz wraps around to 16 */
+    WHAL_ASSERT_EQ(whal_Flash_Read(g_testFlashDev, end - 16, buf, wrapSz),
+                   WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Flash_Write(g_testFlashDev, end - 16, buf, wrapSz),
+                   WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Flash_Erase(g_testFlashDev, end - 16, wrapSz),
+                   WHAL_EINVAL);
+}
+
+static void run_flash_tests(const char *name, int onChip)
 {
     WHAL_TEST_SUITE_START("flash");
     if (name)
         whal_Test_Printf("  device: %s\n", name);
     WHAL_TEST(Test_Flash_Api);
     WHAL_TEST(Test_Flash_WriteReadErase);
+    if (onChip)
+        WHAL_TEST(Test_Flash_OutOfBounds);
     WHAL_TEST_SUITE_END();
 }
 
@@ -94,13 +136,13 @@ void whal_Test_Flash(void)
     g_testFlashDev = BOARD_FLASH_DEV;
     g_testFlashAddr = BOARD_FLASH_TEST_ADDR;
     g_testFlashSectorSz = BOARD_FLASH_SECTOR_SZ;
-    run_flash_tests("on-chip");
+    run_flash_tests("on-chip", 1);
 
     /* Test peripheral flash devices */
     for (size_t i = 0; g_peripheralFlash[i].dev; i++) {
         g_testFlashDev = g_peripheralFlash[i].dev;
         g_testFlashAddr = 0;
         g_testFlashSectorSz = g_peripheralFlash[i].sectorSz;
-        run_flash_tests(g_peripheralFlash[i].name);
+        run_flash_tests(g_peripheralFlash[i].name, 0);
     }
 }

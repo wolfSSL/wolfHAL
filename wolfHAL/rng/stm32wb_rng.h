@@ -60,7 +60,6 @@ extern const whal_RngDriver whal_Stm32wb_Rng_Driver;
  * @param rngDev RNG device instance.
  *
  * @retval WHAL_SUCCESS Initialization completed.
- * @retval WHAL_EINVAL  Invalid arguments.
  */
 whal_Error whal_Stm32wb_Rng_Init(whal_Rng *rngDev);
 /*
@@ -69,7 +68,6 @@ whal_Error whal_Stm32wb_Rng_Init(whal_Rng *rngDev);
  * @param rngDev RNG device instance.
  *
  * @retval WHAL_SUCCESS Deinit completed.
- * @retval WHAL_EINVAL  Invalid arguments.
  */
 whal_Error whal_Stm32wb_Rng_Deinit(whal_Rng *rngDev);
 /*
@@ -79,8 +77,11 @@ whal_Error whal_Stm32wb_Rng_Deinit(whal_Rng *rngDev);
  * @param rngData   Destination buffer.
  * @param rngDataSz Number of random bytes to generate.
  *
- * @retval WHAL_SUCCESS Buffer filled with random data.
- * @retval WHAL_EINVAL  Invalid arguments or seed/clock error detected.
+ * @retval WHAL_SUCCESS   Buffer filled with random data.
+ * @retval WHAL_EINVAL    Null destination buffer.
+ * @retval WHAL_EHARDWARE Seed or clock error detected; after a seed error the
+ *                        driver runs the RM recovery so the next call can succeed.
+ * @retval WHAL_ETIMEOUT  DRDY not set within the configured timeout.
  */
 whal_Error whal_Stm32wb_Rng_Generate(whal_Rng *rngDev, void *rngData, size_t rngDataSz);
 #endif /* !WHAL_CFG_STM32WB_RNG_DIRECT_API_MAPPING */

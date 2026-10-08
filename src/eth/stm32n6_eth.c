@@ -39,8 +39,11 @@ static struct {
  * @file stm32n6_eth.c
  * @brief STM32N6 Ethernet MAC driver implementation.
  *
- * The STM32N6 uses the Synopsys DWC EQOS GMAC with AXI 64-bit bus.
- * Register layout matches the STM32H5 except for:
+ * The STM32N6 uses the gigabit (GMAC) configuration of the Synopsys DWC EQOS
+ * with an AXI 64-bit bus. It shares the STM32H5's EQOS register family;
+ * differences relevant to this driver include:
+ * - MACCR bit 15 is PS (port select); reserved on the H5
+ * - MTL RX queue 0 must be enabled (MACRXQC0R.RXQ0EN)
  * - AXI coherency registers at DMA offsets 0x1020-0x1028
  * - 2 DMA channels at 0x80 stride (this driver uses channel 0 only)
  * - Descriptor alignment: bits 2:0 reserved (8-byte aligned)
@@ -154,6 +157,8 @@ static struct {
 /* --- RX descriptor bits (RDES3) --- */
 #define RDES3_OWN   (1UL << 31)
 #define RDES3_IOC   (1UL << 30)
+#define RDES3_FD    (1UL << 29)
+#define RDES3_LD    (1UL << 28)
 #define RDES3_BUF1V (1UL << 24)
 #define RDES3_ES    (1UL << 15)
 #define RDES3_PL_Msk 0x7FFFUL
@@ -301,6 +306,10 @@ whal_Error whal_Stm32n6_Eth_Start(whal_Eth *ethDev, uint8_t speed,
     size_t base = whal_Stm32n6_Eth_Dev.base;
     (void)ethDev;
 
+    if ((speed != WHAL_ETH_SPEED_10 && speed != WHAL_ETH_SPEED_100) ||
+        (duplex != WHAL_ETH_DUPLEX_HALF && duplex != WHAL_ETH_DUPLEX_FULL))
+        return WHAL_EINVAL;
+
     /* Configure MAC speed and duplex to match PHY. PS=1 selects the
      * MII/RMII data path; required because the EQOS MAC defaults to GMII
      * (PS=0) and this driver only supports 10/100 Mbps. */
@@ -422,11 +431,15 @@ whal_Error whal_Stm32n6_Eth_Recv(whal_Eth *ethDev, void *frame,
     if (rdes3 & RDES3_OWN)
         return WHAL_ENOTREADY;
 
-    /* Check for errors */
-    if (rdes3 & RDES3_ES) {
+    /* Drop errored frames, frames spanning several buffers, and lengths
+     * larger than the buffer */
+    if ((rdes3 & RDES3_ES) ||
+        (rdes3 & (RDES3_FD | RDES3_LD)) != (RDES3_FD | RDES3_LD) ||
+        (rdes3 & RDES3_PL_Msk) > cfg->rxBufSize) {
         desc->des[0] = (uintptr_t)(cfg->rxBufs + idx * cfg->rxBufSize);
         desc->des[3] = RDES3_OWN | RDES3_IOC | RDES3_BUF1V;
         eth_state.rxHead = (idx + 1) % cfg->rxDescCount;
+        __asm__ volatile ("dsb sy" ::: "memory");
         whal_Reg_Write(base, ETH_DMAC0RXDTPR_REG,
                        (uintptr_t)&cfg->rxDescs[cfg->rxDescCount]);
         return WHAL_EHARDWARE;

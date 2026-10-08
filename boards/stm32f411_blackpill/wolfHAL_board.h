@@ -45,6 +45,9 @@ enum {
 
 #define BOARD_LED_PIN 0
 
+#define BOARD_FLASH_START_ADDR 0x08000000
+#define BOARD_FLASH_SIZE       0x80000
+
 /* Flash test address: last sector (sector 7, 128KB at 0x08060000) */
 #define BOARD_FLASH_TEST_ADDR 0x08060000
 #define BOARD_FLASH_SECTOR_SZ 0x20000

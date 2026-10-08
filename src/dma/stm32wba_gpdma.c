@@ -122,7 +122,7 @@
 
 /* CxTR2 bits */
 #define GPDMA_CxTR2_REQSEL_Pos  0   /* Hardware request selection */
-#define GPDMA_CxTR2_REQSEL_Msk  (0x3FUL << GPDMA_CxTR2_REQSEL_Pos)
+#define GPDMA_CxTR2_REQSEL_Msk  (0xFFUL << GPDMA_CxTR2_REQSEL_Pos)
 #define GPDMA_CxTR2_SWREQ_Pos   9   /* Software request (memory-to-memory) */
 #define GPDMA_CxTR2_SWREQ_Msk   (1UL << GPDMA_CxTR2_SWREQ_Pos)
 #define GPDMA_CxTR2_DREQ_Pos    10  /* Direction: 0=src periph, 1=dst periph */
@@ -300,6 +300,8 @@ whal_Error whal_Stm32wba_Gpdma_Start(whal_Dma *dmaDev, size_t ch)
 
 whal_Error whal_Stm32wba_Gpdma_Stop(whal_Dma *dmaDev, size_t ch)
 {
+    size_t cr;
+    whal_Error err;
 #ifdef WHAL_CFG_STM32WBA_GPDMA_SINGLE_INSTANCE
     const whal_Stm32wba_Gpdma_Cfg *cfg =
         (const whal_Stm32wba_Gpdma_Cfg *)whal_Stm32wba_Gpdma_Dev.cfg;
@@ -319,7 +321,18 @@ whal_Error whal_Stm32wba_Gpdma_Stop(whal_Dma *dmaDev, size_t ch)
     if (ch >= cfg->numChannels)
         return WHAL_EINVAL;
 
-    whal_Reg_Update(base, GPDMA_CxCR(ch), GPDMA_CxCR_EN_Msk, 0);
+    /* EN cannot be cleared by software; abort by suspending, waiting for
+     * idle, then resetting the channel (RM0493 17.4.4) */
+    cr = whal_Reg_Read(base, GPDMA_CxCR(ch));
+    if (cr & GPDMA_CxCR_EN_Msk) {
+        whal_Reg_Write(base, GPDMA_CxCR(ch),
+                       (cr & ~GPDMA_CxCR_EN_Msk) | GPDMA_CxCR_SUSP_Msk);
+        err = whal_Reg_ReadPoll(base, GPDMA_CxSR(ch), GPDMA_CxSR_IDLEF_Msk,
+                                 GPDMA_CxSR_IDLEF_Msk, cfg->timeout);
+        if (err)
+            return err;
+        whal_Reg_Write(base, GPDMA_CxCR(ch), GPDMA_CxCR_RESET_Msk);
+    }
 
     whal_Reg_Write(base, GPDMA_CxFCR(ch), GPDMA_CxFCR_ALL);
 

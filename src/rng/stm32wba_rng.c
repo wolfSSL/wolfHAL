@@ -74,13 +74,14 @@ const whal_Rng whal_Stm32wba_Rng_Dev = WHAL_CFG_STM32WBA_RNG_DEV;
 /* Data Register (offset 0x008) */
 #define RNG_DR_REG            0x08
 
-/*
- * Configuration C values (RM0493 Table 178):
- *   NISTC=0, RNG_CONFIG1=0x0F, CLKDIV=0x0, RNG_CONFIG2=0x0,
- *   RNG_CONFIG3=0xD, CED=0, N=2
- */
-#define RNG_CR_CONFIG_C  (whal_SetBits(RNG_CR_RNG_CONFIG1_Msk, RNG_CR_RNG_CONFIG1_Pos, 0x0F) | \
-                          whal_SetBits(RNG_CR_RNG_CONFIG3_Msk, RNG_CR_RNG_CONFIG3_Pos, 0x0D))
+/* Noise Source Control Register (offset 0x00C) */
+#define RNG_NSCR_REG          0x0C
+
+/* Health Test Control Register (offset 0x010) */
+#define RNG_HTCR_REG          0x10
+
+/* Magic value written before HTCR (ST HAL, AN4230) */
+#define RNG_HTCR_MAGIC        0x17590ABCUL
 
 #ifdef WHAL_CFG_STM32WBA_RNG_DIRECT_API_MAPPING
 #define whal_Stm32wba_Rng_Init     whal_Rng_Init
@@ -95,13 +96,18 @@ whal_Error whal_Stm32wba_Rng_Init(whal_Rng *rngDev)
     size_t base = whal_Stm32wba_Rng_Dev.base;
     (void)rngDev;
 
-    /* Apply Configuration C with CONDRST=1 and RNGEN=1 */
+    /* Apply the configuration with CONDRST=1 and RNGEN=1 */
     whal_Reg_Write(base, RNG_CR_REG,
-                   RNG_CR_CONDRST_Msk | RNG_CR_CONFIG_C | RNG_CR_RNGEN_Msk);
+                   RNG_CR_CONDRST_Msk | cfg->cr | RNG_CR_RNGEN_Msk);
+
+    /* HTCR and NSCR only take effect while CONDRST is set */
+    whal_Reg_Write(base, RNG_HTCR_REG, RNG_HTCR_MAGIC);
+    whal_Reg_Write(base, RNG_HTCR_REG, cfg->htcr);
+    whal_Reg_Write(base, RNG_NSCR_REG, cfg->nscr);
 
     /* Clear CONDRST to start conditioning */
     whal_Reg_Write(base, RNG_CR_REG,
-                   RNG_CR_CONFIG_C | RNG_CR_RNGEN_Msk);
+                   cfg->cr | RNG_CR_RNGEN_Msk);
 
     /* Wait for CONDRST to self-clear */
     return whal_Reg_ReadPoll(base, RNG_CR_REG, RNG_CR_CONDRST_Msk, 0,
@@ -145,7 +151,10 @@ whal_Error whal_Stm32wba_Rng_Generate(whal_Rng *rngDev, void *rngData, size_t rn
 
             sr = whal_Reg_Read(base, RNG_SR_REG);
 
-            if (sr & RNG_SR_SECS_Msk) {
+            /* With auto-reset enabled SECS clears on its own; SEIS latches
+             * the error so the value around it is never returned */
+            if (sr & (RNG_SR_SECS_Msk | RNG_SR_SEIS_Msk)) {
+                whal_Reg_Update(base, RNG_SR_REG, RNG_SR_SEIS_Msk, 0);
                 err = WHAL_EHARDWARE;
                 goto exit;
             }

@@ -22,6 +22,7 @@
 #ifndef WHAL_STM32WBA_RNG_H
 #define WHAL_STM32WBA_RNG_H
 
+#include <stdint.h>
 #include <wolfHAL/rng/rng.h>
 #include <wolfHAL/timeout.h>
 
@@ -31,12 +32,18 @@
  *
  * The RNG kernel clock source must be selected in RCC_CCIPR2.RNGSEL
  * before using the RNG. Default after reset is LSE (often not enabled).
+ *
+ * The cr, htcr and nscr values are device specific. Use the NIST
+ * compliant values for the part from AN4230 Table 3.
  */
 
 /*
  * @brief STM32WBA RNG configuration.
  */
 typedef struct whal_Stm32wba_Rng_Cfg {
+    uint32_t cr;               /* RNG_CR configuration bits [29:4] */
+    uint32_t htcr;             /* RNG_HTCR value */
+    uint32_t nscr;             /* RNG_NSCR value */
     whal_Timeout *timeout;     /* Optional timeout for poll loops */
 } whal_Stm32wba_Rng_Cfg;
 
@@ -52,16 +59,15 @@ extern const whal_Rng whal_Stm32wba_Rng_Dev;
 extern const whal_RngDriver whal_Stm32wba_Rng_Driver;
 
 /*
- * @brief Initialize the RNG (CONDRST sequence + enable RNGEN). The board
- *        must have selected a kernel clock source via RCC_CCIPR2.RNGSEL
- *        before calling this.
+ * @brief Initialize the RNG (CONDRST sequence + enable RNGEN). Writes the
+ *        configured RNG_CR, RNG_HTCR and RNG_NSCR values. The board must
+ *        have selected a kernel clock source via RCC_CCIPR2.RNGSEL before
+ *        calling this.
  *
  * @param rngDev RNG device instance.
  *
  * @retval WHAL_SUCCESS   RNG is ready.
- * @retval WHAL_EINVAL    Null pointer.
  * @retval WHAL_ETIMEOUT  CONDRST did not complete within the configured timeout.
- * @retval WHAL_EHARDWARE Health check or seed error reported.
  */
 whal_Error whal_Stm32wba_Rng_Init(whal_Rng *rngDev);
 
@@ -71,7 +77,6 @@ whal_Error whal_Stm32wba_Rng_Init(whal_Rng *rngDev);
  * @param rngDev RNG device instance.
  *
  * @retval WHAL_SUCCESS RNG disabled.
- * @retval WHAL_EINVAL  Null pointer.
  */
 whal_Error whal_Stm32wba_Rng_Deinit(whal_Rng *rngDev);
 

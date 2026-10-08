@@ -260,7 +260,8 @@ whal_Error whal_Stm32wba_Sha1_Oneshot(whal_Sha1 *dev,
     whal_Error err;
     (void)dev;
 
-    if (!digest || digestSz != 20)
+    if (!digest || digestSz != 20 ||
+        (inSz > 0 && !in))
         return WHAL_EINVAL;
 
     whal_Reg_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
@@ -270,11 +271,8 @@ whal_Error whal_Stm32wba_Sha1_Oneshot(whal_Sha1 *dev,
                     HASH_CR_MODE_Msk | HASH_CR_LKEY_Msk | HASH_CR_INIT_Msk,
                     AlgoBits(HASH_ALGO_SHA1) | HASH_CR_INIT_Msk);
 
-    if (inSz > 0) {
-        if (!in)
-            return WHAL_EINVAL;
+    if (inSz > 0)
         WriteTail(base, (const uint8_t *)in, inSz);
-    }
 
     whal_Reg_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
                     HASH_STR_DCAL_Msk);
@@ -360,7 +358,8 @@ whal_Error whal_Stm32wba_Sha224_Oneshot(whal_Sha224 *dev,
     whal_Error err;
     (void)dev;
 
-    if (!digest || digestSz != 28)
+    if (!digest || digestSz != 28 ||
+        (inSz > 0 && !in))
         return WHAL_EINVAL;
 
     whal_Reg_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
@@ -370,11 +369,8 @@ whal_Error whal_Stm32wba_Sha224_Oneshot(whal_Sha224 *dev,
                     HASH_CR_MODE_Msk | HASH_CR_LKEY_Msk | HASH_CR_INIT_Msk,
                     AlgoBits(HASH_ALGO_SHA224) | HASH_CR_INIT_Msk);
 
-    if (inSz > 0) {
-        if (!in)
-            return WHAL_EINVAL;
+    if (inSz > 0)
         WriteTail(base, (const uint8_t *)in, inSz);
-    }
 
     whal_Reg_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
                     HASH_STR_DCAL_Msk);
@@ -460,7 +456,8 @@ whal_Error whal_Stm32wba_Sha256_Oneshot(whal_Sha256 *dev,
     whal_Error err;
     (void)dev;
 
-    if (!digest || digestSz != 32)
+    if (!digest || digestSz != 32 ||
+        (inSz > 0 && !in))
         return WHAL_EINVAL;
 
     whal_Reg_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
@@ -470,11 +467,8 @@ whal_Error whal_Stm32wba_Sha256_Oneshot(whal_Sha256 *dev,
                     HASH_CR_MODE_Msk | HASH_CR_LKEY_Msk | HASH_CR_INIT_Msk,
                     AlgoBits(HASH_ALGO_SHA256) | HASH_CR_INIT_Msk);
 
-    if (inSz > 0) {
-        if (!in)
-            return WHAL_EINVAL;
+    if (inSz > 0)
         WriteTail(base, (const uint8_t *)in, inSz);
-    }
 
     whal_Reg_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
                     HASH_STR_DCAL_Msk);
@@ -562,7 +556,8 @@ whal_Error whal_Stm32wba_HmacSha1_Oneshot(whal_HmacSha1 *dev,
     whal_Error err;
     (void)dev;
 
-    if (!key || !digest || digestSz != 20)
+    if (!key || !digest || digestSz != 20 ||
+        (inSz > 0 && !in))
         return WHAL_EINVAL;
 
     lkey = (keySz > 64) ? 1 : 0;
@@ -590,11 +585,8 @@ whal_Error whal_Stm32wba_HmacSha1_Oneshot(whal_HmacSha1 *dev,
 
     /* Message */
     whal_Reg_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
-    if (inSz > 0) {
-        if (!in)
-            return WHAL_EINVAL;
+    if (inSz > 0)
         WriteTail(base, (const uint8_t *)in, inSz);
-    }
 
     whal_Reg_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
                     HASH_STR_DCAL_Msk);
@@ -734,7 +726,8 @@ whal_Error whal_Stm32wba_HmacSha224_Oneshot(whal_HmacSha224 *dev,
     whal_Error err;
     (void)dev;
 
-    if (!key || !digest || digestSz != 28)
+    if (!key || !digest || digestSz != 28 ||
+        (inSz > 0 && !in))
         return WHAL_EINVAL;
 
     lkey = (keySz > 64) ? 1 : 0;
@@ -762,11 +755,8 @@ whal_Error whal_Stm32wba_HmacSha224_Oneshot(whal_HmacSha224 *dev,
 
     /* Message */
     whal_Reg_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
-    if (inSz > 0) {
-        if (!in)
-            return WHAL_EINVAL;
+    if (inSz > 0)
         WriteTail(base, (const uint8_t *)in, inSz);
-    }
 
     whal_Reg_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
                     HASH_STR_DCAL_Msk);
@@ -906,7 +896,8 @@ whal_Error whal_Stm32wba_HmacSha256_Oneshot(whal_HmacSha256 *dev,
     whal_Error err;
     (void)dev;
 
-    if (!key || !digest || digestSz != 32)
+    if (!key || !digest || digestSz != 32 ||
+        (inSz > 0 && !in))
         return WHAL_EINVAL;
 
     lkey = (keySz > 64) ? 1 : 0;
@@ -934,11 +925,8 @@ whal_Error whal_Stm32wba_HmacSha256_Oneshot(whal_HmacSha256 *dev,
 
     /* Message */
     whal_Reg_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
-    if (inSz > 0) {
-        if (!in)
-            return WHAL_EINVAL;
+    if (inSz > 0)
         WriteTail(base, (const uint8_t *)in, inSz);
-    }
 
     whal_Reg_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
                     HASH_STR_DCAL_Msk);

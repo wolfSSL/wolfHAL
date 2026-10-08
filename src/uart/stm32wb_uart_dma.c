@@ -49,10 +49,13 @@
 #if defined(WHAL_CFG_STM32WB_UART_DIRECT_API_MAPPING) || \
     defined(WHAL_CFG_STM32WB_UART_DMA_DIRECT_API_MAPPING)
 #define whal_Stm32wb_Uart_Init   whal_Uart_Init
+#endif
+#ifdef WHAL_CFG_STM32WB_UART_DIRECT_API_MAPPING
 #define whal_Stm32wb_Uart_Deinit whal_Uart_Deinit
 #endif
 
 #ifdef WHAL_CFG_STM32WB_UART_DMA_DIRECT_API_MAPPING
+#define whal_Stm32wb_UartDma_Deinit    whal_Uart_Deinit
 #define whal_Stm32wb_UartDma_Send      whal_Uart_Send
 #define whal_Stm32wb_UartDma_Recv      whal_Uart_Recv
 #define whal_Stm32wb_UartDma_SendAsync whal_Uart_SendAsync
@@ -86,11 +89,11 @@ whal_Error whal_Stm32wb_UartDma_SendAsync(whal_Uart *uartDev, const void *data,
     base = uartDev->base;
 #endif
 
-    if (dataSz == 0)
-        return WHAL_SUCCESS;
-
     if (cfg->txResult == WHAL_ENOTREADY)
         return WHAL_ENOTREADY;
+
+    if (dataSz == 0)
+        return WHAL_SUCCESS;
 
     cfg->txChCfg->srcAddr = (uint32_t)(uintptr_t)data;
     cfg->txChCfg->dstAddr = (uint32_t)(base + UART_TDR_REG);
@@ -140,11 +143,11 @@ whal_Error whal_Stm32wb_UartDma_RecvAsync(whal_Uart *uartDev, void *data,
     base = uartDev->base;
 #endif
 
-    if (dataSz == 0)
-        return WHAL_SUCCESS;
-
     if (cfg->rxResult == WHAL_ENOTREADY)
         return WHAL_ENOTREADY;
+
+    if (dataSz == 0)
+        return WHAL_SUCCESS;
 
     cfg->rxChCfg->srcAddr = (uint32_t)(base + UART_RDR_REG);
     cfg->rxChCfg->dstAddr = (uint32_t)(uintptr_t)data;
@@ -179,7 +182,7 @@ whal_Error whal_Stm32wb_UartDma_Send(whal_Uart *uartDev, const void *data,
     whal_Error err;
 
     err = whal_Stm32wb_UartDma_SendAsync(uartDev, data, dataSz);
-    if (err)
+    if (err || dataSz == 0)
         return err;
 
 #ifdef WHAL_CFG_STM32WB_UART_DMA_SINGLE_INSTANCE
@@ -222,7 +225,7 @@ whal_Error whal_Stm32wb_UartDma_Recv(whal_Uart *uartDev, void *data,
     whal_Error err;
 
     err = whal_Stm32wb_UartDma_RecvAsync(uartDev, data, dataSz);
-    if (err)
+    if (err || dataSz == 0)
         return err;
 
 #ifdef WHAL_CFG_STM32WB_UART_DMA_SINGLE_INSTANCE
@@ -251,6 +254,33 @@ cleanup:
     return err;
 }
 
+whal_Error whal_Stm32wb_UartDma_Deinit(whal_Uart *uartDev)
+{
+    whal_Stm32wb_UartDma_Cfg *cfg;
+    size_t base;
+
+#ifdef WHAL_CFG_STM32WB_UART_DMA_SINGLE_INSTANCE
+    cfg = (whal_Stm32wb_UartDma_Cfg *)whal_Stm32wb_UartDma_Dev.cfg;
+    base = whal_Stm32wb_UartDma_Dev.base;
+#else
+    if (!uartDev || !uartDev->cfg)
+        return WHAL_EINVAL;
+
+    cfg = (whal_Stm32wb_UartDma_Cfg *)uartDev->cfg;
+    base = uartDev->base;
+#endif
+
+    /* Abandon any in-flight transfer so a later Init starts clean */
+    whal_Reg_Update(base, UART_CR3_REG,
+                    UART_CR3_DMAT_Msk | UART_CR3_DMAR_Msk, 0);
+    whal_Dma_Stop(cfg->dma, cfg->txCh);
+    whal_Dma_Stop(cfg->dma, cfg->rxCh);
+    cfg->txResult = WHAL_SUCCESS;
+    cfg->rxResult = WHAL_SUCCESS;
+
+    return whal_Stm32wb_Uart_Deinit(uartDev);
+}
+
 void whal_Stm32wb_UartDma_TxCallback(void *ctx, whal_Error err)
 {
     whal_Stm32wb_UartDma_Cfg *cfg = (whal_Stm32wb_UartDma_Cfg *)ctx;
@@ -266,7 +296,7 @@ void whal_Stm32wb_UartDma_RxCallback(void *ctx, whal_Error err)
 #ifndef WHAL_CFG_STM32WB_UART_DMA_DIRECT_API_MAPPING
 const whal_UartDriver whal_Stm32wb_UartDma_Driver = {
     .Init = whal_Stm32wb_Uart_Init,
-    .Deinit = whal_Stm32wb_Uart_Deinit,
+    .Deinit = whal_Stm32wb_UartDma_Deinit,
     .Send = whal_Stm32wb_UartDma_Send,
     .Recv = whal_Stm32wb_UartDma_Recv,
     .SendAsync = whal_Stm32wb_UartDma_SendAsync,

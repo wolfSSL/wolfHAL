@@ -56,20 +56,20 @@ extern const whal_EthPhyDriver whal_Lan8742a_Driver;
 /*
  * @brief Initialize the LAN8742A PHY.
  *
- * Resets the PHY, configures autonegotiation, and waits for link.
+ * Resets the PHY and enables autonegotiation. Does not wait for link.
  *
  * @param phyDev PHY device instance.
  *
- * @retval WHAL_SUCCESS   PHY initialized.
+ * @retval WHAL_SUCCESS   PHY reset and autonegotiation enabled.
  * @retval WHAL_EINVAL    Invalid arguments.
- * @retval WHAL_ETIMEOUT  Link did not come up.
+ * @retval WHAL_ETIMEOUT  PHY reset did not complete.
  */
 whal_Error whal_Lan8742a_Init(whal_EthPhy *phyDev);
 
 /*
  * @brief Deinitialize the LAN8742A PHY.
  *
- * Powers down the PHY.
+ * Powers down the PHY (BMCR power-down bit). Init clears it again.
  *
  * @param phyDev PHY device instance.
  *
@@ -84,6 +84,7 @@ whal_Error whal_Lan8742a_Deinit(whal_EthPhy *phyDev);
  * @param phyDev PHY device instance.
  * @param up     Output: 1 if link is up, 0 if down.
  * @param speed  Output: negotiated speed (10 or 100).
+ * @param duplex Output: 1 for full duplex, 0 for half duplex.
  *
  * @retval WHAL_SUCCESS Link state read.
  * @retval WHAL_EINVAL  Invalid arguments.

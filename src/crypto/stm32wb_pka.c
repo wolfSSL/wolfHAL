@@ -199,9 +199,9 @@ static void ReadOperand(size_t base, size_t offset,
 }
 
 /* Zero the slot footprint of a prior WriteOperand/ReadOperand call: the
- * numWords data words plus the one trailing word. Called on every op's
- * success path so the PKA RAM never carries stale operand or result bytes
- * into the next operation. */
+ * numWords data words plus the one trailing word. Called after every op,
+ * whatever its result, so the PKA RAM never carries stale operand or result
+ * bytes into the next operation. */
 static void ZeroOperand(size_t base, size_t offset, size_t dataSz)
 {
     size_t numWords = (dataSz + 3) / 4;
@@ -227,8 +227,13 @@ static whal_Error WaitForProcEnd(size_t base, whal_Timeout *timeout)
             whal_Reg_Write(base, PKA_CLRFR_REG, clrFlags);
             return (sr & errFlags) ? WHAL_EHARDWARE : WHAL_SUCCESS;
         }
-        if (WHAL_TIMEOUT_EXPIRED(timeout))
+        if (WHAL_TIMEOUT_EXPIRED(timeout)) {
+            /* Abort the operation so the PKA RAM is writable again */
+            whal_Reg_Update(base, PKA_CR_REG, PKA_CR_EN_Msk, 0);
+            whal_Reg_Write(base, PKA_CLRFR_REG, clrFlags);
+            whal_Reg_Update(base, PKA_CR_REG, PKA_CR_EN_Msk, PKA_CR_EN_Msk);
             return WHAL_ETIMEOUT;
+        }
     }
 }
 

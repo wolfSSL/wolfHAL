@@ -102,25 +102,26 @@ whal_Error whal_Stm32wb_Flash_Init(whal_Flash *flashDev);
  */
 whal_Error whal_Stm32wb_Flash_Deinit(whal_Flash *flashDev);
 /*
- * @brief Lock a flash range.
+ * @brief Lock the flash for writes (sets FLASH_CR.LOCK).
  *
  * @param flashDev Flash device instance.
- * @param addr     Flash address to lock.
- * @param len      Number of bytes to lock.
+ * @param addr     Unused; the whole flash is locked.
+ * @param len      Unused.
  *
  * @retval WHAL_SUCCESS Lock applied.
  * @retval WHAL_EINVAL  Invalid arguments.
  */
 whal_Error whal_Stm32wb_Flash_Lock(whal_Flash *flashDev, size_t addr, size_t len);
 /*
- * @brief Unlock a flash range.
+ * @brief Unlock the flash for writes via the KEYR sequence.
  *
  * @param flashDev Flash device instance.
- * @param addr     Flash address to unlock.
- * @param len      Number of bytes to unlock.
+ * @param addr     Unused; the whole flash is unlocked.
+ * @param len      Unused.
  *
- * @retval WHAL_SUCCESS Unlock applied.
- * @retval WHAL_EINVAL  Invalid arguments.
+ * @retval WHAL_SUCCESS   Unlock applied.
+ * @retval WHAL_EINVAL    Invalid arguments.
+ * @retval WHAL_EHARDWARE LOCK still set after the key sequence.
  */
 whal_Error whal_Stm32wb_Flash_Unlock(whal_Flash *flashDev, size_t addr, size_t len);
 /*
@@ -144,8 +145,12 @@ whal_Error whal_Stm32wb_Flash_Read(whal_Flash *flashDev, size_t addr, void *data
  * @param data     Buffer to program.
  * @param dataSz   Number of bytes to program.
  *
- * @retval WHAL_SUCCESS Program completed.
- * @retval WHAL_EINVAL  Invalid arguments.
+ * @retval WHAL_SUCCESS   Program completed.
+ * @retval WHAL_EINVAL    Null pointer, address/size not a multiple of 8, or
+ *                        range outside the flash region.
+ * @retval WHAL_ENOTREADY Flash busy or program/erase suspended (PESD).
+ * @retval WHAL_ETIMEOUT  BSY did not clear within the configured timeout.
+ * @retval WHAL_EHARDWARE Programming error reported in FLASH_SR.
  */
 whal_Error whal_Stm32wb_Flash_Write(whal_Flash *flashDev, size_t addr, const void *data,
                               size_t dataSz);
@@ -156,8 +161,11 @@ whal_Error whal_Stm32wb_Flash_Write(whal_Flash *flashDev, size_t addr, const voi
  * @param addr     Flash address to start erasing.
  * @param dataSz   Number of bytes to erase.
  *
- * @retval WHAL_SUCCESS Erase completed.
- * @retval WHAL_EINVAL  Invalid arguments.
+ * @retval WHAL_SUCCESS   Erase completed.
+ * @retval WHAL_EINVAL    Null pointer or range outside the flash region.
+ * @retval WHAL_ENOTREADY Flash busy or program/erase suspended (PESD).
+ * @retval WHAL_ETIMEOUT  BSY did not clear within the configured timeout.
+ * @retval WHAL_EHARDWARE Erase error reported in FLASH_SR.
  */
 whal_Error whal_Stm32wb_Flash_Erase(whal_Flash *flashDev, size_t addr, size_t dataSz);
 #endif /* !WHAL_CFG_STM32WB_FLASH_DIRECT_API_MAPPING */
