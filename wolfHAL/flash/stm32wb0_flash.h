@@ -34,15 +34,15 @@
  *   - Operations are launched by writing a single-byte opcode to
  *     COMMAND (ERASE=0x11, MASSERASE=0x22, WRITE=0x33, BURSTWRITE=0xCC,
  *     KEYWRITE=0xFF). There is no KEYR unlock sequence.
- *   - The 14-bit ADDRESS register encodes XADR[9:0]+YADR[5:0] (page +
- *     row + word) — not a byte address. Page = ADDRESS[15:9], word =
+ *   - The 17-bit ADDRESS register encodes XADDR[10:0]+YADDR[5:0] (page +
+ *     row + word), not a byte address. Page = ADDRESS[16:9], word =
  *     ADDRESS[5:0] (1 word = 4 bytes).
  *   - DATA0-3 carry up to 4 words for BURSTWRITE; single WRITE only
  *     uses DATA0.
  *   - Operation status is tracked through IRQSTAT (CMDSTART / CMDDONE
  *     write-1-to-clear flags). Errors land in CMDERR / ILLCMD.
- *   - Main flash spans 0x10040000 onward in 2 KB pages (96 pages on
- *     WB05KZ).
+ *   - Main flash spans 0x10040000 onward in 2 KB pages (256 pages on
+ *     WB09KE).
  *   - One specific address can be programmed at most twice between
  *     erases — the controller enforces this by only allowing 1->0
  *     transitions.
@@ -60,7 +60,7 @@ typedef struct whal_Stm32wb0_Flash_Cfg {
 /**
  * @brief Flash access latency selection (CONFIG.WAIT_STATES).
  *
- * 0 WS for system clock <= 32 MHz; 1 WS for 64 MHz (RM0529 9.4.2).
+ * 0 WS for system clock <= 32 MHz; 1 WS for 64 MHz (RM0505 9.3.2).
  */
 typedef enum whal_Stm32wb0_Flash_Latency {
     WHAL_STM32WB0_FLASH_LATENCY_0,
@@ -101,7 +101,7 @@ whal_Error whal_Stm32wb0_Flash_Init(whal_Flash *flashDev);
 whal_Error whal_Stm32wb0_Flash_Deinit(whal_Flash *flashDev);
 
 /**
- * @brief Write-protect the whole flash with a PAGEPROT segment.
+ * @brief Write-protect the whole flash with two PAGEPROT segments.
  *
  * Ignores @p addr and @p len.
  *

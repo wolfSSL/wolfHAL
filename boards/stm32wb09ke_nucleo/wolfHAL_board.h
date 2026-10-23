@@ -25,7 +25,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <wolfHAL/wolfHAL.h>
-#include <wolfHAL/platform/st/stm32wb05kz.h>
+#include <wolfHAL/platform/st/stm32wb09ke.h>
 
 extern whal_Uart g_whalUart;
 extern whal_Spi g_whalSpi;
@@ -54,10 +54,10 @@ enum {
 
 #define BOARD_LED_PIN 0
 
-/* Flash array on WB05KZ: 192 KB at 0x10040000, 2 KB pages = 96 pages.
+/* Flash array on WB09KE: 512 KB at 0x10040000, 2 KB pages = 256 pages.
  * Reserve the last page for test scratch. */
-#define BOARD_FLASH_START_ADDR  WHAL_STM32WB05_FLASH_ARRAY_BASE
-#define BOARD_FLASH_SIZE        WHAL_STM32WB05_FLASH_SIZE
+#define BOARD_FLASH_START_ADDR  WHAL_STM32WB09_FLASH_ARRAY_BASE
+#define BOARD_FLASH_SIZE        WHAL_STM32WB09_FLASH_SIZE
 #define BOARD_FLASH_SECTOR_SZ   0x800
 #define BOARD_FLASH_TEST_ADDR   (BOARD_FLASH_START_ADDR + BOARD_FLASH_SIZE - BOARD_FLASH_SECTOR_SZ)
 
@@ -69,7 +69,7 @@ enum {
 
 /* GPIO dev initializer — singleton defined in stm32wb0_gpio.c. */
 #define WHAL_CFG_STM32WB0_GPIO_DEV { \
-    .base = WHAL_STM32WB05_GPIO_BASE, \
+    .base = WHAL_STM32WB09_GPIO_BASE, \
     .cfg = (void *)&(const whal_Stm32wb0_Gpio_Cfg){ \
         .pinCfg = (const whal_Stm32wb0_Gpio_PinCfg[PIN_COUNT]){ \
             /* LD1 (blue) on PB1, output, push-pull, low speed, no pull */ \
@@ -129,18 +129,18 @@ enum {
 
 /* Flash dev initializer — singleton defined in stm32wb0_flash.c. */
 #define WHAL_CFG_STM32WB0_FLASH_DEV { \
-    .driver = WHAL_STM32WB05_FLASH_DRIVER, \
-    .base   = WHAL_STM32WB05_FLASH_BASE, \
+    .driver = WHAL_STM32WB09_FLASH_DRIVER, \
+    .base   = WHAL_STM32WB09_FLASH_BASE, \
     .cfg    = (void *)&(const whal_Stm32wb0_Flash_Cfg){ \
-        .startAddr = WHAL_STM32WB05_FLASH_ARRAY_BASE, \
-        .size      = WHAL_STM32WB05_FLASH_SIZE, \
+        .startAddr = WHAL_STM32WB09_FLASH_ARRAY_BASE, \
+        .size      = WHAL_STM32WB09_FLASH_SIZE, \
         .timeout   = &g_whalTimeout, \
     }, \
 }
 
 /* RNG dev initializer — singleton defined in stm32wb0_rng.c. */
 #define WHAL_CFG_STM32WB0_RNG_DEV { \
-    .base = WHAL_STM32WB05_RNG_BASE, \
+    .base = WHAL_STM32WB09_RNG_BASE, \
     /* .driver: direct API mapping */ \
     .cfg  = (void *)&(const whal_Stm32wb0_Rng_Cfg){ \
         .timeout = &g_whalTimeout, \
@@ -150,7 +150,7 @@ enum {
 /* IWDG dev initializer — singleton defined in stm32wb_iwdg.c
  * (stm32wb0 alias points at the stm32wb leaf). */
 #define WHAL_CFG_STM32WB0_IWDG_DEV { \
-    .base = WHAL_STM32WB05_IWDG_BASE, \
+    .base = WHAL_STM32WB09_IWDG_BASE, \
     /* .driver: direct API mapping */ \
     .cfg  = (void *)&(const whal_Stm32wb0_Iwdg_Cfg){ \
         .prescaler = WHAL_STM32WB0_IWDG_PR_32, \
@@ -162,8 +162,8 @@ enum {
 /* PKA dev initializer — singleton defined in stm32wb_pka.c
  * (stm32wb0 alias points at the stm32wb leaf). */
 #define WHAL_CFG_STM32WB0_PKA_DEV { \
-    .base   = WHAL_STM32WB05_PKA_BASE, \
-    .driver = WHAL_STM32WB05_PKA_DRIVER, \
+    .base   = WHAL_STM32WB09_PKA_BASE, \
+    .driver = WHAL_STM32WB09_PKA_DRIVER, \
     .cfg    = (void *)&(const whal_Stm32wb0_Pka_Cfg){ \
         .timeout = &g_whalTimeout, \
     }, \

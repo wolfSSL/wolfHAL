@@ -19,12 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
  */
 
-/* Board configuration for the NUCLEO-WB05KZ dev board (UM3343 / MB1801+MB2032). */
+/* Board configuration for the NUCLEO-WB09KE dev board (UM3345 / MB1801+MB2032). */
 
 #include <stdint.h>
 #include <stddef.h>
 #include "wolfHAL_board.h"
-#include <wolfHAL/platform/st/stm32wb05kz.h>
+#include <wolfHAL/platform/st/stm32wb09ke.h>
 
 /* Target SYSCLK 64 MHz from the HSI64M tree (PLL-locked onto the 32 MHz
  * HSE crystal). Flash needs 1 wait state above 32 MHz. */
@@ -49,34 +49,34 @@ whal_Timeout g_whalTimeout = {
 };
 
 static const whal_Stm32wb0_Rcc_PeriphClk g_periphClks[] = {
-    {WHAL_STM32WB05_GPIOA_CLOCK},
-    {WHAL_STM32WB05_GPIOB_CLOCK},
-    {WHAL_STM32WB05_USART1_CLOCK},
-    {WHAL_STM32WB05_SPI3_CLOCK},
-    {WHAL_STM32WB05_I2C1_CLOCK},
-    {WHAL_STM32WB05_PKA_CLOCK},
-    {WHAL_STM32WB05_SYSCFG_CLOCK},
-    {WHAL_STM32WB05_RNG_CLOCK},
+    {WHAL_STM32WB09_GPIOA_CLOCK},
+    {WHAL_STM32WB09_GPIOB_CLOCK},
+    {WHAL_STM32WB09_USART1_CLOCK},
+    {WHAL_STM32WB09_SPI3_CLOCK},
+    {WHAL_STM32WB09_I2C1_CLOCK},
+    {WHAL_STM32WB09_PKA_CLOCK},
+    {WHAL_STM32WB09_SYSCFG_CLOCK},
+    {WHAL_STM32WB09_RNG_CLOCK},
 #ifdef BOARD_WATCHDOG_IWDG
-    {WHAL_STM32WB05_IWDG_CLOCK},
+    {WHAL_STM32WB09_IWDG_CLOCK},
 #endif
 };
 #define PERIPH_CLK_COUNT (sizeof(g_periphClks) / sizeof(g_periphClks[0]))
 
-/* UART (USART via VCP at 115200 baud).
- * BRR uses APB1 clock = SYSCLK on WB0. */
+/* UART (USART via VCP at 115200 baud). BRR uses the fixed 16 MHz USART
+ * kernel clock. */
 whal_Uart g_whalUart = {
-    .base = WHAL_STM32WB05_USART1_BASE,
+    .base = WHAL_STM32WB09_USART1_BASE,
     /* .driver: direct API mapping */
     .cfg = &(whal_Stm32wb0_Uart_Cfg) {
         .timeout = &g_whalTimeout,
-        .brr = WHAL_STM32WB0_UART_BRR(16000000, 115200),
+        .brr = WHAL_STM32WB0_UART_BRR(WHAL_STM32WB0_UART_CLK_HZ, 115200),
     },
 };
 
 /* SPI3 */
 whal_Spi g_whalSpi = {
-    .base = WHAL_STM32WB05_SPI3_BASE,
+    .base = WHAL_STM32WB09_SPI3_BASE,
     /* .driver: direct API mapping */
     .cfg = &(whal_Stm32wb0_Spi_Cfg) {
         .pclk = BOARD_SYSCLK_HZ,
@@ -86,7 +86,7 @@ whal_Spi g_whalSpi = {
 
 /* I2C1 */
 whal_I2c g_whalI2c = {
-    .base = WHAL_STM32WB05_I2C1_BASE,
+    .base = WHAL_STM32WB09_I2C1_BASE,
     /* .driver: direct API mapping */
     .cfg = &(whal_Stm32wb0_I2c_Cfg) {
         .pclk = BOARD_SYSCLK_HZ,
@@ -96,8 +96,8 @@ whal_I2c g_whalI2c = {
 
 /* PKA (public-key accelerator) — vtable dispatcher for whal_Crypto_Init/Deinit. */
 whal_Crypto g_whalPka = {
-    .base   = WHAL_STM32WB05_PKA_BASE,
-    .driver = WHAL_STM32WB05_PKA_DRIVER,
+    .base   = WHAL_STM32WB09_PKA_BASE,
+    .driver = WHAL_STM32WB09_PKA_DRIVER,
     .cfg    = &(whal_Stm32wb0_Pka_Cfg) {
         .timeout = &g_whalTimeout,
     },
@@ -105,7 +105,7 @@ whal_Crypto g_whalPka = {
 
 #ifdef BOARD_WATCHDOG_IWDG
 whal_Watchdog g_whalWatchdog = {
-    .base   = WHAL_STM32WB05_IWDG_BASE,
+    .base   = WHAL_STM32WB09_IWDG_BASE,
     /* .driver: direct API mapping */
     .cfg    = &(whal_Stm32wb0_Iwdg_Cfg) {
         .prescaler = WHAL_STM32WB0_IWDG_PR_32,
@@ -127,39 +127,42 @@ whal_Error Board_Init(void)
     whal_Error err;
 
     /* Bring up flash latency BEFORE raising SYSCLK above 32 MHz.
-     * RM0529 9.4.2: 1 wait state for sysclk == 64 MHz. */
+     * RM0505 9.3.2: 1 wait state for sysclk == 64 MHz. */
     err = whal_Stm32wb0_Flash_Ext_SetLatency(BOARD_FLASH_DEV,
                                              WHAL_STM32WB0_FLASH_LATENCY_1);
     if (err)
         return err;
 
-    /* HSI64M is on at reset; defensively poll its ready bit. */
-    err = whal_Stm32wb0_Rcc_EnableHsi();
+    /* RC64MPLL runs from reset as the free-running 64 MHz HSI. */
+    err = whal_Stm32wb0_Rcc_EnableHsi(&g_whalTimeout);
     if (err)
         return err;
 
-    /* Enable the 32 MHz HSE crystal and lock the RC64MPLL onto it.
-     * The Nucleo board ships an X2 32 MHz crystal so HSE is the right
-     * PLL reference; running the PLL locked yields a clean 64 MHz tree. */
-    err = whal_Stm32wb0_Rcc_EnableHse();
+    /* Lock the RC64MPLL onto the 32 MHz HSE crystal for an accurate
+     * PLL64M, then run SYSCLK undivided at 64 MHz. */
+    err = whal_Stm32wb0_Rcc_EnableOsc(
+        &(whal_Stm32wb0_Rcc_OscCfg){WHAL_STM32WB0_RCC_HSE_CFG},
+        &g_whalTimeout);
     if (err)
         return err;
-    err = whal_Stm32wb0_Rcc_EnableHsiPll();
+    err = whal_Stm32wb0_Rcc_EnablePll(
+        &(whal_Stm32wb0_Rcc_PllCfg){.lockDetNstop = 0}, &g_whalTimeout);
     if (err)
         return err;
-
-    /* Source the fast clock tree from the PLL-locked RC64M, then divide
-     * by 1 to land at 64 MHz SYSCLK. */
-    err = whal_Stm32wb0_Rcc_SetFastClkSrc(WHAL_STM32WB0_RCC_FASTCLK_RC64MPLL);
-    if (err)
-        return err;
-    err = whal_Stm32wb0_Rcc_SetSysClock(WHAL_STM32WB0_RCC_SYSCLK_64MHZ);
+    err = whal_Stm32wb0_Rcc_SetSysClock(WHAL_STM32WB0_RCC_SYSCLK_SRC_RC64MPLL,
+                                        WHAL_STM32WB0_RCC_SYSCLK_64MHZ,
+                                        &g_whalTimeout);
     if (err)
         return err;
 
 #ifdef BOARD_WATCHDOG_IWDG
-    /* The IWDG is clocked from LSI (~32 kHz). */
-    err = whal_Stm32wb0_Rcc_EnableLsi();
+    /* The IWDG is clocked from the slow clock tree, fed here by LSI. */
+    err = whal_Stm32wb0_Rcc_EnableOsc(
+        &(whal_Stm32wb0_Rcc_OscCfg){WHAL_STM32WB0_RCC_LSI_CFG},
+        &g_whalTimeout);
+    if (err)
+        return err;
+    err = whal_Stm32wb0_Rcc_SetSlowClock(WHAL_STM32WB0_RCC_SLOWCLK_SRC_LSI);
     if (err)
         return err;
 #endif
@@ -259,13 +262,26 @@ whal_Error Board_Deinit(void)
     }
 
 #ifdef BOARD_WATCHDOG_IWDG
-    err = whal_Stm32wb0_Rcc_DisableLsi();
+    err = whal_Stm32wb0_Rcc_SetSlowClock(WHAL_STM32WB0_RCC_SLOWCLK_SRC_NONE);
+    if (err)
+        return err;
+    err = whal_Stm32wb0_Rcc_DisableOsc(
+        &(whal_Stm32wb0_Rcc_OscCfg){WHAL_STM32WB0_RCC_LSI_CFG});
     if (err)
         return err;
 #endif
 
     /* Drop back to the default 16 MHz sysclk before dropping flash latency. */
-    err = whal_Stm32wb0_Rcc_SetSysClock(WHAL_STM32WB0_RCC_SYSCLK_16MHZ);
+    err = whal_Stm32wb0_Rcc_SetSysClock(WHAL_STM32WB0_RCC_SYSCLK_SRC_RC64MPLL,
+                                        WHAL_STM32WB0_RCC_SYSCLK_16MHZ,
+                                        &g_whalTimeout);
+    if (err)
+        return err;
+    err = whal_Stm32wb0_Rcc_DisablePll();
+    if (err)
+        return err;
+    err = whal_Stm32wb0_Rcc_DisableOsc(
+        &(whal_Stm32wb0_Rcc_OscCfg){WHAL_STM32WB0_RCC_HSE_CFG});
     if (err)
         return err;
 

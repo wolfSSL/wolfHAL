@@ -27,8 +27,8 @@
 
 /*
  * GPIO register offsets. Port and pin are derived from the LED entry in
- * whal_Stm32wb_Gpio_Dev.cfg->pinCfg[BOARD_LED_PIN]. Port stride is 0x400 on all
- * supported STM32 families.
+ * whal_Stm32wb_Gpio_Dev.cfg->pinCfg[BOARD_LED_PIN]. Ports are
+ * WHAL_STM32WB_GPIO_PORT_SIZE apart.
  */
 #define GPIOx_MODE_REG    0x00
 #define GPIOx_OTYPER_REG  0x04
@@ -37,13 +37,12 @@
 #define GPIOx_ODR_REG     0x14
 #define GPIOx_AFRL_REG    0x20
 #define GPIOx_AFRH_REG    0x24
-#define GPIOx_STRIDE      0x400
 
 static inline size_t Board_LedPortBase(void)
 {
     const whal_Stm32wb_Gpio_Cfg *cfg = (const whal_Stm32wb_Gpio_Cfg *)whal_Stm32wb_Gpio_Dev.cfg;
     whal_Stm32wb_Gpio_PinCfg led = cfg->pinCfg[BOARD_LED_PIN];
-    return whal_Stm32wb_Gpio_Dev.base + WHAL_STM32WB_GPIO_GET_PORT(led) * GPIOx_STRIDE;
+    return whal_Stm32wb_Gpio_Dev.base + WHAL_STM32WB_GPIO_GET_PORT(led) * WHAL_STM32WB_GPIO_PORT_SIZE;
 }
 
 static inline size_t Board_LedPinNum(void)
@@ -105,7 +104,7 @@ static void Test_Gpio_PinTableRegisters(void)
     for (size_t i = 0; i < cfg->pinCount; i++) {
         whal_Stm32wb_Gpio_PinCfg p = cfg->pinCfg[i];
         size_t base = whal_Stm32wb_Gpio_Dev.base +
-                      WHAL_STM32WB_GPIO_GET_PORT(p) * GPIOx_STRIDE;
+                      WHAL_STM32WB_GPIO_GET_PORT(p) * WHAL_STM32WB_GPIO_PORT_SIZE;
         size_t pin = WHAL_STM32WB_GPIO_GET_PIN(p);
         size_t pos2 = pin << 1;
         size_t val = 0;

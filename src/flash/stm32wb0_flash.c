@@ -31,7 +31,7 @@
 const whal_Flash whal_Stm32wb0_Flash_Dev = WHAL_CFG_STM32WB0_FLASH_DEV;
 
 /*
- * STM32WB0 Flash controller register layout (RM0529 section 9.4).
+ * STM32WB0 Flash controller register layout (RM0505 section 9.3).
  *
  * The controller is command-driven: write an opcode to COMMAND, watch
  * IRQSTAT for CMDSTART then CMDDONE, then clear those flags by writing
@@ -70,13 +70,17 @@ const whal_Flash whal_Stm32wb0_Flash_Dev = WHAL_CFG_STM32WB0_FLASH_DEV;
 
 #define FLASH_ADDRESS_REG   0x18
 
-/* PAGEPROTx: two write-protect segments per register (RM0529 9.4.9) */
+/* PAGEPROTx: two write-protect segments per register (RM0505 9.3.9) */
 #define FLASH_PAGEPROT0_REG 0x34
 #define FLASH_PAGEPROT1_REG 0x38
 #define FLASH_PAGEPROT_SEG0_SIZE_Pos   0
-#define FLASH_PAGEPROT_SEG0_SIZE_Msk   (0x7FUL << FLASH_PAGEPROT_SEG0_SIZE_Pos)
+#define FLASH_PAGEPROT_SEG0_SIZE_Msk   (0xFFUL << FLASH_PAGEPROT_SEG0_SIZE_Pos)
 #define FLASH_PAGEPROT_SEG0_OFFSET_Pos 8
-#define FLASH_PAGEPROT_SEG0_OFFSET_Msk (0x7FUL << FLASH_PAGEPROT_SEG0_OFFSET_Pos)
+#define FLASH_PAGEPROT_SEG0_OFFSET_Msk (0xFFUL << FLASH_PAGEPROT_SEG0_OFFSET_Pos)
+#define FLASH_PAGEPROT_SEG1_SIZE_Pos   16
+#define FLASH_PAGEPROT_SEG1_SIZE_Msk   (0xFFUL << FLASH_PAGEPROT_SEG1_SIZE_Pos)
+#define FLASH_PAGEPROT_SEG1_OFFSET_Pos 24
+#define FLASH_PAGEPROT_SEG1_OFFSET_Msk (0xFFUL << FLASH_PAGEPROT_SEG1_OFFSET_Pos)
 #define FLASH_DATA0_REG     0x40
 #define FLASH_DATA1_REG     0x44
 #define FLASH_DATA2_REG     0x48
@@ -188,12 +192,17 @@ whal_Error whal_Stm32wb0_Flash_Lock(whal_Flash *flashDev, size_t addr,
     (void)addr;
     (void)len;
 
-    /* A segment from page 0 with the largest SIZE ends at the last page */
+    /* Pages 0-127 and 128 onward; a segment running past the end is
+     * clamped to the last page */
     whal_Reg_Write(base, FLASH_PAGEPROT0_REG,
                    whal_SetBits(FLASH_PAGEPROT_SEG0_OFFSET_Msk,
                                 FLASH_PAGEPROT_SEG0_OFFSET_Pos, 0) |
                    whal_SetBits(FLASH_PAGEPROT_SEG0_SIZE_Msk,
-                                FLASH_PAGEPROT_SEG0_SIZE_Pos, 0x7F));
+                                FLASH_PAGEPROT_SEG0_SIZE_Pos, 0x80) |
+                   whal_SetBits(FLASH_PAGEPROT_SEG1_OFFSET_Msk,
+                                FLASH_PAGEPROT_SEG1_OFFSET_Pos, 0x80) |
+                   whal_SetBits(FLASH_PAGEPROT_SEG1_SIZE_Msk,
+                                FLASH_PAGEPROT_SEG1_SIZE_Pos, 0x80));
     return WHAL_SUCCESS;
 }
 

@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        board: [stm32wb55xx_nucleo, stm32wba55cg_nucleo, stm32wb05kz_nucleo, pic32cz_curiosity_ultra, stm32h563zi_nucleo, stm32f411_blackpill, stm32c031_nucleo, stm32f091rc_nucleo, stm32f302r8_nucleo, stm32l152re_nucleo, stm32n657a0_nucleo, stm32u5a5zj_nucleo]
+        board: [stm32wb55xx_nucleo, stm32wba55cg_nucleo, stm32wb09ke_nucleo, pic32cz_curiosity_ultra, stm32h563zi_nucleo, stm32f411_blackpill, stm32c031_nucleo, stm32f091rc_nucleo, stm32f302r8_nucleo, stm32l152re_nucleo, stm32n657a0_nucleo, stm32u5a5zj_nucleo]
         extra_cflags: ["", "-DWHAL_CFG_NO_TIMEOUT"]
         include:
           - board: stm32wb55xx_nucleo

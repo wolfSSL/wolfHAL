@@ -38,8 +38,16 @@
  * - Internal pull-up and pull-down resistors
  * - Alternate function mapping for peripheral connections (UART, SPI, etc.)
  *
- * Each port occupies 0x400 bytes in the memory map starting from GPIOA base.
+ * Ports are WHAL_STM32WB_GPIO_PORT_SIZE bytes apart starting from GPIOA base.
  */
+
+/*
+ * @brief Address stride between consecutive GPIO ports. Platforms with a
+ * different port spacing define this before including this header.
+ */
+#ifndef WHAL_STM32WB_GPIO_PORT_SIZE
+#define WHAL_STM32WB_GPIO_PORT_SIZE 0x400
+#endif
 
 /*
  * @brief Packed per-pin GPIO configuration (uint32_t).
@@ -138,7 +146,8 @@ extern const whal_Gpio whal_Stm32wb_Gpio_Dev;
     !defined(WHAL_CFG_STM32F4_GPIO_DIRECT_API_MAPPING) && \
     !defined(WHAL_CFG_STM32H5_GPIO_DIRECT_API_MAPPING) && \
     !defined(WHAL_CFG_STM32C0_GPIO_DIRECT_API_MAPPING) && \
-    !defined(WHAL_CFG_STM32F0_GPIO_DIRECT_API_MAPPING)
+    !defined(WHAL_CFG_STM32F0_GPIO_DIRECT_API_MAPPING) && \
+    !defined(WHAL_CFG_STM32WB0_GPIO_DIRECT_API_MAPPING)
 /*
  * @brief Driver instance for STM32 GPIO.
  */

@@ -32,12 +32,9 @@ const whal_Gpio whal_Stm32wb_Gpio_Dev = WHAL_CFG_STM32WB_GPIO_DEV;
 /*
  * STM32WB GPIO Register Definitions
  *
- * Each GPIO port has a 0x400 byte register block. Register offsets
- * are relative to the port base address.
+ * Register offsets are relative to the port base address. Ports are
+ * WHAL_STM32WB_GPIO_PORT_SIZE bytes apart.
  */
-
-/* Size of each GPIO port register block */
-#define GPIO_PORT_SIZE 0x400
 
 /* Mode register - 2 bits per pin, selects input/output/altfn/analog */
 #define GPIO_MODE_REG     0x00
@@ -80,7 +77,7 @@ static inline whal_Error whal_Stm32wb_Gpio_InitPin(whal_Stm32wb_Gpio_PinCfg cfg)
         return WHAL_EINVAL;
 
     portBase = whal_Stm32wb_Gpio_Dev.base +
-               (WHAL_STM32WB_GPIO_GET_PORT(cfg) * GPIO_PORT_SIZE);
+               (WHAL_STM32WB_GPIO_GET_PORT(cfg) * WHAL_STM32WB_GPIO_PORT_SIZE);
     pos2 = pin << 1;
     mask2 = WHAL_BITMASK(2) << pos2;
     mask1 = 1UL << pin;
@@ -158,7 +155,7 @@ static whal_Error whal_Stm32wb_Gpio_SetOrGet(whal_Gpio *gpioDev, size_t idx,
     port = WHAL_STM32WB_GPIO_GET_PORT(pinCfg);
     pin = WHAL_STM32WB_GPIO_GET_PIN(pinCfg);
 
-    portBase = whal_Stm32wb_Gpio_Dev.base + (port * GPIO_PORT_SIZE);
+    portBase = whal_Stm32wb_Gpio_Dev.base + (port * WHAL_STM32WB_GPIO_PORT_SIZE);
     mask = 1UL << pin;
 
     if (set) {

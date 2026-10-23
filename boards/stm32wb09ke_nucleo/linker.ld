@@ -23,24 +23,24 @@
 ENTRY(Reset_Handler)
 
 /*
- * STM32WB05KZ memory layout (DS14591):
- *   Flash: 192 KB @ 0x10040000 (96 pages of 2 KB)
- *   SRAM0: 12 KB @ 0x20000000  (always retained in Deepstop)
- *   SRAM1: 12 KB @ 0x20003000  (retention is programmable)
+ * STM32WB09KE memory layout (RM0505 Table 3):
+ *   Flash: 512 KB @ 0x10040000 (256 pages of 2 KB)
+ *   SRAM0: 16 KB @ 0x20000000  (always retained in Deepstop)
+ *   SRAM1: 16 KB @ 0x20004000  (retention is programmable)
+ *   SRAM2: 16 KB @ 0x20008000  (retention is programmable)
+ *   SRAM3: 16 KB @ 0x2000C000  (retention is programmable)
  *
- * We treat the two SRAM banks as one contiguous 24 KB region — they are
- * adjacent in the memory map and the linker can place the heap/stack at
- * the top of SRAM1 without any special handling. The lowest part of
- * SRAM0 (0x20000000–0x20000033) is reserved for boot-time use; the
- * vector remap puts those words at 0x00000000 — see RM0529 Table 4.
+ * The four adjacent banks are treated as one 64 KB region. SRAM0
+ * 0x20000000-0x20000017 is reserved for the boot ROM and low-power
+ * manager (RM0505 Table 4), so RAM starts just above it.
  */
-_estack = 0x20006000;       /* end of SRAM1 = SRAM0 base + 24 KB */
+_estack = 0x20010000;       /* end of SRAM3 */
 _Min_Stack_Size = 0x500;    /* required amount of stack */
 
 MEMORY
 {
-FLASH (rx) : ORIGIN = 0x10040000, LENGTH = 192K
-RAM (rwx)  : ORIGIN = 0x20000000, LENGTH = 24K
+FLASH (rx) : ORIGIN = 0x10040000, LENGTH = 512K
+RAM (rwx)  : ORIGIN = 0x20000018, LENGTH = 64K - 0x18
 }
 
 SECTIONS
