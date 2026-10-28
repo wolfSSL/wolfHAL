@@ -26,18 +26,21 @@
 #include <wolfHAL/gpio/esp32c6_gpio.h>
 #include <wolfHAL/uart/esp32c6_uart.h>
 #include <wolfHAL/timer/esp32c6_systimer.h>
+#include <wolfHAL/irq/esp32c6_intc.h>
 
 /*
  * @file esp32c6.h
- * @brief Convenience initializers for ESP32-C6 device instances (stub).
+ * @brief Convenience initializers for ESP32-C6 device instances.
  *
  * Peripheral base addresses from the ESP32-C6 TRM (System and Memory, peripheral
  * address table). Peripherals are mapped from 0x6000_0000.
  *   UART0:    0x6000_0000
  *   UART1:    0x6000_1000
  *   SYSTIMER: 0x6000_A000
+ *   INTMTX:   0x6001_0000
  *   IO MUX:   0x6009_0000
  *   GPIO:     0x6009_1000
+ *   PLIC MX:  0x2000_1000
  */
 
 /* --- Device macros --- */
@@ -51,6 +54,10 @@
 #define WHAL_ESP32C6_SYSTIMER_BASE   0x6000A000
 #define WHAL_ESP32C6_SYSTIMER_DRIVER &whal_Esp32c6_Systimer_Driver
 
+#define WHAL_ESP32C6_INTMTX_BASE   0x60010000
+#define WHAL_ESP32C6_PLIC_MX_BASE  0x20001000
+#define WHAL_ESP32C6_INTC_DRIVER   &whal_Esp32c6_Intc_Driver
+
 #define WHAL_ESP32C6_IOMUX_BASE 0x60090000
 
 /* IO MUX function routing UART0 directly on GPIO16 (TX) and GPIO17 (RX). */
@@ -59,6 +66,13 @@
 
 #define WHAL_ESP32C6_GPIO_BASE   0x60091000
 #define WHAL_ESP32C6_GPIO_DRIVER &whal_Esp32c6_Gpio_Driver
+
+/* --- Interrupt matrix sources (TRM Table 10.3-1) --- */
+
+#define WHAL_ESP32C6_INTSRC_UART0             43
+#define WHAL_ESP32C6_INTSRC_SYSTIMER_TARGET0  57
+#define WHAL_ESP32C6_INTSRC_SYSTIMER_TARGET1  58
+#define WHAL_ESP32C6_INTSRC_SYSTIMER_TARGET2  59
 
 /* --- Peripheral clock gates (PCR, TRM chapter 8) --- */
 

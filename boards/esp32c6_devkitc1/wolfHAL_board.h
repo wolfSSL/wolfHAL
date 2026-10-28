@@ -34,6 +34,9 @@ extern volatile uint32_t g_tick;
 
 #define BOARD_LED_PIN 0
 
+/* CPU interrupt line carrying the SYSTIMER tick; ivt.c slot 1 must match. */
+#define BOARD_SYSTIMER_CPU_INT 1
+
 /* BOARD_*_DEV: how this board reaches each peripheral. */
 #define BOARD_GPIO_DEV  WHAL_INTERNAL_DEV
 #define BOARD_UART_DEV  (&g_whalUart)
@@ -86,6 +89,16 @@ extern volatile uint32_t g_tick;
         .comp = WHAL_ESP32C6_SYSTIMER_COMP0, \
         .compValue = 0, \
         .period = 16000, \
+    }, \
+}
+
+/* Interrupt controller dev initializer: single-instance device defined in
+ * esp32c6_intc.c. */
+#define WHAL_CFG_ESP32C6_INTC_DEV { \
+    .base = WHAL_ESP32C6_INTMTX_BASE, \
+    /* .driver: direct API mapping */ \
+    .cfg = (void *)&(const whal_Esp32c6_Intc_DevCfg){ \
+        .plicMxBase = WHAL_ESP32C6_PLIC_MX_BASE, \
     }, \
 }
 

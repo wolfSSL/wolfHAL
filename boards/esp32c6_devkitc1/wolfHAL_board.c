@@ -47,9 +47,16 @@ static const whal_Esp32c6_Clock_PeriphClk g_periphClks[] = {
 };
 #define PERIPH_CLK_COUNT (sizeof(g_periphClks) / sizeof(g_periphClks[0]))
 
+void __attribute__((interrupt)) Systimer_Handler(void)
+{
+    whal_Esp32c6_Systimer_IrqHandler(&g_whalTimer);
+    g_tick++;
+}
+
 void Board_WaitMs(size_t ms)
 {
-    (void)ms;
+    uint32_t startCount = g_tick;
+    while (g_tick - startCount < ms);
 }
 
 whal_Error Board_Init(void)
@@ -80,6 +87,30 @@ whal_Error Board_Init(void)
         return err;
     }
 
+    err = whal_Irq_Init(WHAL_INTERNAL_DEV);
+    if (err) {
+        return err;
+    }
+
+    err = whal_Timer_Init(&g_whalTimer);
+    if (err) {
+        return err;
+    }
+
+    err = whal_Irq_Enable(WHAL_INTERNAL_DEV, WHAL_ESP32C6_INTSRC_SYSTIMER_TARGET0,
+                          &(whal_Esp32c6_Intc_Cfg){
+                              .cpuLine = BOARD_SYSTIMER_CPU_INT,
+                              .priority = 1,
+                          });
+    if (err) {
+        return err;
+    }
+
+    err = whal_Timer_Start(&g_whalTimer);
+    if (err) {
+        return err;
+    }
+
     err = Peripheral_Init();
     if (err) {
         return err;
@@ -93,6 +124,26 @@ whal_Error Board_Deinit(void)
     whal_Error err;
 
     err = Peripheral_Deinit();
+    if (err) {
+        return err;
+    }
+
+    err = whal_Timer_Stop(&g_whalTimer);
+    if (err) {
+        return err;
+    }
+
+    err = whal_Timer_Deinit(&g_whalTimer);
+    if (err) {
+        return err;
+    }
+
+    err = whal_Irq_Disable(WHAL_INTERNAL_DEV, WHAL_ESP32C6_INTSRC_SYSTIMER_TARGET0);
+    if (err) {
+        return err;
+    }
+
+    err = whal_Irq_Deinit(WHAL_INTERNAL_DEV);
     if (err) {
         return err;
     }

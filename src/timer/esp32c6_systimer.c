@@ -326,6 +326,32 @@ whal_Error whal_Esp32c6_Systimer_Reset(whal_Timer *timerDev)
     return WHAL_SUCCESS;
 }
 
+void whal_Esp32c6_Systimer_IrqHandler(whal_Timer *timerDev)
+{
+#ifdef WHAL_CFG_ESP32C6_SYSTIMER_SINGLE_INSTANCE
+    const whal_Esp32c6_Systimer_Cfg *cfg =
+        (const whal_Esp32c6_Systimer_Cfg *)whal_Esp32c6_Systimer_Dev.cfg;
+    size_t base = whal_Esp32c6_Systimer_Dev.base;
+    (void)timerDev;
+#else
+    const whal_Esp32c6_Systimer_Cfg *cfg;
+    size_t base;
+
+    if (!timerDev || !timerDev->cfg) {
+        return;
+    }
+
+    base = timerDev->base;
+    cfg = (const whal_Esp32c6_Systimer_Cfg *)timerDev->cfg;
+#endif
+
+    if (cfg->comp > WHAL_ESP32C6_SYSTIMER_COMP2) {
+        return;
+    }
+
+    whal_Reg_Write(base, SYSTIMER_INT_CLR_REG, compIntMsk[cfg->comp]);
+}
+
 #ifndef WHAL_CFG_ESP32C6_SYSTIMER_DIRECT_API_MAPPING
 const whal_TimerDriver whal_Esp32c6_Systimer_Driver = {
     .Init = whal_Esp32c6_Systimer_Init,

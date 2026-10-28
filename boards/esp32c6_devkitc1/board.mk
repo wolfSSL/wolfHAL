@@ -32,7 +32,8 @@ OBJCOPY = $(GCC_PATH)$(GCC_PREFIX)objcopy
 CFLAGS += -Wall -Werror $(INCLUDE) -g3 -Os -ffunction-sections -fdata-sections \
  -ffreestanding -nostdlib -march=rv32imac_zicsr -mabi=ilp32 \
  -DPLATFORM_ESP32C6 -MMD -MP \
- -DWHAL_CFG_ESP32C6_GPIO_DIRECT_API_MAPPING
+ -DWHAL_CFG_ESP32C6_GPIO_DIRECT_API_MAPPING \
+ -DWHAL_CFG_ESP32C6_INTC_DIRECT_API_MAPPING
 LDFLAGS = -march=rv32imac_zicsr -mabi=ilp32 -ffreestanding -nostartfiles -nostdlib \
  -Wl,--gc-sections -static
 

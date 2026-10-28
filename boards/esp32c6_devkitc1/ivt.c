@@ -57,8 +57,9 @@ extern void _vector_table(void);
  * 2-byte c.j (RV32IMAC has the C extension), which would corrupt the 4-byte
  * stride. `aligned(256)` matches the 256-byte base-alignment mtvec requires.
  *
- * Every slot defaults to _default_handler. To service a specific interrupt,
- * replace its `j _default_handler` with a jump to a dedicated handler.
+ * Unused slots go to _default_handler. A serviced interrupt's slot jumps to a
+ * handler declared __attribute__((interrupt)), which saves registers and
+ * returns with mret.
  */
 __attribute__((naked, aligned(256), section(".vectors")))
 void _vector_table(void)
@@ -67,7 +68,7 @@ void _vector_table(void)
         ".option push       \n"
         ".option norvc      \n"
         "j _default_handler \n"   /*  0  exception entry                     */
-        "j _default_handler \n"   /*  1                                      */
+        "j Systimer_Handler \n"   /*  1  SYSTIMER tick (BOARD_SYSTIMER_CPU_INT) */
         "j _default_handler \n"   /*  2                                      */
         "j _default_handler \n"   /*  3                                      */
         "j _default_handler \n"   /*  4                                      */
@@ -142,9 +143,8 @@ void _start(void)
  * 0). Prepare the C environment, point mtvec at the trap table, then hand off to
  * main().
  *
- * Global interrupts stay disabled: this build wires up no ISRs, so any stray
- * trap parks in _default_handler rather than vectoring into empty slots. Enable
- * them (and configure the interrupt controller) once a real ISR exists.
+ * Global interrupts stay disabled here; Board_Init enables them through the
+ * interrupt controller driver once the vector table is in place.
  *
  * The .data and .bss bounds are word-aligned by linker.ld, so both loops move a
  * word at a time.

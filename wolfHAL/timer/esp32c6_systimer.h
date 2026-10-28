@@ -140,4 +140,12 @@ whal_Error whal_Esp32c6_Systimer_Stop(whal_Timer *timerDev);
 whal_Error whal_Esp32c6_Systimer_Reset(whal_Timer *timerDev);
 #endif /* !WHAL_CFG_ESP32C6_SYSTIMER_DIRECT_API_MAPPING */
 
+/*
+ * @brief Clear the comparator's alarm interrupt. Call from the board's ISR
+ * for this comparator's CPU interrupt line.
+ *
+ * @param timerDev Timer device instance.
+ */
+void whal_Esp32c6_Systimer_IrqHandler(whal_Timer *timerDev);
+
 #endif /* WHAL_ESP32C6_SYSTIMER_H */
