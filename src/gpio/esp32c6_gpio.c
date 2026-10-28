@@ -19,15 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
  */
 
+#include "wolfHAL_board.h"  /* provides WHAL_CFG_ESP32C6_GPIO_DEV initializer */
 #include <wolfHAL/error.h>
 #include <wolfHAL/reg.h>
 #include <wolfHAL/gpio/gpio.h>
 #include <wolfHAL/gpio/esp32c6_gpio.h>
 #include <wolfHAL/bitops.h>
-
-#ifdef WHAL_CFG_ESP32C6_GPIO_SINGLE_INSTANCE
-#include "board.h"  /* provides whal_Esp32c6_Gpio_Dev singleton */
-#endif
 
 /* GPIO matrix + IO MUX register offsets (TRM chapter 7).
  * GPIO_*   offsets are relative to WHAL_ESP32C6_GPIO_BASE  (0x60091000).
@@ -43,9 +40,6 @@
 #define GPIO_ENABLE_W1TC_REG         0x0028
 #define GPIO_IN_REG                  0x003C
 
-/* IO MUX is a separate peripheral block from the GPIO block. */
-#define IO_MUX_BASE                  0x60090000
-
 /* Per-pin register offsets (n = GPIO pin). */
 #define GPIO_PIN_REG(n)              (0x0074 + 4 * (n))
 #define GPIO_FUNC_OUT_SEL_CFG_REG(n) (0x0554 + 4 * (n))
@@ -60,11 +54,9 @@
 #define whal_Esp32c6_Gpio_Deinit whal_Gpio_Deinit
 #define whal_Esp32c6_Gpio_Get    whal_Gpio_Get
 #define whal_Esp32c6_Gpio_Set    whal_Gpio_Set
-#endif
+#endif /* WHAL_CFG_ESP32C6_GPIO_DIRECT_API_MAPPING */
 
-#ifdef WHAL_CFG_ESP32C6_GPIO_SINGLE_INSTANCE
 const whal_Gpio whal_Esp32c6_Gpio_Dev = WHAL_CFG_ESP32C6_GPIO_DEV;
-#endif
 
 static inline whal_Error whal_Esp32c6_Gpio_ConfigurePin(const size_t base, const whal_Esp32c6_Gpio_PinCfg *pinCfg)
 {
@@ -73,7 +65,7 @@ static inline whal_Error whal_Esp32c6_Gpio_ConfigurePin(const size_t base, const
     }
 
     whal_Reg_Write(base, GPIO_PIN_REG(pinCfg->pin), pinCfg->gpioCfg);
-    whal_Reg_Write(IO_MUX_BASE, IO_MUX_GPIO_REG(pinCfg->pin), pinCfg->ioMuxCfg);
+    whal_Reg_Write(WHAL_ESP32C6_IOMUX_BASE, IO_MUX_GPIO_REG(pinCfg->pin), pinCfg->ioMuxCfg);
 
     if (pinCfg->outputEnable) {
         whal_Reg_Write(base, GPIO_ENABLE_W1TS_REG, 1UL << pinCfg->pin);
@@ -87,7 +79,7 @@ static inline whal_Error whal_Esp32c6_Gpio_ConfigureInput(const size_t base, con
     if (!inputCfg || inputCfg->signalNum > 127) {
         return WHAL_EINVAL;
     }
-    
+
     whal_Reg_Write(base, GPIO_FUNC_IN_SEL_CFG_REG(inputCfg->signalNum), inputCfg->cfg);
 
     return WHAL_SUCCESS;
@@ -107,22 +99,10 @@ static whal_Error whal_Esp32c6_Gpio_ConfigureOutput(const size_t base, const wha
 whal_Error whal_Esp32c6_Gpio_Init(whal_Gpio *gpioDev)
 {
     whal_Error err;
-#ifdef WHAL_CFG_ESP32C6_GPIO_SINGLE_INSTANCE
     const whal_Esp32c6_Gpio_Cfg *cfg =
         (const whal_Esp32c6_Gpio_Cfg *)whal_Esp32c6_Gpio_Dev.cfg;
     size_t base = whal_Esp32c6_Gpio_Dev.base;
     (void)gpioDev;
-#else
-    const whal_Esp32c6_Gpio_Cfg *cfg;
-    size_t base;
-
-    if (!gpioDev || !gpioDev->cfg) {
-        return WHAL_EINVAL;
-    }
-
-    base = gpioDev->base;
-    cfg = (const whal_Esp32c6_Gpio_Cfg *)gpioDev->cfg;
-#endif
 
     for (size_t i = 0; i < cfg->pinCount; ++i) {
         err = whal_Esp32c6_Gpio_ConfigurePin(base, &cfg->pinCfg[i]);
@@ -150,49 +130,25 @@ whal_Error whal_Esp32c6_Gpio_Init(whal_Gpio *gpioDev)
 
 whal_Error whal_Esp32c6_Gpio_Deinit(whal_Gpio *gpioDev)
 {
-#ifdef WHAL_CFG_ESP32C6_GPIO_SINGLE_INSTANCE
-    size_t base = whal_Esp32c6_Gpio_Dev.base;
     (void)gpioDev;
-#else
-    size_t base;
-
-    if (!gpioDev) {
-        return WHAL_EINVAL;
-    }
-
-    base = gpioDev->base;
-#endif
-
-    (void)base;
-    return WHAL_ENOTSUP;
+    return WHAL_SUCCESS;
 }
 
 whal_Error whal_Esp32c6_Gpio_Get(whal_Gpio *gpioDev, size_t pin, size_t *value)
 {
     const whal_Esp32c6_Gpio_PinCfg *pinCfg;
-#ifdef WHAL_CFG_ESP32C6_GPIO_SINGLE_INSTANCE
     const whal_Esp32c6_Gpio_Cfg *cfg =
         (const whal_Esp32c6_Gpio_Cfg *)whal_Esp32c6_Gpio_Dev.cfg;
     size_t base = whal_Esp32c6_Gpio_Dev.base;
     (void)gpioDev;
-#else
-    const whal_Esp32c6_Gpio_Cfg *cfg;
-    size_t base;
-
-    if (!gpioDev || !gpioDev->cfg) {
-        return WHAL_EINVAL;
-    }
-
-    base = gpioDev->base;
-    cfg = (const whal_Esp32c6_Gpio_Cfg *)gpioDev->cfg;
-#endif
 
     if (!value || pin >= cfg->pinCount) {
         return WHAL_EINVAL;
     }
 
     pinCfg = &cfg->pinCfg[pin];
-    whal_Reg_Get(base, GPIO_IN_REG, 1UL << pinCfg->pin, pinCfg->pin, value);
+    whal_Reg_Get(base, pinCfg->outputEnable ? GPIO_OUT_REG : GPIO_IN_REG,
+                 1UL << pinCfg->pin, pinCfg->pin, value);
 
     return WHAL_SUCCESS;
 }
@@ -200,22 +156,10 @@ whal_Error whal_Esp32c6_Gpio_Get(whal_Gpio *gpioDev, size_t pin, size_t *value)
 whal_Error whal_Esp32c6_Gpio_Set(whal_Gpio *gpioDev, size_t pin, size_t value)
 {
     const whal_Esp32c6_Gpio_PinCfg *pinCfg;
-#ifdef WHAL_CFG_ESP32C6_GPIO_SINGLE_INSTANCE
     const whal_Esp32c6_Gpio_Cfg *cfg =
         (const whal_Esp32c6_Gpio_Cfg *)whal_Esp32c6_Gpio_Dev.cfg;
     size_t base = whal_Esp32c6_Gpio_Dev.base;
     (void)gpioDev;
-#else
-    const whal_Esp32c6_Gpio_Cfg *cfg;
-    size_t base;
-
-    if (!gpioDev || !gpioDev->cfg) {
-        return WHAL_EINVAL;
-    }
-
-    base = gpioDev->base;
-    cfg = (const whal_Esp32c6_Gpio_Cfg *)gpioDev->cfg;
-#endif
 
     if (pin >= cfg->pinCount) {
         return WHAL_EINVAL;

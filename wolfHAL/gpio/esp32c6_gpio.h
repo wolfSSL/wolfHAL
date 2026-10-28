@@ -178,8 +178,8 @@ typedef struct {
 } whal_Esp32c6_Gpio_Cfg;
 
 /*
- * @brief Platform-owned GPIO device singleton. Defined in the driver TU
- * from the WHAL_CFG_ESP32C6_GPIO_DEV initializer in board.h.
+ * @brief Single-instance device struct. Defined in the driver TU
+ * from the WHAL_CFG_ESP32C6_GPIO_DEV initializer in wolfHAL_board.h.
  */
 extern const whal_Gpio whal_Esp32c6_Gpio_Dev;
 
@@ -196,9 +196,9 @@ extern const whal_GpioDriver whal_Esp32c6_Gpio_Driver;
  *
  * @retval WHAL_SUCCESS Initialization completed.
  * @retval WHAL_EINVAL  Invalid arguments.
- * @retval WHAL_ENOTSUP Not yet implemented.
  */
 whal_Error whal_Esp32c6_Gpio_Init(whal_Gpio *gpioDev);
+
 /*
  * @brief Deinitialize the ESP32-C6 GPIO peripheral.
  *
@@ -206,9 +206,9 @@ whal_Error whal_Esp32c6_Gpio_Init(whal_Gpio *gpioDev);
  *
  * @retval WHAL_SUCCESS Deinit completed.
  * @retval WHAL_EINVAL  Invalid arguments.
- * @retval WHAL_ENOTSUP Not yet implemented.
  */
 whal_Error whal_Esp32c6_Gpio_Deinit(whal_Gpio *gpioDev);
+
 /*
  * @brief Read a GPIO pin value.
  *
@@ -218,9 +218,9 @@ whal_Error whal_Esp32c6_Gpio_Deinit(whal_Gpio *gpioDev);
  *
  * @retval WHAL_SUCCESS Pin value read.
  * @retval WHAL_EINVAL  Invalid arguments.
- * @retval WHAL_ENOTSUP Not yet implemented.
  */
 whal_Error whal_Esp32c6_Gpio_Get(whal_Gpio *gpioDev, size_t pin, size_t *value);
+
 /*
  * @brief Set a GPIO pin value.
  *
@@ -230,7 +230,6 @@ whal_Error whal_Esp32c6_Gpio_Get(whal_Gpio *gpioDev, size_t pin, size_t *value);
  *
  * @retval WHAL_SUCCESS Pin updated.
  * @retval WHAL_EINVAL  Invalid arguments.
- * @retval WHAL_ENOTSUP Not yet implemented.
  */
 whal_Error whal_Esp32c6_Gpio_Set(whal_Gpio *gpioDev, size_t pin, size_t value);
 #endif /* !WHAL_CFG_ESP32C6_GPIO_DIRECT_API_MAPPING */
