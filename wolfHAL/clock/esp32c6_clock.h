@@ -22,43 +22,22 @@
 #ifndef WHAL_ESP32C6_CLOCK_H
 #define WHAL_ESP32C6_CLOCK_H
 
+#include <stddef.h>
 #include <wolfHAL/error.h>
 #include <wolfHAL/reg.h>
 #include <wolfHAL/bitops.h>
 
 /*
  * @file esp32c6_clock.h
- * @brief ESP32-C6 clock system driver (stub).
+ * @brief ESP32-C6 clock system driver.
  *
  * As with other wolfHAL clock drivers, the ESP32-C6 clock tree has no generic
- * abstraction: a board brings it up imperatively. The ESP32-C6 uses the PCR
- * (Power, Clock and Reset) registers for per-peripheral clock enable and reset,
- * plus XTAL/PLL selection for the CPU clock. The full API (PLL/XTAL setup and a
- * PeriphClk enable/disable pair) is still to be designed; only Init is
- * scaffolded here.
+ * abstraction: a board brings it up imperatively. The PCR (Power, Clock and
+ * Reset) block holds the CPU clock source and divider selection, plus a
+ * per-peripheral bus clock enable, reset, and function clock enable.
  */
 
 #define WHAL_ESP32C6_CLOCK_BASE   0x60096000
-
-#define WHAL_PCR_UART0_CONF_REG       0x0000
-#define WHAL_PCR_UART0_CLK_EN_Pos     0
-#define WHAL_PCR_UART0_CLK_EN_Msk     (1UL << WHAL_PCR_UART0_CLK_EN_Pos)
-#define WHAL_PCR_UART0_RST_EN_Pos     1
-#define WHAL_PCR_UART0_RST_EN_Msk     (1UL << WHAL_PCR_UART0_RST_EN_Pos)
-
-#define WHAL_PCR_UART0_SCLK_CONF_REG  0x0004
-#define WHAL_PCR_UART0_SCLK_EN_Pos    22
-#define WHAL_PCR_UART0_SCLK_EN_Msk    (1UL << WHAL_PCR_UART0_SCLK_EN_Pos)
-
-#define WHAL_PCR_IOMUX_CONF_REG          0x00E8
-#define WHAL_PCR_IOMUX_CLK_EN_Pos        0
-#define WHAL_PCR_IOMUX_CLK_EN_Msk        (1UL << WHAL_PCR_IOMUX_CLK_EN_Pos)
-#define WHAL_PCR_IOMUX_RST_EN_Pos        1
-#define WHAL_PCR_IOMUX_RST_EN_Msk        (1UL << WHAL_PCR_IOMUX_RST_EN_Pos)
-
-#define WHAL_PCR_IOMUX_CLK_CONF_REG      0x00EC
-#define WHAL_PCR_IOMUX_FUNC_CLK_EN_Pos   22
-#define WHAL_PCR_IOMUX_FUNC_CLK_EN_Msk   (1UL << WHAL_PCR_IOMUX_FUNC_CLK_EN_Pos)
 
 /* CPU clock source select (PCR), TRM Reg 8.63.
  * SOC_CLK_SEL[17:16]: 0 = XTAL, 1 = PLL, 2 = RC_FAST. */
@@ -75,14 +54,6 @@
 #define WHAL_PCR_HS_DIV_Msk              (WHAL_BITMASK(8) << WHAL_PCR_HS_DIV_Pos)
 #define WHAL_PCR_HS_120M_FORCE_Pos       16
 #define WHAL_PCR_HS_120M_FORCE_Msk       (1UL << WHAL_PCR_HS_120M_FORCE_Pos)
-
-/*
- * @brief Initialize the ESP32-C6 clock tree.
- *
- * @retval WHAL_SUCCESS Clock configured.
- * @retval WHAL_ENOTSUP Not yet implemented.
- */
-whal_Error whal_Esp32c6_Clock_Init(void);
 
 /*
  * @brief HP system (CPU root) clock source (PCR_SOC_CLK_SEL, TRM Reg 8.63).
@@ -127,65 +98,86 @@ typedef enum {
     WHAL_ESP32C6_CPU_HS_120M_FORCE_ENABLE  = 1,
 } whal_Esp32c6_Clock_Hs120MForce;
 
+/*
+ * @brief Peripheral clock descriptor (PCR bus clock, reset, and function clock).
+ *
+ * confReg holds the bus clock enable and reset bits. funcClkReg holds the
+ * function clock enable; a funcClkEnMsk of 0 means the peripheral has none.
+ */
+typedef struct {
+    size_t confReg;
+    size_t clkEnMsk;
+    size_t rstEnMsk;
+    size_t funcClkReg;
+    size_t funcClkEnMsk;
+} whal_Esp32c6_Clock_PeriphClk;
+
+/*
+ * @brief Select the HP system (CPU root) clock source.
+ *
+ * @param sysClk Clock source to switch to.
+ */
 static inline void whal_Esp32c6_Clock_SetSysClk(const whal_Esp32c6_Clock_HpSysClk sysClk)
 {
-    whal_Reg_Update(WHAL_ESP32C6_CLOCK_BASE, WHAL_PCR_SYSCLK_CONF_REG, 
+    whal_Reg_Update(WHAL_ESP32C6_CLOCK_BASE, WHAL_PCR_SYSCLK_CONF_REG,
                     WHAL_PCR_SOC_CLK_SEL_Msk,
                     whal_SetBits(WHAL_PCR_SOC_CLK_SEL_Msk, WHAL_PCR_SOC_CLK_SEL_Pos, sysClk));
 }
 
+/*
+ * @brief Configure the CPU_CLK dividers.
+ *
+ * @param cpuLsDiv    Divider applied when the source is XTAL or RC_FAST.
+ * @param cpuHsDiv    Divider applied when the source is PLL.
+ * @param hs120MForce Force CPU_CLK to 120 MHz from the PLL.
+ */
 static inline void whal_Esp32c6_Clock_ConfigureCpuFreq(const whal_Esp32c6_Clock_CpuLsDiv cpuLsDiv,
                                                        const whal_Esp32c6_Clock_CpuHsDiv cpuHsDiv,
                                                        const whal_Esp32c6_Clock_Hs120MForce hs120MForce)
 {
-    whal_Reg_Update(WHAL_ESP32C6_CLOCK_BASE, WHAL_PCR_CPU_FREQ_CONF_REG, 
-                    WHAL_PCR_LS_DIV_Msk | WHAL_PCR_HS_DIV_Msk |WHAL_PCR_HS_120M_FORCE_Msk,
+    whal_Reg_Update(WHAL_ESP32C6_CLOCK_BASE, WHAL_PCR_CPU_FREQ_CONF_REG,
+                    WHAL_PCR_LS_DIV_Msk | WHAL_PCR_HS_DIV_Msk | WHAL_PCR_HS_120M_FORCE_Msk,
                     whal_SetBits(WHAL_PCR_LS_DIV_Msk, WHAL_PCR_LS_DIV_Pos, cpuLsDiv) |
                     whal_SetBits(WHAL_PCR_HS_DIV_Msk, WHAL_PCR_HS_DIV_Pos, cpuHsDiv) |
                     whal_SetBits(WHAL_PCR_HS_120M_FORCE_Msk, WHAL_PCR_HS_120M_FORCE_Pos, hs120MForce));
 }
 
-
-static inline void whal_Esp32c6_Clock_EnableUart0Clk(void)
+/*
+ * @brief Enable a peripheral's bus clock, release its reset, and enable its
+ * function clock.
+ *
+ * @param clk Peripheral clock descriptor.
+ *
+ * @retval WHAL_SUCCESS Always.
+ */
+static inline whal_Error whal_Esp32c6_Clock_EnablePeriphClk(
+    const whal_Esp32c6_Clock_PeriphClk *clk)
 {
-    whal_Reg_Update(WHAL_ESP32C6_CLOCK_BASE, WHAL_PCR_UART0_CONF_REG,
-                    WHAL_PCR_UART0_CLK_EN_Msk | WHAL_PCR_UART0_RST_EN_Msk,
-                    whal_SetBits(WHAL_PCR_UART0_CLK_EN_Msk, WHAL_PCR_UART0_CLK_EN_Pos, 1) |
-                    whal_SetBits(WHAL_PCR_UART0_RST_EN_Msk, WHAL_PCR_UART0_RST_EN_Pos, 0));
-    whal_Reg_Update(WHAL_ESP32C6_CLOCK_BASE, WHAL_PCR_UART0_SCLK_CONF_REG,
-                    WHAL_PCR_UART0_SCLK_EN_Msk,
-                    whal_SetBits(WHAL_PCR_UART0_SCLK_EN_Msk, WHAL_PCR_UART0_SCLK_EN_Pos, 1));
+    whal_Reg_Update(WHAL_ESP32C6_CLOCK_BASE, clk->confReg,
+                    clk->clkEnMsk | clk->rstEnMsk, clk->clkEnMsk);
+    if (clk->funcClkEnMsk) {
+        whal_Reg_Update(WHAL_ESP32C6_CLOCK_BASE, clk->funcClkReg,
+                        clk->funcClkEnMsk, clk->funcClkEnMsk);
+    }
+    return WHAL_SUCCESS;
 }
 
-static inline void whal_Esp32c6_Clock_DisableUart0Clk(void)
+/*
+ * @brief Disable a peripheral's function clock and bus clock.
+ *
+ * @param clk Peripheral clock descriptor.
+ *
+ * @retval WHAL_SUCCESS Always.
+ */
+static inline whal_Error whal_Esp32c6_Clock_DisablePeriphClk(
+    const whal_Esp32c6_Clock_PeriphClk *clk)
 {
-    whal_Reg_Update(WHAL_ESP32C6_CLOCK_BASE, WHAL_PCR_UART0_SCLK_CONF_REG,
-                    WHAL_PCR_UART0_SCLK_EN_Msk,
-                    whal_SetBits(WHAL_PCR_UART0_SCLK_EN_Msk, WHAL_PCR_UART0_SCLK_EN_Pos, 0));
-    whal_Reg_Update(WHAL_ESP32C6_CLOCK_BASE, WHAL_PCR_UART0_CONF_REG,
-                    WHAL_PCR_UART0_CLK_EN_Msk,
-                    whal_SetBits(WHAL_PCR_UART0_CLK_EN_Msk, WHAL_PCR_UART0_CLK_EN_Pos, 0));
-}
-
-static inline void whal_Esp32c6_Clock_EnableIomuxClk(void)
-{
-    whal_Reg_Update(WHAL_ESP32C6_CLOCK_BASE, WHAL_PCR_IOMUX_CONF_REG,
-                    WHAL_PCR_IOMUX_CLK_EN_Msk | WHAL_PCR_IOMUX_RST_EN_Msk,
-                    whal_SetBits(WHAL_PCR_IOMUX_CLK_EN_Msk, WHAL_PCR_IOMUX_CLK_EN_Pos, 1) |
-                    whal_SetBits(WHAL_PCR_IOMUX_RST_EN_Msk, WHAL_PCR_IOMUX_RST_EN_Pos, 0));
-    whal_Reg_Update(WHAL_ESP32C6_CLOCK_BASE, WHAL_PCR_IOMUX_CLK_CONF_REG,
-                    WHAL_PCR_IOMUX_FUNC_CLK_EN_Msk,
-                    whal_SetBits(WHAL_PCR_IOMUX_FUNC_CLK_EN_Msk, WHAL_PCR_IOMUX_FUNC_CLK_EN_Pos, 1));
-}
-
-static inline void whal_Esp32c6_Clock_DisableIomuxClk(void)
-{
-    whal_Reg_Update(WHAL_ESP32C6_CLOCK_BASE, WHAL_PCR_IOMUX_CLK_CONF_REG,
-                    WHAL_PCR_IOMUX_FUNC_CLK_EN_Msk,
-                    whal_SetBits(WHAL_PCR_IOMUX_FUNC_CLK_EN_Msk, WHAL_PCR_IOMUX_FUNC_CLK_EN_Pos, 0));
-    whal_Reg_Update(WHAL_ESP32C6_CLOCK_BASE, WHAL_PCR_IOMUX_CONF_REG,
-                    WHAL_PCR_IOMUX_CLK_EN_Msk,
-                    whal_SetBits(WHAL_PCR_IOMUX_CLK_EN_Msk, WHAL_PCR_IOMUX_CLK_EN_Pos, 0));
+    if (clk->funcClkEnMsk) {
+        whal_Reg_Update(WHAL_ESP32C6_CLOCK_BASE, clk->funcClkReg,
+                        clk->funcClkEnMsk, 0);
+    }
+    whal_Reg_Update(WHAL_ESP32C6_CLOCK_BASE, clk->confReg, clk->clkEnMsk, 0);
+    return WHAL_SUCCESS;
 }
 
 #endif /* WHAL_ESP32C6_CLOCK_H */
