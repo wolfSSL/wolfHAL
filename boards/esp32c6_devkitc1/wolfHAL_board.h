@@ -39,7 +39,8 @@ extern volatile uint32_t g_tick;
 #define BOARD_UART_DEV  (&g_whalUart)
 #define BOARD_TIMER_DEV (&g_whalTimer)
 
-/* GPIO dev initializer: GPIO8 (BOARD_LED_PIN) as a simple push-pull output. */
+/* GPIO dev initializer: GPIO8 (BOARD_LED_PIN) as a simple push-pull output,
+ * GPIO16/GPIO17 as UART0 TX/RX through the IO MUX. */
 #define WHAL_CFG_ESP32C6_GPIO_DEV { \
     .base = WHAL_ESP32C6_GPIO_BASE, \
     /* .driver: direct API mapping */ \
@@ -49,8 +50,15 @@ extern volatile uint32_t g_tick;
               .outputEnable = 1, \
               .gpioCfg  = WHAL_ESP32C6_GPIO_PINREG(0, GPIO_INT_DISABLE, 0, 0), \
               .ioMuxCfg = WHAL_ESP32C6_GPIO_IOMUX(IO_MUX_FUNC_GPIO, 0, 0, 2) }, \
+            { .pin = 16, \
+              .gpioCfg  = WHAL_ESP32C6_GPIO_PINREG(0, GPIO_INT_DISABLE, 0, 0), \
+              .ioMuxCfg = WHAL_ESP32C6_GPIO_IOMUX(WHAL_ESP32C6_IOMUX_FUNC_U0TXD, 0, 0, 2) }, \
+            { .pin = 17, \
+              .gpioCfg  = WHAL_ESP32C6_GPIO_PINREG(0, GPIO_INT_DISABLE, 0, 0), \
+              .ioMuxCfg = WHAL_ESP32C6_GPIO_IOMUX(WHAL_ESP32C6_IOMUX_FUNC_U0RXD, 1, \
+                                                  IO_MUX_FUN_WPU_Msk, 2) }, \
         }, \
-        .pinCount = 1, \
+        .pinCount = 3, \
         .outputCfg = (const whal_Esp32c6_Gpio_OutputCfg[]){ \
             { .gpioNum = 8, .cfg = WHAL_ESP32C6_GPIO_OUT(GPIO_SIG_GPIO) }, \
         }, \
@@ -63,7 +71,8 @@ extern volatile uint32_t g_tick;
     .base = WHAL_ESP32C6_UART0_BASE, \
     .driver = WHAL_ESP32C6_UART0_DRIVER, \
     .cfg = &(whal_Esp32c6_Uart_Cfg){ \
-        .baud = 115200, \
+        .clkDiv = WHAL_ESP32C6_UART_CLKDIV(115200, 40000000), \
+        .timeout = &g_whalTimeout, \
     }, \
 }
 

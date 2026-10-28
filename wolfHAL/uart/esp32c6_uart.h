@@ -25,18 +25,33 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <wolfHAL/uart/uart.h>
+#include <wolfHAL/timeout.h>
 
 /*
  * @file esp32c6_uart.h
- * @brief ESP32-C6 UART driver configuration types (stub).
+ * @brief ESP32-C6 UART driver configuration types.
+ *
+ * Polled 8N1 driver. The UART core clock (UART_SCLK) source and pre-divider
+ * live in PCR and are owned by the clock driver; at reset UART_SCLK is
+ * XTAL_CLK (40 MHz) undivided.
  */
 
 /*
- * @brief UART configuration. The field set is expected to grow as the driver
- * is built out (clock source, data bits, parity, stop bits, pins).
+ * @brief Compose a UART_CLKDIV_SYNC_REG value for @p baud from a UART_SCLK of
+ * @p sclkHz. The divisor is CLKDIV + CLKDIV_FRAG / 16, rounded to the nearest
+ * sixteenth. CLKDIV is 12 bits, so @p sclkHz / @p baud must be below 4096
+ * (at 40 MHz the lowest baud rate is 9766).
+ */
+#define WHAL_ESP32C6_UART_CLKDIV(baud, sclkHz) \
+    ((uint32_t)(((((uint64_t)(sclkHz) * 16 + (baud) / 2) / (baud)) >> 4) & 0xFFF) | \
+     ((uint32_t)((((uint64_t)(sclkHz) * 16 + (baud) / 2) / (baud)) & 0xF) << 20))
+
+/*
+ * @brief UART configuration.
  */
 typedef struct whal_Esp32c6_Uart_Cfg {
-    uint32_t baud;  /* Target baud rate */
+    uint32_t clkDiv;        /* UART_CLKDIV_SYNC_REG value, see WHAL_ESP32C6_UART_CLKDIV */
+    whal_Timeout *timeout;
 } whal_Esp32c6_Uart_Cfg;
 
 /*
@@ -58,9 +73,9 @@ extern const whal_UartDriver whal_Esp32c6_Uart_Driver;
  *
  * @param uartDev UART device instance.
  *
- * @retval WHAL_SUCCESS Initialization completed.
- * @retval WHAL_EINVAL  Invalid arguments.
- * @retval WHAL_ENOTSUP Not yet implemented.
+ * @retval WHAL_SUCCESS  Initialization completed.
+ * @retval WHAL_EINVAL   Invalid arguments.
+ * @retval WHAL_ETIMEOUT Pending transmit or register sync did not finish.
  */
 whal_Error whal_Esp32c6_Uart_Init(whal_Uart *uartDev);
 
@@ -71,7 +86,6 @@ whal_Error whal_Esp32c6_Uart_Init(whal_Uart *uartDev);
  *
  * @retval WHAL_SUCCESS Deinit completed.
  * @retval WHAL_EINVAL  Invalid arguments.
- * @retval WHAL_ENOTSUP Not yet implemented.
  */
 whal_Error whal_Esp32c6_Uart_Deinit(whal_Uart *uartDev);
 
@@ -82,9 +96,9 @@ whal_Error whal_Esp32c6_Uart_Deinit(whal_Uart *uartDev);
  * @param data    Buffer to transmit.
  * @param dataSz  Number of bytes to transmit.
  *
- * @retval WHAL_SUCCESS All bytes transmitted.
- * @retval WHAL_EINVAL  Invalid arguments.
- * @retval WHAL_ENOTSUP Not yet implemented.
+ * @retval WHAL_SUCCESS  All bytes transmitted.
+ * @retval WHAL_EINVAL   Invalid arguments.
+ * @retval WHAL_ETIMEOUT FIFO space or transmit completion did not arrive.
  */
 whal_Error whal_Esp32c6_Uart_Send(whal_Uart *uartDev, const void *data, size_t dataSz);
 
@@ -95,9 +109,11 @@ whal_Error whal_Esp32c6_Uart_Send(whal_Uart *uartDev, const void *data, size_t d
  * @param data    Receive buffer.
  * @param dataSz  Number of bytes to receive.
  *
- * @retval WHAL_SUCCESS All bytes received.
- * @retval WHAL_EINVAL  Invalid arguments.
- * @retval WHAL_ENOTSUP Not yet implemented.
+ * @retval WHAL_SUCCESS   All bytes received.
+ * @retval WHAL_EINVAL    Invalid arguments.
+ * @retval WHAL_ETIMEOUT  A byte did not arrive.
+ * @retval WHAL_EHARDWARE A parity, framing or RX FIFO overflow error was
+ *                        detected.
  */
 whal_Error whal_Esp32c6_Uart_Recv(whal_Uart *uartDev, void *data, size_t dataSz);
 
@@ -108,9 +124,8 @@ whal_Error whal_Esp32c6_Uart_Recv(whal_Uart *uartDev, void *data, size_t dataSz)
  * @param data    Buffer to transmit. Must remain valid until completion.
  * @param dataSz  Number of bytes to transmit.
  *
- * @retval WHAL_SUCCESS Transfer started.
  * @retval WHAL_EINVAL  Invalid arguments.
- * @retval WHAL_ENOTSUP Not yet implemented.
+ * @retval WHAL_ENOTSUP Async transfers are not supported.
  */
 whal_Error whal_Esp32c6_Uart_SendAsync(whal_Uart *uartDev, const void *data, size_t dataSz);
 
@@ -121,9 +136,8 @@ whal_Error whal_Esp32c6_Uart_SendAsync(whal_Uart *uartDev, const void *data, siz
  * @param data    Receive buffer. Must remain valid until completion.
  * @param dataSz  Number of bytes to receive.
  *
- * @retval WHAL_SUCCESS Receive started.
  * @retval WHAL_EINVAL  Invalid arguments.
- * @retval WHAL_ENOTSUP Not yet implemented.
+ * @retval WHAL_ENOTSUP Async transfers are not supported.
  */
 whal_Error whal_Esp32c6_Uart_RecvAsync(whal_Uart *uartDev, void *data, size_t dataSz);
 #endif /* !WHAL_CFG_ESP32C6_UART_DIRECT_API_MAPPING */

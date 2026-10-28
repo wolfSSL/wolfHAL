@@ -75,6 +75,11 @@ whal_Error Board_Init(void)
         return err;
     }
 
+    err = whal_Uart_Init(&g_whalUart);
+    if (err) {
+        return err;
+    }
+
     err = Peripheral_Init();
     if (err) {
         return err;
@@ -88,6 +93,11 @@ whal_Error Board_Deinit(void)
     whal_Error err;
 
     err = Peripheral_Deinit();
+    if (err) {
+        return err;
+    }
+
+    err = whal_Uart_Deinit(&g_whalUart);
     if (err) {
         return err;
     }
