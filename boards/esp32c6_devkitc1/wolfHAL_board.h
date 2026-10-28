@@ -29,6 +29,7 @@
 
 extern whal_Uart g_whalUart;
 extern whal_Timer g_whalTimer;
+extern whal_Watchdog g_whalTimg0Wdt;
 extern whal_Timeout g_whalTimeout;
 extern volatile uint32_t g_tick;
 
@@ -41,6 +42,7 @@ extern volatile uint32_t g_tick;
 #define BOARD_GPIO_DEV  WHAL_INTERNAL_DEV
 #define BOARD_UART_DEV  (&g_whalUart)
 #define BOARD_TIMER_DEV (&g_whalTimer)
+#define BOARD_RTC_WDT_DEV ((whal_Watchdog *)&whal_Esp32c6_RtcWdt_Dev)
 
 /* GPIO dev initializer: GPIO8 (BOARD_LED_PIN) as a simple push-pull output,
  * GPIO16/GPIO17 as UART0 TX/RX through the IO MUX. */
@@ -99,6 +101,26 @@ extern volatile uint32_t g_tick;
     /* .driver: direct API mapping */ \
     .cfg = (void *)&(const whal_Esp32c6_Intc_DevCfg){ \
         .plicMxBase = WHAL_ESP32C6_PLIC_MX_BASE, \
+    }, \
+}
+
+/* RTC watchdog dev initializer: single-instance device defined in
+ * esp32c6_rtc_wdt.c. stg0Hold is about 1 s of the 136 kHz RTC slow clock. */
+#define WHAL_CFG_ESP32C6_RTC_WDT_DEV { \
+    .base = WHAL_ESP32C6_RTC_WDT_BASE, \
+    .driver = WHAL_ESP32C6_RTC_WDT_DRIVER, \
+    .cfg = (void *)&(const whal_Esp32c6_RtcWdt_Cfg){ \
+        .stg0Hold = 136000, \
+    }, \
+}
+
+/* TIMG0 watchdog dev initializer: 40 MHz XTAL / 40000 = 1 kHz, 1 s timeout. */
+#define WHAL_CFG_ESP32C6_TIMG_WDT_DEV { \
+    .base = WHAL_ESP32C6_TIMG0_BASE, \
+    .driver = WHAL_ESP32C6_TIMG_WDT_DRIVER, \
+    .cfg = (void *)&(const whal_Esp32c6_TimgWdt_Cfg){ \
+        .prescale = 40000, \
+        .stg0Hold = 1000, \
     }, \
 }
 

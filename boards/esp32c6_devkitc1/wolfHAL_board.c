@@ -40,6 +40,7 @@ whal_Timeout g_whalTimeout = {
 
 whal_Uart g_whalUart = WHAL_CFG_ESP32C6_UART_DEV;
 whal_Timer g_whalTimer = WHAL_CFG_ESP32C6_SYSTIMER_DEV;
+whal_Watchdog g_whalTimg0Wdt = WHAL_CFG_ESP32C6_TIMG_WDT_DEV;
 
 static const whal_Esp32c6_Clock_PeriphClk g_periphClks[] = {
     {WHAL_ESP32C6_UART0_GATE},
@@ -62,6 +63,22 @@ void Board_WaitMs(size_t ms)
 whal_Error Board_Init(void)
 {
     whal_Error err;
+
+    /* Direct Boot leaves the ROM's boot watchdogs armed */
+    err = whal_Watchdog_Deinit(&g_whalTimg0Wdt);
+    if (err) {
+        return err;
+    }
+
+    err = whal_Esp32c6_RtcWdt_Ext_DisableSwd(BOARD_RTC_WDT_DEV);
+    if (err) {
+        return err;
+    }
+
+    err = whal_Watchdog_Deinit(BOARD_RTC_WDT_DEV);
+    if (err) {
+        return err;
+    }
 
     /* Configure the SysClk to use PLL at 160 MHz */
     whal_Esp32c6_Clock_SetSysClk(WHAL_ESP32C6_HP_SYS_CLK_PLL);

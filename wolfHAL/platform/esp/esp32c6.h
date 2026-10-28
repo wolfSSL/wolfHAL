@@ -27,6 +27,8 @@
 #include <wolfHAL/uart/esp32c6_uart.h>
 #include <wolfHAL/timer/esp32c6_systimer.h>
 #include <wolfHAL/irq/esp32c6_intc.h>
+#include <wolfHAL/watchdog/esp32c6_rtc_wdt.h>
+#include <wolfHAL/watchdog/esp32c6_timg_wdt.h>
 
 /*
  * @file esp32c6.h
@@ -36,10 +38,13 @@
  * address table). Peripherals are mapped from 0x6000_0000.
  *   UART0:    0x6000_0000
  *   UART1:    0x6000_1000
+ *   TIMG0:    0x6000_8000
+ *   TIMG1:    0x6000_9000
  *   SYSTIMER: 0x6000_A000
  *   INTMTX:   0x6001_0000
  *   IO MUX:   0x6009_0000
  *   GPIO:     0x6009_1000
+ *   RTC_WDT:  0x600B_1C00
  *   PLIC MX:  0x2000_1000
  */
 
@@ -50,6 +55,10 @@
 
 #define WHAL_ESP32C6_UART1_BASE   0x60001000
 #define WHAL_ESP32C6_UART1_DRIVER &whal_Esp32c6_Uart_Driver
+
+#define WHAL_ESP32C6_TIMG0_BASE      0x60008000
+#define WHAL_ESP32C6_TIMG1_BASE      0x60009000
+#define WHAL_ESP32C6_TIMG_WDT_DRIVER &whal_Esp32c6_TimgWdt_Driver
 
 #define WHAL_ESP32C6_SYSTIMER_BASE   0x6000A000
 #define WHAL_ESP32C6_SYSTIMER_DRIVER &whal_Esp32c6_Systimer_Driver
@@ -66,6 +75,9 @@
 
 #define WHAL_ESP32C6_GPIO_BASE   0x60091000
 #define WHAL_ESP32C6_GPIO_DRIVER &whal_Esp32c6_Gpio_Driver
+
+#define WHAL_ESP32C6_RTC_WDT_BASE   0x600B1C00
+#define WHAL_ESP32C6_RTC_WDT_DRIVER &whal_Esp32c6_RtcWdt_Driver
 
 /* --- Interrupt matrix sources (TRM Table 10.3-1) --- */
 

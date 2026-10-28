@@ -49,6 +49,7 @@ BOARD_SOURCE += $(wildcard $(WHAL_DIR)/src/*/flash.c)
 BOARD_SOURCE += $(wildcard $(WHAL_DIR)/src/*/block.c)
 BOARD_SOURCE += $(wildcard $(WHAL_DIR)/src/*/sensor.c)
 BOARD_SOURCE += $(wildcard $(WHAL_DIR)/src/*/timer.c)
+BOARD_SOURCE += $(wildcard $(WHAL_DIR)/src/*/watchdog.c)
 BOARD_SOURCE += $(wildcard $(WHAL_DIR)/src/*/esp32c6_*.c)
 
 # Peripheral devices
