@@ -22,6 +22,7 @@
 _BOARD_DIR := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
 
 PLATFORM = esp32c6
+TESTS ?= gpio
 
 GCC_PREFIX ?= riscv-none-elf-
 GCC     = $(GCC_PATH)$(GCC_PREFIX)gcc
@@ -30,20 +31,27 @@ OBJCOPY = $(GCC_PATH)$(GCC_PREFIX)objcopy
 
 CFLAGS += -Wall -Werror $(INCLUDE) -g3 -Os -ffunction-sections -fdata-sections \
  -ffreestanding -nostdlib -march=rv32imac_zicsr -mabi=ilp32 \
- -DPLATFORM_ESP32C6 -MMD -MP
+ -DPLATFORM_ESP32C6 -MMD -MP \
+ -DWHAL_CFG_ESP32C6_GPIO_DIRECT_API_MAPPING
 LDFLAGS = -march=rv32imac_zicsr -mabi=ilp32 -ffreestanding -nostartfiles -nostdlib \
  -Wl,--gc-sections -static
 
 LINKER_SCRIPT ?= $(_BOARD_DIR)/linker.ld
 
-INCLUDE += -I$(_BOARD_DIR)
+INCLUDE += -I$(_BOARD_DIR) -I$(WHAL_DIR)/boards/peripheral
 
 BOARD_SOURCE = $(_BOARD_DIR)/ivt.c
-BOARD_SOURCE += $(_BOARD_DIR)/board.c
-BOARD_SOURCE += $(wildcard $(WHAL_DIR)/src/*/gpio.c)
+BOARD_SOURCE += $(_BOARD_DIR)/wolfHAL_board.c
+BOARD_SOURCE += $(wildcard $(WHAL_DIR)/src/*.c)
 BOARD_SOURCE += $(wildcard $(WHAL_DIR)/src/*/uart.c)
+BOARD_SOURCE += $(wildcard $(WHAL_DIR)/src/*/flash.c)
+BOARD_SOURCE += $(wildcard $(WHAL_DIR)/src/*/block.c)
+BOARD_SOURCE += $(wildcard $(WHAL_DIR)/src/*/sensor.c)
 BOARD_SOURCE += $(wildcard $(WHAL_DIR)/src/*/timer.c)
 BOARD_SOURCE += $(wildcard $(WHAL_DIR)/src/*/esp32c6_*.c)
+
+# Peripheral devices
+include $(WHAL_DIR)/boards/peripheral/board.mk
 
 # Flash via openocd: make flash BOARD=<board> IMAGE=<path/to/image>
 OPENOCD ?= /opt/openocd-esp32/bin/openocd-esp32

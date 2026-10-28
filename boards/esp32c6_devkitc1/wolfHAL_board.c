@@ -1,4 +1,4 @@
-/* board.c
+/* wolfHAL_board.c
  *
  * Copyright (C) 2026 wolfSSL Inc.
  *
@@ -23,11 +23,12 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "board.h"
+#include "wolfHAL_board.h"
+#include "wolfHAL_peripheral.h"
 
 volatile uint32_t g_tick = 0;
 
-uint32_t Board_GetTick(void)
+static uint32_t Board_GetTick(void)
 {
     return g_tick;
 }
@@ -38,8 +39,13 @@ whal_Timeout g_whalTimeout = {
 };
 
 whal_Uart g_whalUart = WHAL_CFG_ESP32C6_UART_DEV;
-whal_Gpio g_whalGpio = WHAL_CFG_ESP32C6_GPIO_DEV;
 whal_Timer g_whalTimer = WHAL_CFG_ESP32C6_SYSTIMER_DEV;
+
+static const whal_Esp32c6_Clock_PeriphClk g_periphClks[] = {
+    {WHAL_ESP32C6_UART0_GATE},
+    {WHAL_ESP32C6_IOMUX_GATE},
+};
+#define PERIPH_CLK_COUNT (sizeof(g_periphClks) / sizeof(g_periphClks[0]))
 
 void Board_WaitMs(size_t ms)
 {
@@ -57,10 +63,19 @@ whal_Error Board_Init(void)
                                         WHAL_ESP32C6_CPU_HS_120M_FORCE_DISABLE);
 
     /* Enable peripheral clocks */
-    whal_Esp32c6_Clock_EnableUart0Clk();
-    whal_Esp32c6_Clock_EnableIomuxClk(); 
+    for (size_t i = 0; i < PERIPH_CLK_COUNT; i++) {
+        err = whal_Esp32c6_Clock_EnablePeriphClk(&g_periphClks[i]);
+        if (err) {
+            return err;
+        }
+    }
 
-    err = whal_Gpio_Init(&g_whalGpio);
+    err = whal_Gpio_Init(WHAL_INTERNAL_DEV);
+    if (err) {
+        return err;
+    }
+
+    err = Peripheral_Init();
     if (err) {
         return err;
     }
@@ -70,5 +85,25 @@ whal_Error Board_Init(void)
 
 whal_Error Board_Deinit(void)
 {
+    whal_Error err;
+
+    err = Peripheral_Deinit();
+    if (err) {
+        return err;
+    }
+
+    err = whal_Gpio_Deinit(WHAL_INTERNAL_DEV);
+    if (err) {
+        return err;
+    }
+
+    /* Disable peripheral clocks */
+    for (size_t i = 0; i < PERIPH_CLK_COUNT; i++) {
+        err = whal_Esp32c6_Clock_DisablePeriphClk(&g_periphClks[i]);
+        if (err) {
+            return err;
+        }
+    }
+
     return WHAL_SUCCESS;
 }
