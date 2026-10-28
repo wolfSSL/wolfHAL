@@ -34,6 +34,10 @@ extern whal_Timeout g_whalTimeout;
 extern volatile uint32_t g_tick;
 
 #define BOARD_LED_PIN 0
+#define BOARD_FLASH_START_ADDR 0x42000000
+#define BOARD_FLASH_SIZE       0x00400000
+#define BOARD_FLASH_TEST_ADDR  0x423F0000
+#define BOARD_FLASH_SECTOR_SZ  0x1000
 
 /* CPU interrupt line carrying the SYSTIMER tick; ivt.c slot 1 must match. */
 #define BOARD_SYSTIMER_CPU_INT 1
@@ -43,6 +47,7 @@ extern volatile uint32_t g_tick;
 #define BOARD_UART_DEV  (&g_whalUart)
 #define BOARD_TIMER_DEV (&g_whalTimer)
 #define BOARD_RTC_WDT_DEV ((whal_Watchdog *)&whal_Esp32c6_RtcWdt_Dev)
+#define BOARD_FLASH_DEV   ((whal_Flash *)&whal_Esp32c6_Flash_Dev)
 
 /* GPIO dev initializer: GPIO15 (BOARD_LED_PIN, active-low user LED) as a
  * push-pull output, GPIO16/GPIO17 (D6/D7) as UART0 TX/RX through the IO MUX. */
@@ -121,6 +126,16 @@ extern volatile uint32_t g_tick;
     .cfg = (void *)&(const whal_Esp32c6_TimgWdt_Cfg){ \
         .prescale = 40000, \
         .stg0Hold = 1000, \
+    }, \
+}
+
+/* Flash dev initializer: single-instance device defined in esp32c6_flash.c. */
+#define WHAL_CFG_ESP32C6_FLASH_DEV { \
+    .base = WHAL_ESP32C6_SPI1_BASE, \
+    .driver = WHAL_ESP32C6_FLASH_DRIVER, \
+    .cfg = (void *)&(const whal_Esp32c6_Flash_Cfg){ \
+        .startAddr = WHAL_ESP32C6_FLASH_XIP_BASE, \
+        .size = 0x00400000, \
     }, \
 }
 

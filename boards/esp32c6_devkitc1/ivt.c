@@ -111,6 +111,28 @@ void __attribute__((noreturn)) _default_handler(void)
     }
 }
 
+void *memcpy(void *dest, const void *src, size_t n)
+{
+    unsigned char *d = dest;
+    const unsigned char *s = src;
+
+    for (size_t i = 0; i < n; i++)
+        d[i] = s[i];
+
+    return dest;
+}
+
+void *memset(void *s, int c, size_t n)
+{
+    unsigned char *p = s;
+    unsigned char v = (unsigned char)c;
+
+    for (size_t i = 0; i < n; i++)
+        p[i] = v;
+
+    return s;
+}
+
 /*
  * Reset entry. Runs from flash (XIP) the moment the ROM hands over control.
  * `naked` keeps the compiler from emitting a prologue that would touch a stack

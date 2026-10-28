@@ -96,8 +96,9 @@ SECTIONS
     /* Flash load address of .data, read by the startup copy loop. */
     _sidata = LOADADDR(.data);
 
-    /* Initialized data: runs from SRAM (VMA), initial image stored in flash
-     * (LMA) after the code and copied in by _start. */
+    /* Initialized data and RAM-resident code (.ramfunc): runs from SRAM (VMA),
+     * initial image stored in flash (LMA) after the code and copied in by
+     * _start. */
     .data :
     {
         . = ALIGN(4);
@@ -105,6 +106,8 @@ SECTIONS
         /* gp anchors gp-relative access to .sdata/.sbss within a +/-2 KB
          * window; place it 0x800 past the small-data start. */
         PROVIDE(__global_pointer$ = . + 0x800);
+        *(.ramfunc)
+        *(.ramfunc*)
         *(.data)
         *(.data*)
         *(.sdata)

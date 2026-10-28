@@ -104,6 +104,11 @@ whal_Error Board_Init(void)
         return err;
     }
 
+    err = whal_Flash_Init(BOARD_FLASH_DEV);
+    if (err) {
+        return err;
+    }
+
     err = whal_Irq_Init(WHAL_INTERNAL_DEV);
     if (err) {
         return err;
@@ -161,6 +166,11 @@ whal_Error Board_Deinit(void)
     }
 
     err = whal_Irq_Deinit(WHAL_INTERNAL_DEV);
+    if (err) {
+        return err;
+    }
+
+    err = whal_Flash_Deinit(BOARD_FLASH_DEV);
     if (err) {
         return err;
     }

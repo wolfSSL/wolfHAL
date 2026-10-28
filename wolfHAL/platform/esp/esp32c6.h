@@ -24,6 +24,7 @@
 
 #include <wolfHAL/clock/esp32c6_clock.h>
 #include <wolfHAL/gpio/esp32c6_gpio.h>
+#include <wolfHAL/flash/esp32c6_flash.h>
 #include <wolfHAL/uart/esp32c6_uart.h>
 #include <wolfHAL/timer/esp32c6_systimer.h>
 #include <wolfHAL/irq/esp32c6_intc.h>
@@ -38,6 +39,7 @@
  * address table). Peripherals are mapped from 0x6000_0000.
  *   UART0:    0x6000_0000
  *   UART1:    0x6000_1000
+ *   SPI1:     0x6000_3000 (memory SPI, not in the TRM address map)
  *   TIMG0:    0x6000_8000
  *   TIMG1:    0x6000_9000
  *   SYSTIMER: 0x6000_A000
@@ -55,6 +57,12 @@
 
 #define WHAL_ESP32C6_UART1_BASE   0x60001000
 #define WHAL_ESP32C6_UART1_DRIVER &whal_Esp32c6_Uart_Driver
+
+#define WHAL_ESP32C6_SPI1_BASE    0x60003000
+#define WHAL_ESP32C6_FLASH_DRIVER &whal_Esp32c6_Flash_Driver
+
+/* XIP window that the cache maps flash offset 0 into. */
+#define WHAL_ESP32C6_FLASH_XIP_BASE 0x42000000
 
 #define WHAL_ESP32C6_TIMG0_BASE      0x60008000
 #define WHAL_ESP32C6_TIMG1_BASE      0x60009000
