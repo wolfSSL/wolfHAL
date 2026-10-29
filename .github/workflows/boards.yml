@@ -46,3 +46,8 @@ jobs:
       - name: Build tests
         working-directory: tests
         run: CFLAGS="${{ matrix.extra_cflags }}" make BOARD=${{ matrix.board }} RADIO=${{ matrix.radio }}
+
+      - name: Build ieee802154_ping
+        if: matrix.radio
+        working-directory: examples/ieee802154_ping
+        run: CFLAGS="${{ matrix.extra_cflags }}" make BOARD=${{ matrix.board }}
