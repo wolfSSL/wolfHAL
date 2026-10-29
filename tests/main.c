@@ -143,6 +143,10 @@ void whal_Test_Eth_Platform(void);
 #endif
 #endif
 
+#ifdef WHAL_TEST_ENABLE_IEEE802154
+void whal_Test_Ieee802154(void);
+#endif
+
 #ifdef WHAL_TEST_ENABLE_BMI270_SENSOR
 void whal_Test_Bmi270_Sensor(void);
 #endif
@@ -351,6 +355,10 @@ void main(void)
 #ifdef WHAL_TEST_ENABLE_ETH_PLATFORM
     whal_Test_Eth_Platform();
 #endif
+#endif
+
+#ifdef WHAL_TEST_ENABLE_IEEE802154
+    whal_Test_Ieee802154();
 #endif
 
 #ifdef WHAL_TEST_ENABLE_BMI270_SENSOR
