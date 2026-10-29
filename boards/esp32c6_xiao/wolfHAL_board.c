@@ -64,6 +64,11 @@ whal_Error Board_Init(void)
 {
     whal_Error err;
 
+    /* Let bus masters other than the CPU, such as peripheral DMA, reach memory */
+    whal_Reg_Write(WHAL_ESP32C6_HP_APM_BASE, WHAL_ESP32C6_APM_FUNC_CTRL_REG, 0);
+    whal_Reg_Write(WHAL_ESP32C6_LP_APM0_BASE, WHAL_ESP32C6_APM_FUNC_CTRL_REG, 0);
+    whal_Reg_Write(WHAL_ESP32C6_LP_APM_BASE, WHAL_ESP32C6_APM_FUNC_CTRL_REG, 0);
+
     /* Direct Boot leaves the ROM's boot watchdogs armed */
     err = whal_Watchdog_Deinit(&g_whalTimg0Wdt);
     if (err) {

@@ -46,7 +46,10 @@
  *   INTMTX:   0x6001_0000
  *   IO MUX:   0x6009_0000
  *   GPIO:     0x6009_1000
+ *   HP_APM:   0x6009_9000
+ *   LP_APM0:  0x6009_9800
  *   RTC_WDT:  0x600B_1C00
+ *   LP_APM:   0x600B_3800
  *   PLIC MX:  0x2000_1000
  */
 
@@ -86,6 +89,13 @@
 
 #define WHAL_ESP32C6_RTC_WDT_BASE   0x600B1C00
 #define WHAL_ESP32C6_RTC_WDT_DRIVER &whal_Esp32c6_RtcWdt_Driver
+
+/* Access path filters (TRM chapter 16). Enabled at reset, they deny every
+ * bus master other than the HP CPU, including peripheral DMA. */
+#define WHAL_ESP32C6_HP_APM_BASE             0x60099000
+#define WHAL_ESP32C6_LP_APM0_BASE            0x60099800
+#define WHAL_ESP32C6_LP_APM_BASE             0x600B3800
+#define WHAL_ESP32C6_APM_FUNC_CTRL_REG       0x00C4
 
 /* --- Interrupt matrix sources (TRM Table 10.3-1) --- */
 
