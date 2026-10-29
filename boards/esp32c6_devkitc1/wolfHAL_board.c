@@ -38,6 +38,11 @@ whal_Timeout g_whalTimeout = {
     .GetTick = Board_GetTick,
 };
 
+whal_Timeout g_whalUsbSerialTimeout = {
+    .timeoutTicks = 10,
+    .GetTick = Board_GetTick,
+};
+
 whal_Uart g_whalUart = WHAL_CFG_ESP32C6_UART_DEV;
 whal_Timer g_whalTimer = WHAL_CFG_ESP32C6_SYSTIMER_DEV;
 whal_Watchdog g_whalTimg0Wdt = WHAL_CFG_ESP32C6_TIMG_WDT_DEV;
@@ -161,6 +166,11 @@ whal_Error Board_Init(void)
         return err;
     }
 
+    err = whal_Uart_Init((whal_Uart *)&whal_Esp32c6_UsbSerialJtag_Dev);
+    if (err) {
+        return err;
+    }
+
     err = whal_Flash_Init(BOARD_FLASH_DEV);
     if (err) {
         return err;
@@ -272,6 +282,11 @@ whal_Error Board_Deinit(void)
     }
 
     err = whal_Flash_Deinit(BOARD_FLASH_DEV);
+    if (err) {
+        return err;
+    }
+
+    err = whal_Uart_Deinit((whal_Uart *)&whal_Esp32c6_UsbSerialJtag_Dev);
     if (err) {
         return err;
     }

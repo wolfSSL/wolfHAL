@@ -26,6 +26,7 @@
 #include <wolfHAL/gpio/esp32c6_gpio.h>
 #include <wolfHAL/flash/esp32c6_flash.h>
 #include <wolfHAL/uart/esp32c6_uart.h>
+#include <wolfHAL/uart/esp32c6_usb_serial_jtag.h>
 #include <wolfHAL/timer/esp32c6_systimer.h>
 #include <wolfHAL/irq/esp32c6_intc.h>
 #include <wolfHAL/watchdog/esp32c6_rtc_wdt.h>
@@ -44,6 +45,7 @@
  *   TIMG0:    0x6000_8000
  *   TIMG1:    0x6000_9000
  *   SYSTIMER: 0x6000_A000
+ *   USB_SERIAL_JTAG: 0x6000_F000
  *   INTMTX:   0x6001_0000
  *   IO MUX:   0x6009_0000
  *   GPIO:     0x6009_1000
@@ -76,6 +78,9 @@
 
 #define WHAL_ESP32C6_SYSTIMER_BASE   0x6000A000
 #define WHAL_ESP32C6_SYSTIMER_DRIVER &whal_Esp32c6_Systimer_Driver
+
+#define WHAL_ESP32C6_USB_SERIAL_JTAG_BASE   0x6000F000
+#define WHAL_ESP32C6_USB_SERIAL_JTAG_DRIVER &whal_Esp32c6_UsbSerialJtag_Driver
 
 #define WHAL_ESP32C6_INTMTX_BASE   0x60010000
 #define WHAL_ESP32C6_PLIC_MX_BASE  0x20001000

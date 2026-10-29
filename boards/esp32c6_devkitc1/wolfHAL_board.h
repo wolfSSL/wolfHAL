@@ -31,6 +31,7 @@ extern whal_Uart g_whalUart;
 extern whal_Timer g_whalTimer;
 extern whal_Watchdog g_whalTimg0Wdt;
 extern whal_Timeout g_whalTimeout;
+extern whal_Timeout g_whalUsbSerialTimeout;
 extern volatile uint32_t g_tick;
 
 #define BOARD_LED_PIN 0
@@ -49,6 +50,7 @@ extern volatile uint32_t g_tick;
 /* BOARD_*_DEV: how this board reaches each peripheral. */
 #define BOARD_GPIO_DEV  WHAL_INTERNAL_DEV
 #define BOARD_UART_DEV  (&g_whalUart)
+#define BOARD_USB_SERIAL_DEV ((whal_Uart *)&whal_Esp32c6_UsbSerialJtag_Dev)
 #define BOARD_TIMER_DEV (&g_whalTimer)
 #define BOARD_RTC_WDT_DEV ((whal_Watchdog *)&whal_Esp32c6_RtcWdt_Dev)
 #define BOARD_FLASH_DEV   ((whal_Flash *)&whal_Esp32c6_Flash_Dev)
@@ -156,6 +158,17 @@ extern uint8_t g_whalEui64[WHAL_IEEE802154_EXT_ADDR_SZ];
     .cfg = (void *)&(const whal_Esp32c6_Ieee802154_Cfg){ \
         .cpuFreqMhz = 160, \
         .eui64 = g_whalEui64, \
+    }, \
+}
+
+/* USB Serial/JTAG dev initializer: single-instance device defined in
+ * esp32c6_usb_serial_jtag.c. The short timeout keeps output from stalling
+ * while no host program has the port open. */
+#define WHAL_CFG_ESP32C6_USB_SERIAL_JTAG_DEV { \
+    .base = WHAL_ESP32C6_USB_SERIAL_JTAG_BASE, \
+    .driver = WHAL_ESP32C6_USB_SERIAL_JTAG_DRIVER, \
+    .cfg = (void *)&(const whal_Esp32c6_UsbSerialJtag_Cfg){ \
+        .timeout = &g_whalUsbSerialTimeout, \
     }, \
 }
 
