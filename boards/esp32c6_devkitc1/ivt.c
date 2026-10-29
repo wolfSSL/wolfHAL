@@ -69,7 +69,7 @@ void _vector_table(void)
         ".option norvc      \n"
         "j _default_handler \n"   /*  0  exception entry                     */
         "j Systimer_Handler \n"   /*  1  SYSTIMER tick (BOARD_SYSTIMER_CPU_INT) */
-        "j _default_handler \n"   /*  2                                      */
+        "j Ieee802154_Handler \n" /*  2  802.15.4 MAC (BOARD_IEEE802154_CPU_INT) */
         "j _default_handler \n"   /*  3                                      */
         "j _default_handler \n"   /*  4                                      */
         "j _default_handler \n"   /*  5                                      */
@@ -109,6 +109,12 @@ void __attribute__((noreturn)) _default_handler(void)
 {
     while (1) {
     }
+}
+
+/* Overridden by the board when the 802.15.4 radio is in use. */
+void __attribute__((weak)) Ieee802154_Handler(void)
+{
+    _default_handler();
 }
 
 void *memcpy(void *dest, const void *src, size_t n)

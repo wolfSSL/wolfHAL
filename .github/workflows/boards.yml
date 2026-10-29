@@ -18,6 +18,12 @@ jobs:
         include:
           - board: stm32wb55xx_nucleo
             extra_cflags: "-DBOARD_DMA"
+          - board: esp32c6_devkitc1
+            extra_cflags: ""
+            radio: "1"
+          - board: esp32c6_xiao
+            extra_cflags: ""
+            radio: "1"
     steps:
       - uses: actions/checkout@v4
 
@@ -29,10 +35,14 @@ jobs:
         if: startsWith(matrix.board, 'esp32c6')
         run: sudo apt-get update && sudo apt-get install -y gcc-riscv64-unknown-elf
 
+      - name: Fetch ESP32-C6 radio libraries
+        if: matrix.radio
+        run: ./tools/esp32c6_radio/fetch_blobs.sh
+
       - name: Build blinky
         working-directory: examples/blinky
-        run: CFLAGS="${{ matrix.extra_cflags }}" make BOARD=${{ matrix.board }}
+        run: CFLAGS="${{ matrix.extra_cflags }}" make BOARD=${{ matrix.board }} RADIO=${{ matrix.radio }}
 
       - name: Build tests
         working-directory: tests
-        run: CFLAGS="${{ matrix.extra_cflags }}" make BOARD=${{ matrix.board }}
+        run: CFLAGS="${{ matrix.extra_cflags }}" make BOARD=${{ matrix.board }} RADIO=${{ matrix.radio }}

@@ -30,6 +30,7 @@
 #include <wolfHAL/irq/esp32c6_intc.h>
 #include <wolfHAL/watchdog/esp32c6_rtc_wdt.h>
 #include <wolfHAL/watchdog/esp32c6_timg_wdt.h>
+#include <wolfHAL/ieee802154/esp32c6_ieee802154.h>
 
 /*
  * @file esp32c6.h
@@ -48,9 +49,11 @@
  *   GPIO:     0x6009_1000
  *   HP_APM:   0x6009_9000
  *   LP_APM0:  0x6009_9800
+ *   EFUSE:    0x600B_0800
  *   RTC_WDT:  0x600B_1C00
  *   LP_APM:   0x600B_3800
  *   PLIC MX:  0x2000_1000
+ *   802.15.4: 0x600A_3000 (not in the TRM)
  */
 
 /* --- Device macros --- */
@@ -90,6 +93,9 @@
 #define WHAL_ESP32C6_RTC_WDT_BASE   0x600B1C00
 #define WHAL_ESP32C6_RTC_WDT_DRIVER &whal_Esp32c6_RtcWdt_Driver
 
+#define WHAL_ESP32C6_IEEE802154_BASE   0x600A3000
+#define WHAL_ESP32C6_IEEE802154_DRIVER &whal_Esp32c6_Ieee802154_Driver
+
 /* Access path filters (TRM chapter 16). Enabled at reset, they deny every
  * bus master other than the HP CPU, including peripheral DMA. */
 #define WHAL_ESP32C6_HP_APM_BASE             0x60099000
@@ -97,7 +103,16 @@
 #define WHAL_ESP32C6_LP_APM_BASE             0x600B3800
 #define WHAL_ESP32C6_APM_FUNC_CTRL_REG       0x00C4
 
+/* eFuse read-back of the factory MAC (TRM Registers 6.18, 6.19). SYS_1 holds
+ * MAC bits 47:32 in [15:0] and MAC_EXT in [31:16]. */
+#define WHAL_ESP32C6_EFUSE_BASE              0x600B0800
+#define WHAL_ESP32C6_EFUSE_RD_MAC_SYS_0_REG  0x0044
+#define WHAL_ESP32C6_EFUSE_RD_MAC_SYS_1_REG  0x0048
+
 /* --- Interrupt matrix sources (TRM Table 10.3-1) --- */
+
+/* Listed as reserved in the TRM. */
+#define WHAL_ESP32C6_INTSRC_ZB_MAC            12
 
 #define WHAL_ESP32C6_INTSRC_UART0             43
 #define WHAL_ESP32C6_INTSRC_SYSTIMER_TARGET0  57
@@ -119,5 +134,74 @@
     .rstEnMsk = (1UL << 1),         \
     .funcClkReg = 0x00EC,           \
     .funcClkEnMsk = (1UL << 22)
+
+/* --- Modem clocks (MODEM_SYSCON / MODEM_LPCON, not in the TRM) --- */
+
+/* 802.15.4 MAC with the ETM, modem security and BLE timer clocks it uses. */
+#define WHAL_ESP32C6_ZB_MAC_MODEM_CLK           \
+    .base = WHAL_ESP32C6_MODEM_SYSCON_BASE,     \
+    .clkReg = 0x0004,                           \
+    .clkEnMsk = (WHAL_BITMASK(9) << 22),        \
+    .rstMsk = (1UL << 22) | (WHAL_BITMASK(4) << 24) | \
+              (1UL << 29) | (1UL << 30)
+
+/* Bluetooth/802.15.4 baseband, plus the Wi-Fi baseband clocks the PHY
+ * calibration uses. */
+#define WHAL_ESP32C6_BB_MODEM_CLK               \
+    .base = WHAL_ESP32C6_MODEM_SYSCON_BASE,     \
+    .clkReg = 0x0014,                           \
+    .clkEnMsk = WHAL_BITMASK(9) | (1UL << 17) | (1UL << 18), \
+    .rstMsk = (1UL << 8) | (WHAL_BITMASK(4) << 15)
+
+/* RF front end. */
+#define WHAL_ESP32C6_FE_MODEM_CLK               \
+    .base = WHAL_ESP32C6_MODEM_SYSCON_BASE,     \
+    .clkReg = 0x0014,                           \
+    .clkEnMsk = (WHAL_BITMASK(6) << 11),        \
+    .rstMsk = (1UL << 14)
+
+/* Radio coexistence arbiter. */
+#define WHAL_ESP32C6_COEX_MODEM_CLK             \
+    .base = WHAL_ESP32C6_MODEM_LPCON_BASE,      \
+    .clkReg = 0x0018,                           \
+    .clkEnMsk = (1UL << 1),                     \
+    .rstMsk = 0
+
+/* Modem power timer the PHY library times its waits on. */
+#define WHAL_ESP32C6_WIFIPWR_MODEM_CLK          \
+    .base = WHAL_ESP32C6_MODEM_LPCON_BASE,      \
+    .clkReg = 0x0018,                           \
+    .clkEnMsk = (1UL << 0),                     \
+    .rstMsk = 0
+
+/* Analog I2C master the PHY uses to reach the RF registers, clocked from
+ * 160 MHz. */
+#define WHAL_ESP32C6_I2C_MST_MODEM_CLK          \
+    .base = WHAL_ESP32C6_MODEM_LPCON_BASE,      \
+    .clkReg = 0x0018,                           \
+    .clkEnMsk = (1UL << 2),                     \
+    .rstMsk = 0
+
+#define WHAL_ESP32C6_I2C_MST_160M_MODEM_CLK     \
+    .base = WHAL_ESP32C6_MODEM_LPCON_BASE,      \
+    .clkReg = 0x0010,                           \
+    .clkEnMsk = (1UL << 0),                     \
+    .rstMsk = 0
+
+/* Clock gating maps: each modem clock domain runs only in the PMU clock
+ * gating codes whose bit is set. The active code depends on how the PMU was
+ * last configured (the ROM leaves code 0, ESP-IDF uses others), so these open
+ * every domain for every code. */
+#define WHAL_ESP32C6_SYSCON_ICG_MODEM_CLK       \
+    .base = WHAL_ESP32C6_MODEM_SYSCON_BASE,     \
+    .clkReg = 0x000C,                           \
+    .clkEnMsk = 0xFFFFFF00,                     \
+    .rstMsk = 0
+
+#define WHAL_ESP32C6_LPCON_ICG_MODEM_CLK        \
+    .base = WHAL_ESP32C6_MODEM_LPCON_BASE,      \
+    .clkReg = 0x0020,                           \
+    .clkEnMsk = 0xFFFF0000,                     \
+    .rstMsk = 0
 
 #endif /* WHAL_ESP32C6_H */

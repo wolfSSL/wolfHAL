@@ -50,7 +50,22 @@ BOARD_SOURCE += $(wildcard $(WHAL_DIR)/src/*/block.c)
 BOARD_SOURCE += $(wildcard $(WHAL_DIR)/src/*/sensor.c)
 BOARD_SOURCE += $(wildcard $(WHAL_DIR)/src/*/timer.c)
 BOARD_SOURCE += $(wildcard $(WHAL_DIR)/src/*/watchdog.c)
-BOARD_SOURCE += $(wildcard $(WHAL_DIR)/src/*/esp32c6_*.c)
+BOARD_SOURCE += $(filter-out %/esp32c6_ieee802154.c,$(wildcard $(WHAL_DIR)/src/*/esp32c6_*.c))
+
+ifneq ($(RADIO),)
+ESP32C6_BLOB_DIR ?= $(WHAL_DIR)/tools/esp32c6_radio/blobs
+ifeq ($(wildcard $(ESP32C6_BLOB_DIR)/libphy.a),)
+$(error RADIO=1 needs the Espressif PHY libraries; run tools/esp32c6_radio/fetch_blobs.sh)
+endif
+CFLAGS += -DBOARD_RADIO
+TESTS += ieee802154
+BOARD_SOURCE += $(WHAL_DIR)/src/ieee802154/ieee802154.c
+BOARD_SOURCE += $(WHAL_DIR)/src/ieee802154/esp32c6_ieee802154.c
+LDLIBS += -L$(ESP32C6_BLOB_DIR) -lphy -lbtbb \
+ $(ESP32C6_BLOB_DIR)/esp32c6.rom.ld \
+ $(ESP32C6_BLOB_DIR)/esp32c6.rom.phy.ld \
+ $(ESP32C6_BLOB_DIR)/esp32c6.rom.libgcc.ld
+endif
 
 # Peripheral devices
 include $(WHAL_DIR)/boards/peripheral/board.mk

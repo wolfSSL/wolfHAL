@@ -48,6 +48,58 @@ static const whal_Esp32c6_Clock_PeriphClk g_periphClks[] = {
 };
 #define PERIPH_CLK_COUNT (sizeof(g_periphClks) / sizeof(g_periphClks[0]))
 
+#ifdef BOARD_RADIO
+uint8_t g_whalEui64[WHAL_IEEE802154_EXT_ADDR_SZ];
+static const whal_Ieee802154_Callbacks *volatile g_ieee802154Cb;
+static void *volatile g_ieee802154Ctx;
+
+static const whal_Esp32c6_Clock_ModemClk g_modemClks[] = {
+    {WHAL_ESP32C6_SYSCON_ICG_MODEM_CLK},
+    {WHAL_ESP32C6_LPCON_ICG_MODEM_CLK},
+    {WHAL_ESP32C6_ZB_MAC_MODEM_CLK},
+    {WHAL_ESP32C6_BB_MODEM_CLK},
+    {WHAL_ESP32C6_FE_MODEM_CLK},
+    {WHAL_ESP32C6_COEX_MODEM_CLK},
+    {WHAL_ESP32C6_WIFIPWR_MODEM_CLK},
+    {WHAL_ESP32C6_I2C_MST_MODEM_CLK},
+    {WHAL_ESP32C6_I2C_MST_160M_MODEM_CLK},
+};
+#define MODEM_CLK_COUNT (sizeof(g_modemClks) / sizeof(g_modemClks[0]))
+
+void __attribute__((interrupt)) Ieee802154_Handler(void)
+{
+    whal_Esp32c6_Ieee802154_IrqHandler(BOARD_IEEE802154_DEV, g_ieee802154Cb,
+                                       g_ieee802154Ctx);
+}
+
+void Board_Ieee802154SetCallbacks(const whal_Ieee802154_Callbacks *cb,
+                                  void *ctx)
+{
+    /* Clear first so the ISR never pairs the new ctx with old callbacks */
+    g_ieee802154Cb = NULL;
+    g_ieee802154Ctx = ctx;
+    g_ieee802154Cb = cb;
+}
+
+/* Factory EUI-64: MAC[0..2], MAC_EXT, MAC[3..5], most significant first. */
+static void Board_ReadEui64(void)
+{
+    uint32_t mac0 = whal_Reg_Read(WHAL_ESP32C6_EFUSE_BASE,
+                                  WHAL_ESP32C6_EFUSE_RD_MAC_SYS_0_REG);
+    uint32_t mac1 = whal_Reg_Read(WHAL_ESP32C6_EFUSE_BASE,
+                                  WHAL_ESP32C6_EFUSE_RD_MAC_SYS_1_REG);
+
+    g_whalEui64[0] = (uint8_t)(mac1 >> 8);
+    g_whalEui64[1] = (uint8_t)mac1;
+    g_whalEui64[2] = (uint8_t)(mac0 >> 24);
+    g_whalEui64[3] = (uint8_t)(mac1 >> 24);
+    g_whalEui64[4] = (uint8_t)(mac1 >> 16);
+    g_whalEui64[5] = (uint8_t)(mac0 >> 16);
+    g_whalEui64[6] = (uint8_t)(mac0 >> 8);
+    g_whalEui64[7] = (uint8_t)mac0;
+}
+#endif
+
 void __attribute__((interrupt)) Systimer_Handler(void)
 {
     whal_Esp32c6_Systimer_IrqHandler(&g_whalTimer);
@@ -138,6 +190,44 @@ whal_Error Board_Init(void)
         return err;
     }
 
+#ifdef BOARD_RADIO
+    /* Power the RF switch and select the ceramic antenna */
+    err = whal_Gpio_Set(BOARD_GPIO_DEV, BOARD_RF_SWITCH_EN_PIN, 0);
+    if (err) {
+        return err;
+    }
+
+    err = whal_Gpio_Set(BOARD_GPIO_DEV, BOARD_RF_ANT_SEL_PIN, 0);
+    if (err) {
+        return err;
+    }
+
+    Board_WaitMs(100);
+
+    Board_ReadEui64();
+
+    for (size_t i = 0; i < MODEM_CLK_COUNT; i++) {
+        err = whal_Esp32c6_Clock_EnableModemClk(&g_modemClks[i]);
+        if (err) {
+            return err;
+        }
+    }
+
+    err = whal_Ieee802154_Init(BOARD_IEEE802154_DEV);
+    if (err) {
+        return err;
+    }
+
+    err = whal_Irq_Enable(WHAL_INTERNAL_DEV, WHAL_ESP32C6_INTSRC_ZB_MAC,
+                          &(whal_Esp32c6_Intc_Cfg){
+                              .cpuLine = BOARD_IEEE802154_CPU_INT,
+                              .priority = 1,
+                          });
+    if (err) {
+        return err;
+    }
+#endif
+
     err = Peripheral_Init();
     if (err) {
         return err;
@@ -154,6 +244,25 @@ whal_Error Board_Deinit(void)
     if (err) {
         return err;
     }
+
+#ifdef BOARD_RADIO
+    err = whal_Irq_Disable(WHAL_INTERNAL_DEV, WHAL_ESP32C6_INTSRC_ZB_MAC);
+    if (err) {
+        return err;
+    }
+
+    err = whal_Ieee802154_Deinit(BOARD_IEEE802154_DEV);
+    if (err) {
+        return err;
+    }
+
+    for (size_t i = 0; i < MODEM_CLK_COUNT; i++) {
+        err = whal_Esp32c6_Clock_DisableModemClk(&g_modemClks[i]);
+        if (err) {
+            return err;
+        }
+    }
+#endif
 
     err = whal_Timer_Stop(&g_whalTimer);
     if (err) {

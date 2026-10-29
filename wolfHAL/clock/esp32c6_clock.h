@@ -39,6 +39,12 @@
 
 #define WHAL_ESP32C6_CLOCK_BASE   0x60096000
 
+/* Modem clock control blocks; not in the TRM. */
+#define WHAL_ESP32C6_MODEM_SYSCON_BASE   0x600A9800
+#define WHAL_ESP32C6_MODEM_LPCON_BASE    0x600AF000
+
+#define WHAL_MODEM_SYSCON_RST_CONF_REG   0x0010
+
 /* CPU clock source select (PCR), TRM Reg 8.63.
  * SOC_CLK_SEL[17:16]: 0 = XTAL, 1 = PLL, 2 = RC_FAST. */
 #define WHAL_PCR_SYSCLK_CONF_REG         0x0110
@@ -113,6 +119,20 @@ typedef struct {
 } whal_Esp32c6_Clock_PeriphClk;
 
 /*
+ * @brief Modem clock descriptor (MODEM_SYSCON or MODEM_LPCON).
+ *
+ * base is the modem clock block and clkReg the register holding the clock
+ * enable bits. rstMsk selects MODEM_SYSCON reset bits pulsed once the clocks
+ * run; 0 means none.
+ */
+typedef struct {
+    size_t base;
+    size_t clkReg;
+    size_t clkEnMsk;
+    size_t rstMsk;
+} whal_Esp32c6_Clock_ModemClk;
+
+/*
  * @brief Select the HP system (CPU root) clock source.
  *
  * @param sysClk Clock source to switch to.
@@ -177,6 +197,41 @@ static inline whal_Error whal_Esp32c6_Clock_DisablePeriphClk(
                         clk->funcClkEnMsk, 0);
     }
     whal_Reg_Update(WHAL_ESP32C6_CLOCK_BASE, clk->confReg, clk->clkEnMsk, 0);
+    return WHAL_SUCCESS;
+}
+
+/*
+ * @brief Enable a modem clock group, then pulse its resets.
+ *
+ * @param clk Modem clock descriptor.
+ *
+ * @retval WHAL_SUCCESS Always.
+ */
+static inline whal_Error whal_Esp32c6_Clock_EnableModemClk(
+    const whal_Esp32c6_Clock_ModemClk *clk)
+{
+    whal_Reg_Update(clk->base, clk->clkReg, clk->clkEnMsk, clk->clkEnMsk);
+    if (clk->rstMsk) {
+        whal_Reg_Update(WHAL_ESP32C6_MODEM_SYSCON_BASE,
+                        WHAL_MODEM_SYSCON_RST_CONF_REG,
+                        clk->rstMsk, clk->rstMsk);
+        whal_Reg_Update(WHAL_ESP32C6_MODEM_SYSCON_BASE,
+                        WHAL_MODEM_SYSCON_RST_CONF_REG, clk->rstMsk, 0);
+    }
+    return WHAL_SUCCESS;
+}
+
+/*
+ * @brief Disable a modem clock group.
+ *
+ * @param clk Modem clock descriptor.
+ *
+ * @retval WHAL_SUCCESS Always.
+ */
+static inline whal_Error whal_Esp32c6_Clock_DisableModemClk(
+    const whal_Esp32c6_Clock_ModemClk *clk)
+{
+    whal_Reg_Update(clk->base, clk->clkReg, clk->clkEnMsk, 0);
     return WHAL_SUCCESS;
 }
 

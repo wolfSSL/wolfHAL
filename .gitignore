@@ -61,3 +61,5 @@ compile_commands.json
 tests/core/test_core
 
 *.pdf
+
+tools/esp32c6_radio/blobs/

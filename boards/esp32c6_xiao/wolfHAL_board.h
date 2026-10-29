@@ -34,6 +34,8 @@ extern whal_Timeout g_whalTimeout;
 extern volatile uint32_t g_tick;
 
 #define BOARD_LED_PIN 0
+#define BOARD_RF_SWITCH_EN_PIN 3
+#define BOARD_RF_ANT_SEL_PIN   4
 #define BOARD_FLASH_START_ADDR 0x42000000
 #define BOARD_FLASH_SIZE       0x00400000
 #define BOARD_FLASH_TEST_ADDR  0x423F0000
@@ -42,15 +44,25 @@ extern volatile uint32_t g_tick;
 /* CPU interrupt line carrying the SYSTIMER tick; ivt.c slot 1 must match. */
 #define BOARD_SYSTIMER_CPU_INT 1
 
+/* CPU interrupt line carrying the 802.15.4 MAC; ivt.c slot 2 must match. */
+#define BOARD_IEEE802154_CPU_INT 2
+
 /* BOARD_*_DEV: how this board reaches each peripheral. */
 #define BOARD_GPIO_DEV  WHAL_INTERNAL_DEV
 #define BOARD_UART_DEV  (&g_whalUart)
 #define BOARD_TIMER_DEV (&g_whalTimer)
 #define BOARD_RTC_WDT_DEV ((whal_Watchdog *)&whal_Esp32c6_RtcWdt_Dev)
 #define BOARD_FLASH_DEV   ((whal_Flash *)&whal_Esp32c6_Flash_Dev)
+#define BOARD_IEEE802154_DEV ((whal_Ieee802154 *)&whal_Esp32c6_Ieee802154_Dev)
+
+#ifdef BOARD_RADIO
+extern uint8_t g_whalEui64[WHAL_IEEE802154_EXT_ADDR_SZ];
+#endif
 
 /* GPIO dev initializer: GPIO15 (BOARD_LED_PIN, active-low user LED) as a
- * push-pull output, GPIO16/GPIO17 (D6/D7) as UART0 TX/RX through the IO MUX. */
+ * push-pull output, GPIO16/GPIO17 (D6/D7) as UART0 TX/RX through the IO MUX,
+ * GPIO3 (RF switch enable, active low) and GPIO14 (antenna select, low for the
+ * ceramic antenna) as push-pull outputs. */
 #define WHAL_CFG_ESP32C6_GPIO_DEV { \
     .base = WHAL_ESP32C6_GPIO_BASE, \
     /* .driver: direct API mapping */ \
@@ -67,12 +79,22 @@ extern volatile uint32_t g_tick;
               .gpioCfg  = WHAL_ESP32C6_GPIO_PINREG(0, GPIO_INT_DISABLE, 0, 0), \
               .ioMuxCfg = WHAL_ESP32C6_GPIO_IOMUX(WHAL_ESP32C6_IOMUX_FUNC_U0RXD, 1, \
                                                   IO_MUX_FUN_WPU_Msk, 2) }, \
+            { .pin = 3, \
+              .outputEnable = 1, \
+              .gpioCfg  = WHAL_ESP32C6_GPIO_PINREG(0, GPIO_INT_DISABLE, 0, 0), \
+              .ioMuxCfg = WHAL_ESP32C6_GPIO_IOMUX(IO_MUX_FUNC_GPIO, 0, 0, 2) }, \
+            { .pin = 14, \
+              .outputEnable = 1, \
+              .gpioCfg  = WHAL_ESP32C6_GPIO_PINREG(0, GPIO_INT_DISABLE, 0, 0), \
+              .ioMuxCfg = WHAL_ESP32C6_GPIO_IOMUX(IO_MUX_FUNC_GPIO, 0, 0, 2) }, \
         }, \
-        .pinCount = 3, \
+        .pinCount = 5, \
         .outputCfg = (const whal_Esp32c6_Gpio_OutputCfg[]){ \
             { .gpioNum = 15, .cfg = WHAL_ESP32C6_GPIO_OUT(GPIO_SIG_GPIO) }, \
+            { .gpioNum = 3, .cfg = WHAL_ESP32C6_GPIO_OUT(GPIO_SIG_GPIO) }, \
+            { .gpioNum = 14, .cfg = WHAL_ESP32C6_GPIO_OUT(GPIO_SIG_GPIO) }, \
         }, \
-        .outputCount = 1, \
+        .outputCount = 3, \
     }, \
 }
 
@@ -139,8 +161,25 @@ extern volatile uint32_t g_tick;
     }, \
 }
 
+/* 802.15.4 radio dev initializer: single-instance device defined in
+ * esp32c6_ieee802154.c. Board_Init reads the EUI-64 from eFuse. */
+#define WHAL_CFG_ESP32C6_IEEE802154_DEV { \
+    .base = WHAL_ESP32C6_IEEE802154_BASE, \
+    .driver = WHAL_ESP32C6_IEEE802154_DRIVER, \
+    .cfg = (void *)&(const whal_Esp32c6_Ieee802154_Cfg){ \
+        .cpuFreqMhz = 160, \
+        .eui64 = g_whalEui64, \
+    }, \
+}
+
 whal_Error Board_Init(void);
 whal_Error Board_Deinit(void);
 void Board_WaitMs(size_t ms);
+
+#ifdef BOARD_RADIO
+/* Callbacks the 802.15.4 interrupt reports to; NULL ignores events. */
+void Board_Ieee802154SetCallbacks(const whal_Ieee802154_Callbacks *cb,
+                                  void *ctx);
+#endif
 
 #endif /* WOLFHAL_BOARD_H */

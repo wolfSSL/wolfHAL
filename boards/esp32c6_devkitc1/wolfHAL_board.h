@@ -42,12 +42,20 @@ extern volatile uint32_t g_tick;
 /* CPU interrupt line carrying the SYSTIMER tick; ivt.c slot 1 must match. */
 #define BOARD_SYSTIMER_CPU_INT 1
 
+/* CPU interrupt line carrying the 802.15.4 MAC; ivt.c slot 2 must match. */
+#define BOARD_IEEE802154_CPU_INT 2
+
 /* BOARD_*_DEV: how this board reaches each peripheral. */
 #define BOARD_GPIO_DEV  WHAL_INTERNAL_DEV
 #define BOARD_UART_DEV  (&g_whalUart)
 #define BOARD_TIMER_DEV (&g_whalTimer)
 #define BOARD_RTC_WDT_DEV ((whal_Watchdog *)&whal_Esp32c6_RtcWdt_Dev)
 #define BOARD_FLASH_DEV   ((whal_Flash *)&whal_Esp32c6_Flash_Dev)
+#define BOARD_IEEE802154_DEV ((whal_Ieee802154 *)&whal_Esp32c6_Ieee802154_Dev)
+
+#ifdef BOARD_RADIO
+extern uint8_t g_whalEui64[WHAL_IEEE802154_EXT_ADDR_SZ];
+#endif
 
 /* GPIO dev initializer: GPIO8 (BOARD_LED_PIN) as a simple push-pull output,
  * GPIO16/GPIO17 as UART0 TX/RX through the IO MUX. */
@@ -139,8 +147,25 @@ extern volatile uint32_t g_tick;
     }, \
 }
 
+/* 802.15.4 radio dev initializer: single-instance device defined in
+ * esp32c6_ieee802154.c. Board_Init reads the EUI-64 from eFuse. */
+#define WHAL_CFG_ESP32C6_IEEE802154_DEV { \
+    .base = WHAL_ESP32C6_IEEE802154_BASE, \
+    .driver = WHAL_ESP32C6_IEEE802154_DRIVER, \
+    .cfg = (void *)&(const whal_Esp32c6_Ieee802154_Cfg){ \
+        .cpuFreqMhz = 160, \
+        .eui64 = g_whalEui64, \
+    }, \
+}
+
 whal_Error Board_Init(void);
 whal_Error Board_Deinit(void);
 void Board_WaitMs(size_t ms);
+
+#ifdef BOARD_RADIO
+/* Callbacks the 802.15.4 interrupt reports to; NULL ignores events. */
+void Board_Ieee802154SetCallbacks(const whal_Ieee802154_Callbacks *cb,
+                                  void *ctx);
+#endif
 
 #endif /* WOLFHAL_BOARD_H */

@@ -42,11 +42,13 @@ MEMORY
     /* External flash mapped by the ROM into the XIP window. The XIAO ESP32C6
      * has 4 MB; only what the image uses is consumed. */
     FLASH (rx)  : ORIGIN = 0x42000000, LENGTH = 4M
-    /* HP SRAM: 512 KB, 0x4080_0000 - 0x4087_FFFF. */
-    RAM   (rwx) : ORIGIN = 0x40800000, LENGTH = 512K
+    /* HP SRAM from 0x4080_0000 up to the ROM's .bss and .data at
+     * 0x4087_E610, which ROM routines (including those the radio PHY library
+     * calls) keep using. */
+    RAM   (rwx) : ORIGIN = 0x40800000, LENGTH = 0x7E610
 }
 
-/* Top of HP SRAM. The stack grows down from here. 0x4088_0000 is 16-byte
+/* Top of usable SRAM. The stack grows down from here. 0x4087_E610 is 16-byte
  * aligned, satisfying the RV32 ILP32 stack-alignment requirement. */
 _estack = ORIGIN(RAM) + LENGTH(RAM);
 /* Link error if the stack cannot fit alongside .data/.bss. */
@@ -108,6 +110,8 @@ SECTIONS
         PROVIDE(__global_pointer$ = . + 0x800);
         *(.ramfunc)
         *(.ramfunc*)
+        *(.iram1)
+        *(.iram1.*)
         *(.data)
         *(.data*)
         *(.sdata)
