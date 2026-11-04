@@ -67,8 +67,9 @@ use `g_peripheralSensor[]`).
 
 ## Core Tests
 
-Host-side unit tests (bitops, dispatch, endian, reg, timeout) live in `core/`
-and build with the native compiler:
+Host-side unit tests (bitops, dispatch, endian, reg, timeout, and the PL011
+UART driver against an emulated register block) live in `core/` and build
+with the native compiler:
 
 ```
 cd core && make && make run
