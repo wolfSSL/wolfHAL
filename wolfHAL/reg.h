@@ -23,6 +23,7 @@
 #define WHAL_REG_H
 
 #include <stddef.h>
+#include <stdint.h>
 #include <wolfHAL/error.h>
 #include <wolfHAL/bitops.h>
 #include <wolfHAL/timeout.h>
@@ -30,6 +31,9 @@
 /*
  * @file reg.h
  * @brief Helpers for accessing and manipulating memory-mapped registers.
+ *
+ * Every access is 32 bits wide, also where size_t is 64 bits. Value and
+ * mask bits above bit 31 are dropped.
  */
 
 /*
@@ -49,8 +53,8 @@
 static inline void whal_Reg_Update(size_t base, size_t offset, size_t mask,
                                    size_t value)
 {
-    volatile size_t *reg = (size_t *)(base + offset);
-    *reg = (*reg & ~mask) | (value & mask);
+    volatile uint32_t *reg = (volatile uint32_t *)(base + offset);
+    *reg = (uint32_t)((*reg & ~mask) | (value & mask));
 }
 
 /*
@@ -67,7 +71,7 @@ static inline void whal_Reg_Update(size_t base, size_t offset, size_t mask,
 static inline void whal_Reg_Get(size_t base, size_t offset, size_t msk,
                                 size_t pos, size_t *value)
 {
-    size_t val = *(volatile size_t *)(base + offset);
+    size_t val = *(volatile uint32_t *)(base + offset);
     *value = whal_GetBits(msk, pos, val);
 }
 
@@ -80,7 +84,7 @@ static inline void whal_Reg_Get(size_t base, size_t offset, size_t msk,
  */
 static inline void whal_Reg_Write(size_t base, size_t offset, size_t value)
 {
-    *(volatile size_t *)(base + offset) = value;
+    *(volatile uint32_t *)(base + offset) = (uint32_t)value;
 }
 
 /*
@@ -93,7 +97,7 @@ static inline void whal_Reg_Write(size_t base, size_t offset, size_t value)
  */
 static inline size_t whal_Reg_Read(size_t base, size_t offset)
 {
-    return *(volatile size_t *)(base + offset);
+    return *(volatile uint32_t *)(base + offset);
 }
 
 /*
@@ -102,8 +106,12 @@ static inline size_t whal_Reg_Read(size_t base, size_t offset)
  * @param base    Register block base address.
  * @param offset  Register offset.
  * @param mask    Bit mask to extract the field.
- * @param value   Expected value of the masked field.
+ * @param value   Expected value of the masked field. Must fit in @p mask
+ *                and in 32 bits, or the poll never matches.
  * @param timeout Timeout instance (NULL for unbounded wait).
+ *
+ * @retval WHAL_SUCCESS  The masked field matched @p value.
+ * @retval WHAL_ETIMEOUT The timeout expired first.
  */
 whal_Error whal_Reg_ReadPoll(size_t base, size_t offset,
                              size_t mask, size_t value,

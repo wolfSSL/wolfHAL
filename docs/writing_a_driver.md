@@ -243,6 +243,9 @@ Use `Write` and `Read` for whole-register access. Use `Update` and `Get` when
 you need to modify or read individual fields within a register without
 disturbing other bits.
 
+Every access is 32 bits wide, also on 64-bit targets where `size_t` is 64
+bits. Value and mask bits above bit 31 are dropped.
+
 ### Timeouts
 
 Most drivers poll hardware status registers in busy-wait loops (e.g., waiting
