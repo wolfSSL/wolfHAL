@@ -61,13 +61,15 @@ BOARD_SOURCE += $(wildcard $(WHAL_DIR)/src/*/systick.c)
 # Peripheral devices
 include $(WHAL_DIR)/boards/peripheral/board.mk
 
-# Flash via openocd: make flash BOARD=<board> IMAGE=<path/to/image>
+# Flash via openocd: make flash BOARD=<board> IMAGE=<path/to/image.bin>
+# bluenrg-x.cfg is only used to connect; flash.tcl programs the flash
+# controller directly.
 OPENOCD ?= /opt/openocd/bin/openocd
-OPENOCD_INTERFACE ?= interface/stlink.cfg
-OPENOCD_TARGET ?= target/stm32wb0x.cfg
+OPENOCD_INTERFACE ?= interface/stlink-dap.cfg
+OPENOCD_TARGET ?= target/bluenrg-x.cfg
 
 .PHONY: flash
 flash:
-	@test -n "$(IMAGE)" || { echo "IMAGE=<path/to/image> required" >&2; exit 1; }
+	@test -n "$(IMAGE)" || { echo "IMAGE=<path/to/image.bin> required" >&2; exit 1; }
 	$(OPENOCD) -f $(OPENOCD_INTERFACE) -f $(OPENOCD_TARGET) \
-	 -c "program $(IMAGE) verify reset exit"
+	 -c "set IMAGE $(abspath $(IMAGE))" -f $(_BOARD_DIR)/flash.tcl

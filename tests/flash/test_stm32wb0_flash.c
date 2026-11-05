@@ -24,7 +24,7 @@
 #include "wolfHAL_board.h"
 #include "test.h"
 
-/* RM0529 does not say whether a command on a PAGEPROT-protected page raises
+/* RM0505 does not say whether a command on a PAGEPROT-protected page raises
  * CMDERR or is ignored, so the test checks the flash contents rather than the
  * return code. */
 

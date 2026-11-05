@@ -26,10 +26,13 @@
  * @file stm32wb0_uart.h
  * @brief STM32WB0 UART driver (alias for STM32WB UART).
  *
- * The STM32WB0 USART peripheral is register-compatible with the STM32WB
- * USART (FIFO USART variant: CR1.FIFOEN at bit 29, BRR at 0x0C, ISR at
- * 0x1C, RDR at 0x24, TDR at 0x28). This header re-exports the STM32WB
- * UART driver types and symbols under STM32WB0-specific names.
+ * The STM32WB0 USART is register-compatible with the STM32WB FIFO USART
+ * (CR1.FIFOEN at bit 29, BRR at 0x0C, ISR at 0x1C, ICR at 0x20, RDR at 0x24,
+ * TDR at 0x28). This header re-exports the STM32WB UART driver types and
+ * symbols under STM32WB0-specific names.
+ *
+ * The USART baud rate generator runs from a fixed 16 MHz kernel clock that
+ * does not follow SYSCLK, so BRR is computed from WHAL_STM32WB0_UART_CLK_HZ.
  */
 
 #include <wolfHAL/uart/stm32wb_uart.h>
@@ -45,6 +48,11 @@ typedef whal_Stm32wb_Uart_Cfg whal_Stm32wb0_Uart_Cfg;
 #define whal_Stm32wb0_Uart_Send   whal_Stm32wb_Uart_Send
 #define whal_Stm32wb0_Uart_Recv   whal_Stm32wb_Uart_Recv
 #endif /* !WHAL_CFG_STM32WB0_UART_DIRECT_API_MAPPING */
+
+/**
+ * @brief USART kernel clock frequency.
+ */
+#define WHAL_STM32WB0_UART_CLK_HZ 16000000
 
 /**
  * @brief Baud rate register helpers (re-exported from STM32WB).

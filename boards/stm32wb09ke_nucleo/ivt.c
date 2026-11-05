@@ -43,7 +43,7 @@ void SVC_Handler(void)        __attribute__((weak, noreturn, alias("Default_Hand
 void PendSV_Handler(void)     __attribute__((weak, noreturn, alias("Default_Handler")));
 void SysTick_Handler(void)    __attribute__((weak, noreturn, alias("Default_Handler")));
 
-/* STM32WB05xZ peripheral interrupts (RM0529 Table 6) */
+/* STM32WB09xE peripheral interrupts (RM0505 Table 6) */
 void NVM_IRQHandler(void)       __attribute__((weak, noreturn, alias("Default_Handler")));
 void RCC_IRQHandler(void)       __attribute__((weak, noreturn, alias("Default_Handler")));
 void BATTERY_IRQHandler(void)   __attribute__((weak, noreturn, alias("Default_Handler")));
@@ -66,6 +66,7 @@ void BLE_WKUP_IRQHandler(void)  __attribute__((weak, noreturn, alias("Default_Ha
 void BLE_SEQ_IRQHandler(void)   __attribute__((weak, noreturn, alias("Default_Handler")));
 void TIM16_IRQHandler(void)     __attribute__((weak, noreturn, alias("Default_Handler")));
 void TIM17_IRQHandler(void)     __attribute__((weak, noreturn, alias("Default_Handler")));
+void TRNG_IRQHandler(void)      __attribute__((weak, noreturn, alias("Default_Handler")));
 
 #define RESERVED Default_Handler
 
@@ -108,7 +109,7 @@ void (* const interrupt_vector_table[])(void) __attribute__((section(".isr_vecto
     RESERVED,                                  /* Reserved */
     PendSV_Handler,
     SysTick_Handler,
-    /* STM32WB05xZ peripheral interrupts (Table 6) */
+    /* STM32WB09xE peripheral interrupts (Table 6) */
     NVM_IRQHandler,                            /* 0  Flash controller */
     RCC_IRQHandler,                            /* 1  Reset and clock controller */
     BATTERY_IRQHandler,                        /* 2  PVD */
@@ -137,7 +138,7 @@ void (* const interrupt_vector_table[])(void) __attribute__((section(".isr_vecto
     BLE_SEQ_IRQHandler,                        /* 25 BLE RX/TX sequence */
     TIM16_IRQHandler,                          /* 26 TIM16 */
     TIM17_IRQHandler,                          /* 27 TIM17 */
-    RESERVED,                                  /* 28 Reserved */
+    TRNG_IRQHandler,                           /* 28 TRNG */
     RESERVED,                                  /* 29 Reserved */
     RESERVED,                                  /* 30 Reserved */
     RESERVED,                                  /* 31 Reserved */
