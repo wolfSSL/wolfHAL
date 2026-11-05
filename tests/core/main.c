@@ -37,6 +37,9 @@ void whal_Test_Bitops(void);
 void whal_Test_Dispatch(void);
 void whal_Test_Endian(void);
 void whal_Test_Reg(void);
+void whal_Test_CadenceOspi_SpiMem(void);
+void whal_Test_SpiMemNor_Flash(void);
+void whal_Test_Versal2_OspiDma(void);
 #ifndef WHAL_CFG_NO_TIMEOUT
 void whal_Test_Timeout(void);
 #endif
@@ -51,6 +54,9 @@ int main(void)
     whal_Test_Dispatch();
     whal_Test_Endian();
     whal_Test_Reg();
+    whal_Test_CadenceOspi_SpiMem();
+    whal_Test_SpiMemNor_Flash();
+    whal_Test_Versal2_OspiDma();
 #ifndef WHAL_CFG_NO_TIMEOUT
     whal_Test_Timeout();
 #endif
