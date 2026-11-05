@@ -303,6 +303,72 @@ static void Test_Spi_ValidDispatch(void)
     WHAL_ASSERT_EQ(whal_Spi_Deinit(&dev), WHAL_SUCCESS);
 }
 
+/* --- SPI memory dispatch tests --- */
+
+static whal_Error MockSpiMemInit(whal_SpiMem *d) { (void)d; return WHAL_SUCCESS; }
+static whal_Error MockSpiMemDeinit(whal_SpiMem *d) { (void)d; return WHAL_SUCCESS; }
+static whal_Error MockSpiMemExec(whal_SpiMem *d, const whal_SpiMemOp *op) { (void)d; (void)op; return WHAL_SUCCESS; }
+static whal_Error MockSpiMemMaxDataSz(whal_SpiMem *d, const whal_SpiMemOp *op, size_t *maxSz) { (void)d; (void)op; *maxSz = 8; return WHAL_SUCCESS; }
+
+static const whal_SpiMemDriver mockSpiMemDriver = {
+    .Init = MockSpiMemInit,
+    .Deinit = MockSpiMemDeinit,
+    .Exec = MockSpiMemExec,
+    .MaxDataSz = MockSpiMemMaxDataSz,
+};
+
+static void Test_SpiMem_NullDev(void)
+{
+    whal_SpiMemOp op = {0};
+    size_t maxSz;
+    WHAL_ASSERT_EQ(whal_SpiMem_Init(NULL), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_SpiMem_Deinit(NULL), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_SpiMem_Exec(NULL, &op), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_SpiMem_MaxDataSz(NULL, &op, &maxSz), WHAL_EINVAL);
+}
+
+static void Test_SpiMem_NullArgs(void)
+{
+    whal_SpiMem dev = { .driver = &mockSpiMemDriver };
+    whal_SpiMemOp op = {0};
+    size_t maxSz;
+    WHAL_ASSERT_EQ(whal_SpiMem_Exec(&dev, NULL), WHAL_EINVAL);
+    /* A data phase needs a buffer. */
+    op.dir = WHAL_SPIMEM_DIR_IN;
+    op.dataSz = 4;
+    WHAL_ASSERT_EQ(whal_SpiMem_Exec(&dev, &op), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_SpiMem_MaxDataSz(&dev, NULL, &maxSz), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_SpiMem_MaxDataSz(&dev, &op, NULL), WHAL_EINVAL);
+}
+
+static void Test_SpiMem_NullDriver(void)
+{
+    whal_SpiMem dev = { .driver = NULL };
+    whal_SpiMemOp op = {0};
+    size_t maxSz;
+    WHAL_ASSERT_EQ(whal_SpiMem_Init(&dev), WHAL_ENOTSUP);
+    WHAL_ASSERT_EQ(whal_SpiMem_Exec(&dev, &op), WHAL_ENOTSUP);
+    WHAL_ASSERT_EQ(whal_SpiMem_MaxDataSz(&dev, &op, &maxSz), WHAL_ENOTSUP);
+}
+
+static void Test_SpiMem_ValidDispatch(void)
+{
+    whal_SpiMem dev = { .driver = &mockSpiMemDriver };
+    uint8_t buf[4] = {0};
+    whal_SpiMemOp op = {
+        .opcode = 0x9F,
+        .dir = WHAL_SPIMEM_DIR_IN,
+        .data = buf,
+        .dataSz = 3,
+    };
+    size_t maxSz = 0;
+    WHAL_ASSERT_EQ(whal_SpiMem_Init(&dev), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(whal_SpiMem_Exec(&dev, &op), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(whal_SpiMem_MaxDataSz(&dev, &op, &maxSz), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(maxSz, 8);
+    WHAL_ASSERT_EQ(whal_SpiMem_Deinit(&dev), WHAL_SUCCESS);
+}
+
 /* --- Block dispatch tests --- */
 
 static whal_Error MockBlockInit(whal_Block *d) { (void)d; return WHAL_SUCCESS; }
@@ -1020,6 +1086,10 @@ void whal_Test_Dispatch(void)
     WHAL_TEST(Test_Spi_NullDev);
     WHAL_TEST(Test_Spi_NullDriver);
     WHAL_TEST(Test_Spi_ValidDispatch);
+    WHAL_TEST(Test_SpiMem_NullDev);
+    WHAL_TEST(Test_SpiMem_NullArgs);
+    WHAL_TEST(Test_SpiMem_NullDriver);
+    WHAL_TEST(Test_SpiMem_ValidDispatch);
     WHAL_TEST(Test_Block_NullDev);
     WHAL_TEST(Test_Block_NullDriver);
     WHAL_TEST(Test_Block_ValidDispatch);
