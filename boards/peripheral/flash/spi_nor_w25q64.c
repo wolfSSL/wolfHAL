@@ -24,7 +24,7 @@
 #include "wolfHAL_board.h"
 
 /*
- * Winbond W25Q64 — 64 Mbit (8 MB) SPI-NOR Flash
+ * Winbond W25Q64: 64 Mbit (8 MB) SPI-NOR Flash
  *
  * - Page size:   256 bytes
  * - Sector size: 4 KB (smallest erasable unit)
@@ -43,8 +43,8 @@ static whal_Spi_ComCfg g_w25q64ComCfg = {
 };
 
 whal_Flash g_whalSpiNorW25q64 = {
-    .driver = &whal_SpiNor_Driver,
-    .cfg = &(whal_SpiNor_Cfg) {
+    .driver = &whal_SpiNor_Flash_Driver,
+    .cfg = &(whal_SpiNor_Flash_Cfg) {
         .spiDev = BOARD_SPI_DEV,
         .spiComCfg = &g_w25q64ComCfg,
         .gpioDev = BOARD_GPIO_DEV,

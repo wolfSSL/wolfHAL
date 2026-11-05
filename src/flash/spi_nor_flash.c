@@ -20,8 +20,8 @@
  */
 
 #include <stdint.h>
-#ifdef WHAL_CFG_SPI_NOR_SINGLE_INSTANCE
-#include "wolfHAL_board.h"  /* provides whal_SpiNor_Dev singleton */
+#ifdef WHAL_CFG_SPI_NOR_FLASH_SINGLE_INSTANCE
+#include "wolfHAL_board.h"  /* provides whal_SpiNor_Flash_Dev */
 #endif
 #include <wolfHAL/flash/spi_nor_flash.h>
 #include <wolfHAL/flash/flash.h>
@@ -32,7 +32,6 @@
 
 /* SPI-NOR JEDEC Standard Commands */
 #define CMD_WRITE_ENABLE  0x06
-#define CMD_WRITE_DISABLE 0x04
 #define CMD_READ_SR1      0x05 /* Read Status Register 1 */
 #define CMD_WRITE_SR      0x01 /* Write Status Register */
 #define CMD_READ_DATA     0x03
@@ -60,7 +59,6 @@
 
 /* Extended Address Register */
 #define CMD_WRITE_EAR 0xC5
-#define CMD_READ_EAR  0xC8
 
 /* Status Register 1 Bits */
 #define SR1_WIP  0x01 /* Write In Progress */
@@ -72,22 +70,22 @@
 
 #define DUMMY 0xFF
 
-#ifdef WHAL_CFG_SPI_NOR_SINGLE_INSTANCE
-const whal_Flash whal_SpiNor_Dev = WHAL_CFG_SPI_NOR_DEV;
+#ifdef WHAL_CFG_SPI_NOR_FLASH_SINGLE_INSTANCE
+const whal_Flash whal_SpiNor_Flash_Dev = WHAL_CFG_SPI_NOR_FLASH_DEV;
 #endif
 
-static whal_Error SpiNor_CsAssert(whal_SpiNor_Cfg *cfg)
+static whal_Error SpiNor_CsAssert(whal_SpiNor_Flash_Cfg *cfg)
 {
     return whal_Gpio_Set(cfg->gpioDev, cfg->csPin, 0);
 }
 
-static whal_Error SpiNor_CsDeassert(whal_SpiNor_Cfg *cfg)
+static whal_Error SpiNor_CsDeassert(whal_SpiNor_Flash_Cfg *cfg)
 {
     return whal_Gpio_Set(cfg->gpioDev, cfg->csPin, 1);
 }
 
 /* Send a 1-byte command with no data phase */
-static whal_Error SpiNor_Cmd(whal_SpiNor_Cfg *cfg, uint8_t cmd)
+static whal_Error SpiNor_Cmd(whal_SpiNor_Flash_Cfg *cfg, uint8_t cmd)
 {
     whal_Error err;
 
@@ -100,7 +98,7 @@ static whal_Error SpiNor_Cmd(whal_SpiNor_Cfg *cfg, uint8_t cmd)
 }
 
 /* Read Status Register 1 */
-static whal_Error SpiNor_ReadSR1(whal_SpiNor_Cfg *cfg, uint8_t *sr)
+static whal_Error SpiNor_ReadSR1(whal_SpiNor_Flash_Cfg *cfg, uint8_t *sr)
 {
     uint8_t cmd = CMD_READ_SR1;
     whal_Error err;
@@ -116,7 +114,7 @@ static whal_Error SpiNor_ReadSR1(whal_SpiNor_Cfg *cfg, uint8_t *sr)
 }
 
 /* Poll until WIP bit clears */
-static whal_Error SpiNor_WaitReady(whal_SpiNor_Cfg *cfg)
+static whal_Error SpiNor_WaitReady(whal_SpiNor_Flash_Cfg *cfg)
 {
     uint8_t sr;
     whal_Error err;
@@ -134,7 +132,7 @@ static whal_Error SpiNor_WaitReady(whal_SpiNor_Cfg *cfg)
 }
 
 /* Issue Write Enable (WREN) and verify WEL is set */
-static whal_Error SpiNor_WriteEnable(whal_SpiNor_Cfg *cfg)
+static whal_Error SpiNor_WriteEnable(whal_SpiNor_Flash_Cfg *cfg)
 {
     uint8_t sr;
     whal_Error err;
@@ -171,21 +169,21 @@ static void SpiNor_BuildCmdAddr4b(uint8_t *frame, uint8_t cmd, size_t addr)
     frame[4] = (uint8_t)(addr);
 }
 
-whal_Error whal_SpiNor_Init(whal_Flash *flashDev)
+whal_Error whal_SpiNor_Flash_Init(whal_Flash *flashDev)
 {
-    whal_SpiNor_Cfg *cfg;
+    whal_SpiNor_Flash_Cfg *cfg;
     uint8_t jedec[3];
     uint8_t cmd;
     whal_Error err;
 
-#ifdef WHAL_CFG_SPI_NOR_SINGLE_INSTANCE
-    cfg = (whal_SpiNor_Cfg *)whal_SpiNor_Dev.cfg;
+#ifdef WHAL_CFG_SPI_NOR_FLASH_SINGLE_INSTANCE
+    cfg = (whal_SpiNor_Flash_Cfg *)whal_SpiNor_Flash_Dev.cfg;
     (void)flashDev;
 #else
     if (!flashDev || !flashDev->cfg)
         return WHAL_EINVAL;
 
-    cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
+    cfg = (whal_SpiNor_Flash_Cfg *)flashDev->cfg;
 #endif
 
     if (!cfg->spiComCfg)
@@ -237,26 +235,26 @@ cleanup:
     return err;
 }
 
-whal_Error whal_SpiNor_Deinit(whal_Flash *flashDev)
+whal_Error whal_SpiNor_Flash_Deinit(whal_Flash *flashDev)
 {
-    whal_SpiNor_Cfg *cfg;
+    whal_SpiNor_Flash_Cfg *cfg;
 
-#ifdef WHAL_CFG_SPI_NOR_SINGLE_INSTANCE
-    cfg = (whal_SpiNor_Cfg *)whal_SpiNor_Dev.cfg;
+#ifdef WHAL_CFG_SPI_NOR_FLASH_SINGLE_INSTANCE
+    cfg = (whal_SpiNor_Flash_Cfg *)whal_SpiNor_Flash_Dev.cfg;
     (void)flashDev;
 #else
     if (!flashDev || !flashDev->cfg)
         return WHAL_EINVAL;
 
-    cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
+    cfg = (whal_SpiNor_Flash_Cfg *)flashDev->cfg;
 #endif
 
     return SpiNor_CsDeassert(cfg);
 }
 
-whal_Error whal_SpiNor_Lock(whal_Flash *flashDev, size_t addr, size_t len)
+whal_Error whal_SpiNor_Flash_Lock(whal_Flash *flashDev, size_t addr, size_t len)
 {
-    whal_SpiNor_Cfg *cfg;
+    whal_SpiNor_Flash_Cfg *cfg;
     uint8_t frame[2];
     uint8_t sr;
     whal_Error err;
@@ -264,14 +262,14 @@ whal_Error whal_SpiNor_Lock(whal_Flash *flashDev, size_t addr, size_t len)
     (void)addr;
     (void)len;
 
-#ifdef WHAL_CFG_SPI_NOR_SINGLE_INSTANCE
-    cfg = (whal_SpiNor_Cfg *)whal_SpiNor_Dev.cfg;
+#ifdef WHAL_CFG_SPI_NOR_FLASH_SINGLE_INSTANCE
+    cfg = (whal_SpiNor_Flash_Cfg *)whal_SpiNor_Flash_Dev.cfg;
     (void)flashDev;
 #else
     if (!flashDev || !flashDev->cfg)
         return WHAL_EINVAL;
 
-    cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
+    cfg = (whal_SpiNor_Flash_Cfg *)flashDev->cfg;
 #endif
 
     err = whal_Spi_StartCom(cfg->spiDev, cfg->spiComCfg);
@@ -306,9 +304,9 @@ cleanup:
     return err;
 }
 
-whal_Error whal_SpiNor_Unlock(whal_Flash *flashDev, size_t addr, size_t len)
+whal_Error whal_SpiNor_Flash_Unlock(whal_Flash *flashDev, size_t addr, size_t len)
 {
-    whal_SpiNor_Cfg *cfg;
+    whal_SpiNor_Flash_Cfg *cfg;
     uint8_t frame[2];
     uint8_t sr;
     whal_Error err;
@@ -316,14 +314,14 @@ whal_Error whal_SpiNor_Unlock(whal_Flash *flashDev, size_t addr, size_t len)
     (void)addr;
     (void)len;
 
-#ifdef WHAL_CFG_SPI_NOR_SINGLE_INSTANCE
-    cfg = (whal_SpiNor_Cfg *)whal_SpiNor_Dev.cfg;
+#ifdef WHAL_CFG_SPI_NOR_FLASH_SINGLE_INSTANCE
+    cfg = (whal_SpiNor_Flash_Cfg *)whal_SpiNor_Flash_Dev.cfg;
     (void)flashDev;
 #else
     if (!flashDev || !flashDev->cfg)
         return WHAL_EINVAL;
 
-    cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
+    cfg = (whal_SpiNor_Flash_Cfg *)flashDev->cfg;
 #endif
 
     err = whal_Spi_StartCom(cfg->spiDev, cfg->spiComCfg);
@@ -358,16 +356,16 @@ cleanup:
     return err;
 }
 
-whal_Error whal_SpiNor3b_Read(whal_Flash *flashDev, size_t addr, void *data,
-                            size_t dataSz)
+whal_Error whal_SpiNor_Flash_ReadData_03h(whal_Flash *flashDev, size_t addr, void *data,
+                                          size_t dataSz)
 {
     uint8_t *dataBuf = (uint8_t *)data;
-    whal_SpiNor_Cfg *cfg;
+    whal_SpiNor_Flash_Cfg *cfg;
     uint8_t frame[4];
     whal_Error err;
 
-#ifdef WHAL_CFG_SPI_NOR_SINGLE_INSTANCE
-    cfg = (whal_SpiNor_Cfg *)whal_SpiNor_Dev.cfg;
+#ifdef WHAL_CFG_SPI_NOR_FLASH_SINGLE_INSTANCE
+    cfg = (whal_SpiNor_Flash_Cfg *)whal_SpiNor_Flash_Dev.cfg;
     (void)flashDev;
 
     if (!data || dataSz == 0)
@@ -376,7 +374,7 @@ whal_Error whal_SpiNor3b_Read(whal_Flash *flashDev, size_t addr, void *data,
     if (!flashDev || !flashDev->cfg || !data || dataSz == 0)
         return WHAL_EINVAL;
 
-    cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
+    cfg = (whal_SpiNor_Flash_Cfg *)flashDev->cfg;
 #endif
 
     if (addr & ~0xFFFFFF || dataSz > 0x1000000 - addr ||
@@ -405,19 +403,19 @@ cleanup:
     return err;
 }
 
-whal_Error whal_SpiNor3b_Write(whal_Flash *flashDev, size_t addr,
-                             const void *data, size_t dataSz)
+whal_Error whal_SpiNor_Flash_PageProgram_02h(whal_Flash *flashDev, size_t addr,
+                                             const void *data, size_t dataSz)
 {
     const uint8_t *dataBuf = (const uint8_t *)data;
-    whal_SpiNor_Cfg *cfg;
+    whal_SpiNor_Flash_Cfg *cfg;
     uint8_t frame[4];
     whal_Error err;
     size_t chunk;
     size_t offset;
     size_t pageRemaining;
 
-#ifdef WHAL_CFG_SPI_NOR_SINGLE_INSTANCE
-    cfg = (whal_SpiNor_Cfg *)whal_SpiNor_Dev.cfg;
+#ifdef WHAL_CFG_SPI_NOR_FLASH_SINGLE_INSTANCE
+    cfg = (whal_SpiNor_Flash_Cfg *)whal_SpiNor_Flash_Dev.cfg;
     (void)flashDev;
 
     if (!data || dataSz == 0)
@@ -426,7 +424,7 @@ whal_Error whal_SpiNor3b_Write(whal_Flash *flashDev, size_t addr,
     if (!flashDev || !flashDev->cfg || !data || dataSz == 0)
         return WHAL_EINVAL;
 
-    cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
+    cfg = (whal_SpiNor_Flash_Cfg *)flashDev->cfg;
 #endif
 
     if (addr & ~0xFFFFFF || dataSz > 0x1000000 - addr ||
@@ -479,17 +477,17 @@ whal_Error whal_SpiNor3b_Write(whal_Flash *flashDev, size_t addr,
     return err;
 }
 
-whal_Error whal_SpiNor3b_Erase4k(whal_Flash *flashDev, size_t addr,
-                               size_t dataSz)
+whal_Error whal_SpiNor_Flash_SectorErase_20h(whal_Flash *flashDev, size_t addr,
+                                             size_t dataSz)
 {
-    whal_SpiNor_Cfg *cfg;
+    whal_SpiNor_Flash_Cfg *cfg;
     uint8_t frame[4];
     whal_Error err;
     size_t end;
     size_t cur;
 
-#ifdef WHAL_CFG_SPI_NOR_SINGLE_INSTANCE
-    cfg = (whal_SpiNor_Cfg *)whal_SpiNor_Dev.cfg;
+#ifdef WHAL_CFG_SPI_NOR_FLASH_SINGLE_INSTANCE
+    cfg = (whal_SpiNor_Flash_Cfg *)whal_SpiNor_Flash_Dev.cfg;
     (void)flashDev;
 
     if (dataSz == 0)
@@ -498,7 +496,7 @@ whal_Error whal_SpiNor3b_Erase4k(whal_Flash *flashDev, size_t addr,
     if (!flashDev || !flashDev->cfg || dataSz == 0)
         return WHAL_EINVAL;
 
-    cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
+    cfg = (whal_SpiNor_Flash_Cfg *)flashDev->cfg;
 #endif
 
     if (addr & ~0xFFFFFF || dataSz > 0x1000000 - addr ||
@@ -543,17 +541,17 @@ whal_Error whal_SpiNor3b_Erase4k(whal_Flash *flashDev, size_t addr,
     return err;
 }
 
-whal_Error whal_SpiNor3b_Erase32k(whal_Flash *flashDev, size_t addr,
-                                size_t dataSz)
+whal_Error whal_SpiNor_Flash_BlockErase32k_52h(whal_Flash *flashDev, size_t addr,
+                                               size_t dataSz)
 {
-    whal_SpiNor_Cfg *cfg;
+    whal_SpiNor_Flash_Cfg *cfg;
     uint8_t frame[4];
     whal_Error err;
     size_t end;
     size_t cur;
 
-#ifdef WHAL_CFG_SPI_NOR_SINGLE_INSTANCE
-    cfg = (whal_SpiNor_Cfg *)whal_SpiNor_Dev.cfg;
+#ifdef WHAL_CFG_SPI_NOR_FLASH_SINGLE_INSTANCE
+    cfg = (whal_SpiNor_Flash_Cfg *)whal_SpiNor_Flash_Dev.cfg;
     (void)flashDev;
 
     if (dataSz == 0)
@@ -562,7 +560,7 @@ whal_Error whal_SpiNor3b_Erase32k(whal_Flash *flashDev, size_t addr,
     if (!flashDev || !flashDev->cfg || dataSz == 0)
         return WHAL_EINVAL;
 
-    cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
+    cfg = (whal_SpiNor_Flash_Cfg *)flashDev->cfg;
 #endif
 
     if (addr & ~0xFFFFFF || dataSz > 0x1000000 - addr ||
@@ -607,17 +605,17 @@ whal_Error whal_SpiNor3b_Erase32k(whal_Flash *flashDev, size_t addr,
     return err;
 }
 
-whal_Error whal_SpiNor3b_Erase64k(whal_Flash *flashDev, size_t addr,
-                                size_t dataSz)
+whal_Error whal_SpiNor_Flash_BlockErase64k_D8h(whal_Flash *flashDev, size_t addr,
+                                               size_t dataSz)
 {
-    whal_SpiNor_Cfg *cfg;
+    whal_SpiNor_Flash_Cfg *cfg;
     uint8_t frame[4];
     whal_Error err;
     size_t end;
     size_t cur;
 
-#ifdef WHAL_CFG_SPI_NOR_SINGLE_INSTANCE
-    cfg = (whal_SpiNor_Cfg *)whal_SpiNor_Dev.cfg;
+#ifdef WHAL_CFG_SPI_NOR_FLASH_SINGLE_INSTANCE
+    cfg = (whal_SpiNor_Flash_Cfg *)whal_SpiNor_Flash_Dev.cfg;
     (void)flashDev;
 
     if (dataSz == 0)
@@ -626,7 +624,7 @@ whal_Error whal_SpiNor3b_Erase64k(whal_Flash *flashDev, size_t addr,
     if (!flashDev || !flashDev->cfg || dataSz == 0)
         return WHAL_EINVAL;
 
-    cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
+    cfg = (whal_SpiNor_Flash_Cfg *)flashDev->cfg;
 #endif
 
     if (addr & ~0xFFFFFF || dataSz > 0x1000000 - addr ||
@@ -671,23 +669,23 @@ whal_Error whal_SpiNor3b_Erase64k(whal_Flash *flashDev, size_t addr,
     return err;
 }
 
-whal_Error whal_SpiNor_EraseChip(whal_Flash *flashDev, size_t addr,
-                                 size_t dataSz)
+whal_Error whal_SpiNor_Flash_ChipErase_C7h(whal_Flash *flashDev, size_t addr,
+                                           size_t dataSz)
 {
-    whal_SpiNor_Cfg *cfg;
+    whal_SpiNor_Flash_Cfg *cfg;
     whal_Error err;
 
     (void)addr;
     (void)dataSz;
 
-#ifdef WHAL_CFG_SPI_NOR_SINGLE_INSTANCE
-    cfg = (whal_SpiNor_Cfg *)whal_SpiNor_Dev.cfg;
+#ifdef WHAL_CFG_SPI_NOR_FLASH_SINGLE_INSTANCE
+    cfg = (whal_SpiNor_Flash_Cfg *)whal_SpiNor_Flash_Dev.cfg;
     (void)flashDev;
 #else
     if (!flashDev || !flashDev->cfg)
         return WHAL_EINVAL;
 
-    cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
+    cfg = (whal_SpiNor_Flash_Cfg *)flashDev->cfg;
 #endif
 
     err = whal_Spi_StartCom(cfg->spiDev, cfg->spiComCfg);
@@ -708,16 +706,16 @@ whal_Error whal_SpiNor_EraseChip(whal_Flash *flashDev, size_t addr,
 
 /* --- Fast Read (3-byte addr) --- */
 
-whal_Error whal_SpiNor3b_ReadFast(whal_Flash *flashDev, size_t addr,
-                                void *data, size_t dataSz)
+whal_Error whal_SpiNor_Flash_FastRead_0Bh(whal_Flash *flashDev, size_t addr,
+                                          void *data, size_t dataSz)
 {
     uint8_t *dataBuf = (uint8_t *)data;
-    whal_SpiNor_Cfg *cfg;
+    whal_SpiNor_Flash_Cfg *cfg;
     uint8_t frame[5];
     whal_Error err;
 
-#ifdef WHAL_CFG_SPI_NOR_SINGLE_INSTANCE
-    cfg = (whal_SpiNor_Cfg *)whal_SpiNor_Dev.cfg;
+#ifdef WHAL_CFG_SPI_NOR_FLASH_SINGLE_INSTANCE
+    cfg = (whal_SpiNor_Flash_Cfg *)whal_SpiNor_Flash_Dev.cfg;
     (void)flashDev;
 
     if (!data || dataSz == 0)
@@ -726,7 +724,7 @@ whal_Error whal_SpiNor3b_ReadFast(whal_Flash *flashDev, size_t addr,
     if (!flashDev || !flashDev->cfg || !data || dataSz == 0)
         return WHAL_EINVAL;
 
-    cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
+    cfg = (whal_SpiNor_Flash_Cfg *)flashDev->cfg;
 #endif
 
     if (addr & ~0xFFFFFF || dataSz > 0x1000000 - addr ||
@@ -758,20 +756,20 @@ cleanup:
 
 /* --- Dedicated 4-byte address commands --- */
 
-whal_Error whal_SpiNor4bMode_Init(whal_Flash *flashDev)
+whal_Error whal_SpiNor_Flash_Addr4Mode_Init(whal_Flash *flashDev)
 {
-    whal_SpiNor_Cfg *cfg;
+    whal_SpiNor_Flash_Cfg *cfg;
     whal_Error err;
 
-    err = whal_SpiNor_Init(flashDev);
+    err = whal_SpiNor_Flash_Init(flashDev);
     if (err)
         return err;
 
-#ifdef WHAL_CFG_SPI_NOR_SINGLE_INSTANCE
-    cfg = (whal_SpiNor_Cfg *)whal_SpiNor_Dev.cfg;
+#ifdef WHAL_CFG_SPI_NOR_FLASH_SINGLE_INSTANCE
+    cfg = (whal_SpiNor_Flash_Cfg *)whal_SpiNor_Flash_Dev.cfg;
     (void)flashDev;
 #else
-    cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
+    cfg = (whal_SpiNor_Flash_Cfg *)flashDev->cfg;
 #endif
 
     err = whal_Spi_StartCom(cfg->spiDev, cfg->spiComCfg);
@@ -784,16 +782,16 @@ whal_Error whal_SpiNor4bMode_Init(whal_Flash *flashDev)
     return err;
 }
 
-whal_Error whal_SpiNor4b_Read(whal_Flash *flashDev, size_t addr,
-                              void *data, size_t dataSz)
+whal_Error whal_SpiNor_Flash_Addr4_ReadData_13h(whal_Flash *flashDev, size_t addr,
+                                                void *data, size_t dataSz)
 {
     uint8_t *dataBuf = (uint8_t *)data;
-    whal_SpiNor_Cfg *cfg;
+    whal_SpiNor_Flash_Cfg *cfg;
     uint8_t frame[5];
     whal_Error err;
 
-#ifdef WHAL_CFG_SPI_NOR_SINGLE_INSTANCE
-    cfg = (whal_SpiNor_Cfg *)whal_SpiNor_Dev.cfg;
+#ifdef WHAL_CFG_SPI_NOR_FLASH_SINGLE_INSTANCE
+    cfg = (whal_SpiNor_Flash_Cfg *)whal_SpiNor_Flash_Dev.cfg;
     (void)flashDev;
 
     if (!data || dataSz == 0)
@@ -802,7 +800,7 @@ whal_Error whal_SpiNor4b_Read(whal_Flash *flashDev, size_t addr,
     if (!flashDev || !flashDev->cfg || !data || dataSz == 0)
         return WHAL_EINVAL;
 
-    cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
+    cfg = (whal_SpiNor_Flash_Cfg *)flashDev->cfg;
 #endif
 
     if (addr >= cfg->capacity || dataSz > cfg->capacity - addr)
@@ -830,16 +828,16 @@ cleanup:
     return err;
 }
 
-whal_Error whal_SpiNor4b_ReadFast(whal_Flash *flashDev, size_t addr,
-                                  void *data, size_t dataSz)
+whal_Error whal_SpiNor_Flash_Addr4_FastRead_0Ch(whal_Flash *flashDev, size_t addr,
+                                                void *data, size_t dataSz)
 {
     uint8_t *dataBuf = (uint8_t *)data;
-    whal_SpiNor_Cfg *cfg;
+    whal_SpiNor_Flash_Cfg *cfg;
     uint8_t frame[6];
     whal_Error err;
 
-#ifdef WHAL_CFG_SPI_NOR_SINGLE_INSTANCE
-    cfg = (whal_SpiNor_Cfg *)whal_SpiNor_Dev.cfg;
+#ifdef WHAL_CFG_SPI_NOR_FLASH_SINGLE_INSTANCE
+    cfg = (whal_SpiNor_Flash_Cfg *)whal_SpiNor_Flash_Dev.cfg;
     (void)flashDev;
 
     if (!data || dataSz == 0)
@@ -848,7 +846,7 @@ whal_Error whal_SpiNor4b_ReadFast(whal_Flash *flashDev, size_t addr,
     if (!flashDev || !flashDev->cfg || !data || dataSz == 0)
         return WHAL_EINVAL;
 
-    cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
+    cfg = (whal_SpiNor_Flash_Cfg *)flashDev->cfg;
 #endif
 
     if (addr >= cfg->capacity || dataSz > cfg->capacity - addr)
@@ -877,19 +875,19 @@ cleanup:
     return err;
 }
 
-whal_Error whal_SpiNor4b_Write(whal_Flash *flashDev, size_t addr,
-                               const void *data, size_t dataSz)
+whal_Error whal_SpiNor_Flash_Addr4_PageProgram_12h(whal_Flash *flashDev, size_t addr,
+                                                   const void *data, size_t dataSz)
 {
     const uint8_t *dataBuf = (const uint8_t *)data;
-    whal_SpiNor_Cfg *cfg;
+    whal_SpiNor_Flash_Cfg *cfg;
     uint8_t frame[5];
     whal_Error err;
     size_t chunk;
     size_t offset;
     size_t pageRemaining;
 
-#ifdef WHAL_CFG_SPI_NOR_SINGLE_INSTANCE
-    cfg = (whal_SpiNor_Cfg *)whal_SpiNor_Dev.cfg;
+#ifdef WHAL_CFG_SPI_NOR_FLASH_SINGLE_INSTANCE
+    cfg = (whal_SpiNor_Flash_Cfg *)whal_SpiNor_Flash_Dev.cfg;
     (void)flashDev;
 
     if (!data || dataSz == 0)
@@ -898,7 +896,7 @@ whal_Error whal_SpiNor4b_Write(whal_Flash *flashDev, size_t addr,
     if (!flashDev || !flashDev->cfg || !data || dataSz == 0)
         return WHAL_EINVAL;
 
-    cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
+    cfg = (whal_SpiNor_Flash_Cfg *)flashDev->cfg;
 #endif
 
     if (addr >= cfg->capacity || dataSz > cfg->capacity - addr)
@@ -945,17 +943,17 @@ whal_Error whal_SpiNor4b_Write(whal_Flash *flashDev, size_t addr,
     return err;
 }
 
-whal_Error whal_SpiNor4b_Erase4k(whal_Flash *flashDev, size_t addr,
-                                  size_t dataSz)
+whal_Error whal_SpiNor_Flash_Addr4_SectorErase_21h(whal_Flash *flashDev, size_t addr,
+                                                   size_t dataSz)
 {
-    whal_SpiNor_Cfg *cfg;
+    whal_SpiNor_Flash_Cfg *cfg;
     uint8_t frame[5];
     whal_Error err;
     size_t end;
     size_t cur;
 
-#ifdef WHAL_CFG_SPI_NOR_SINGLE_INSTANCE
-    cfg = (whal_SpiNor_Cfg *)whal_SpiNor_Dev.cfg;
+#ifdef WHAL_CFG_SPI_NOR_FLASH_SINGLE_INSTANCE
+    cfg = (whal_SpiNor_Flash_Cfg *)whal_SpiNor_Flash_Dev.cfg;
     (void)flashDev;
 
     if (dataSz == 0)
@@ -964,7 +962,7 @@ whal_Error whal_SpiNor4b_Erase4k(whal_Flash *flashDev, size_t addr,
     if (!flashDev || !flashDev->cfg || dataSz == 0)
         return WHAL_EINVAL;
 
-    cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
+    cfg = (whal_SpiNor_Flash_Cfg *)flashDev->cfg;
 #endif
 
     if (addr >= cfg->capacity || dataSz > cfg->capacity - addr)
@@ -1008,17 +1006,17 @@ whal_Error whal_SpiNor4b_Erase4k(whal_Flash *flashDev, size_t addr,
     return err;
 }
 
-whal_Error whal_SpiNor4b_Erase64k(whal_Flash *flashDev, size_t addr,
-                                   size_t dataSz)
+whal_Error whal_SpiNor_Flash_Addr4_BlockErase64k_DCh(whal_Flash *flashDev, size_t addr,
+                                                     size_t dataSz)
 {
-    whal_SpiNor_Cfg *cfg;
+    whal_SpiNor_Flash_Cfg *cfg;
     uint8_t frame[5];
     whal_Error err;
     size_t end;
     size_t cur;
 
-#ifdef WHAL_CFG_SPI_NOR_SINGLE_INSTANCE
-    cfg = (whal_SpiNor_Cfg *)whal_SpiNor_Dev.cfg;
+#ifdef WHAL_CFG_SPI_NOR_FLASH_SINGLE_INSTANCE
+    cfg = (whal_SpiNor_Flash_Cfg *)whal_SpiNor_Flash_Dev.cfg;
     (void)flashDev;
 
     if (dataSz == 0)
@@ -1027,7 +1025,7 @@ whal_Error whal_SpiNor4b_Erase64k(whal_Flash *flashDev, size_t addr,
     if (!flashDev || !flashDev->cfg || dataSz == 0)
         return WHAL_EINVAL;
 
-    cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
+    cfg = (whal_SpiNor_Flash_Cfg *)flashDev->cfg;
 #endif
 
     if (addr >= cfg->capacity || dataSz > cfg->capacity - addr)
@@ -1073,16 +1071,16 @@ whal_Error whal_SpiNor4b_Erase64k(whal_Flash *flashDev, size_t addr,
 
 /* --- 4-byte address mode (0xB7) variants --- */
 
-whal_Error whal_SpiNor4bMode_Read(whal_Flash *flashDev, size_t addr,
-                                  void *data, size_t dataSz)
+whal_Error whal_SpiNor_Flash_Addr4Mode_ReadData_03h(whal_Flash *flashDev, size_t addr,
+                                                    void *data, size_t dataSz)
 {
     uint8_t *dataBuf = (uint8_t *)data;
-    whal_SpiNor_Cfg *cfg;
+    whal_SpiNor_Flash_Cfg *cfg;
     uint8_t frame[5];
     whal_Error err;
 
-#ifdef WHAL_CFG_SPI_NOR_SINGLE_INSTANCE
-    cfg = (whal_SpiNor_Cfg *)whal_SpiNor_Dev.cfg;
+#ifdef WHAL_CFG_SPI_NOR_FLASH_SINGLE_INSTANCE
+    cfg = (whal_SpiNor_Flash_Cfg *)whal_SpiNor_Flash_Dev.cfg;
     (void)flashDev;
 
     if (!data || dataSz == 0)
@@ -1091,7 +1089,7 @@ whal_Error whal_SpiNor4bMode_Read(whal_Flash *flashDev, size_t addr,
     if (!flashDev || !flashDev->cfg || !data || dataSz == 0)
         return WHAL_EINVAL;
 
-    cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
+    cfg = (whal_SpiNor_Flash_Cfg *)flashDev->cfg;
 #endif
 
     if (addr >= cfg->capacity || dataSz > cfg->capacity - addr)
@@ -1119,16 +1117,16 @@ cleanup:
     return err;
 }
 
-whal_Error whal_SpiNor4bMode_ReadFast(whal_Flash *flashDev, size_t addr,
-                                      void *data, size_t dataSz)
+whal_Error whal_SpiNor_Flash_Addr4Mode_FastRead_0Bh(whal_Flash *flashDev, size_t addr,
+                                                    void *data, size_t dataSz)
 {
     uint8_t *dataBuf = (uint8_t *)data;
-    whal_SpiNor_Cfg *cfg;
+    whal_SpiNor_Flash_Cfg *cfg;
     uint8_t frame[6];
     whal_Error err;
 
-#ifdef WHAL_CFG_SPI_NOR_SINGLE_INSTANCE
-    cfg = (whal_SpiNor_Cfg *)whal_SpiNor_Dev.cfg;
+#ifdef WHAL_CFG_SPI_NOR_FLASH_SINGLE_INSTANCE
+    cfg = (whal_SpiNor_Flash_Cfg *)whal_SpiNor_Flash_Dev.cfg;
     (void)flashDev;
 
     if (!data || dataSz == 0)
@@ -1137,7 +1135,7 @@ whal_Error whal_SpiNor4bMode_ReadFast(whal_Flash *flashDev, size_t addr,
     if (!flashDev || !flashDev->cfg || !data || dataSz == 0)
         return WHAL_EINVAL;
 
-    cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
+    cfg = (whal_SpiNor_Flash_Cfg *)flashDev->cfg;
 #endif
 
     if (addr >= cfg->capacity || dataSz > cfg->capacity - addr)
@@ -1166,19 +1164,19 @@ cleanup:
     return err;
 }
 
-whal_Error whal_SpiNor4bMode_Write(whal_Flash *flashDev, size_t addr,
-                                   const void *data, size_t dataSz)
+whal_Error whal_SpiNor_Flash_Addr4Mode_PageProgram_02h(whal_Flash *flashDev, size_t addr,
+                                                       const void *data, size_t dataSz)
 {
     const uint8_t *dataBuf = (const uint8_t *)data;
-    whal_SpiNor_Cfg *cfg;
+    whal_SpiNor_Flash_Cfg *cfg;
     uint8_t frame[5];
     whal_Error err;
     size_t chunk;
     size_t offset;
     size_t pageRemaining;
 
-#ifdef WHAL_CFG_SPI_NOR_SINGLE_INSTANCE
-    cfg = (whal_SpiNor_Cfg *)whal_SpiNor_Dev.cfg;
+#ifdef WHAL_CFG_SPI_NOR_FLASH_SINGLE_INSTANCE
+    cfg = (whal_SpiNor_Flash_Cfg *)whal_SpiNor_Flash_Dev.cfg;
     (void)flashDev;
 
     if (!data || dataSz == 0)
@@ -1187,7 +1185,7 @@ whal_Error whal_SpiNor4bMode_Write(whal_Flash *flashDev, size_t addr,
     if (!flashDev || !flashDev->cfg || !data || dataSz == 0)
         return WHAL_EINVAL;
 
-    cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
+    cfg = (whal_SpiNor_Flash_Cfg *)flashDev->cfg;
 #endif
 
     if (addr >= cfg->capacity || dataSz > cfg->capacity - addr)
@@ -1234,17 +1232,17 @@ whal_Error whal_SpiNor4bMode_Write(whal_Flash *flashDev, size_t addr,
     return err;
 }
 
-whal_Error whal_SpiNor4bMode_Erase4k(whal_Flash *flashDev, size_t addr,
-                                      size_t dataSz)
+whal_Error whal_SpiNor_Flash_Addr4Mode_SectorErase_20h(whal_Flash *flashDev, size_t addr,
+                                                       size_t dataSz)
 {
-    whal_SpiNor_Cfg *cfg;
+    whal_SpiNor_Flash_Cfg *cfg;
     uint8_t frame[5];
     whal_Error err;
     size_t end;
     size_t cur;
 
-#ifdef WHAL_CFG_SPI_NOR_SINGLE_INSTANCE
-    cfg = (whal_SpiNor_Cfg *)whal_SpiNor_Dev.cfg;
+#ifdef WHAL_CFG_SPI_NOR_FLASH_SINGLE_INSTANCE
+    cfg = (whal_SpiNor_Flash_Cfg *)whal_SpiNor_Flash_Dev.cfg;
     (void)flashDev;
 
     if (dataSz == 0)
@@ -1253,7 +1251,7 @@ whal_Error whal_SpiNor4bMode_Erase4k(whal_Flash *flashDev, size_t addr,
     if (!flashDev || !flashDev->cfg || dataSz == 0)
         return WHAL_EINVAL;
 
-    cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
+    cfg = (whal_SpiNor_Flash_Cfg *)flashDev->cfg;
 #endif
 
     if (addr >= cfg->capacity || dataSz > cfg->capacity - addr)
@@ -1297,17 +1295,17 @@ whal_Error whal_SpiNor4bMode_Erase4k(whal_Flash *flashDev, size_t addr,
     return err;
 }
 
-whal_Error whal_SpiNor4bMode_Erase32k(whal_Flash *flashDev, size_t addr,
-                                       size_t dataSz)
+whal_Error whal_SpiNor_Flash_Addr4Mode_BlockErase32k_52h(whal_Flash *flashDev, size_t addr,
+                                                         size_t dataSz)
 {
-    whal_SpiNor_Cfg *cfg;
+    whal_SpiNor_Flash_Cfg *cfg;
     uint8_t frame[5];
     whal_Error err;
     size_t end;
     size_t cur;
 
-#ifdef WHAL_CFG_SPI_NOR_SINGLE_INSTANCE
-    cfg = (whal_SpiNor_Cfg *)whal_SpiNor_Dev.cfg;
+#ifdef WHAL_CFG_SPI_NOR_FLASH_SINGLE_INSTANCE
+    cfg = (whal_SpiNor_Flash_Cfg *)whal_SpiNor_Flash_Dev.cfg;
     (void)flashDev;
 
     if (dataSz == 0)
@@ -1316,7 +1314,7 @@ whal_Error whal_SpiNor4bMode_Erase32k(whal_Flash *flashDev, size_t addr,
     if (!flashDev || !flashDev->cfg || dataSz == 0)
         return WHAL_EINVAL;
 
-    cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
+    cfg = (whal_SpiNor_Flash_Cfg *)flashDev->cfg;
 #endif
 
     if (addr >= cfg->capacity || dataSz > cfg->capacity - addr)
@@ -1360,17 +1358,17 @@ whal_Error whal_SpiNor4bMode_Erase32k(whal_Flash *flashDev, size_t addr,
     return err;
 }
 
-whal_Error whal_SpiNor4bMode_Erase64k(whal_Flash *flashDev, size_t addr,
-                                       size_t dataSz)
+whal_Error whal_SpiNor_Flash_Addr4Mode_BlockErase64k_D8h(whal_Flash *flashDev, size_t addr,
+                                                         size_t dataSz)
 {
-    whal_SpiNor_Cfg *cfg;
+    whal_SpiNor_Flash_Cfg *cfg;
     uint8_t frame[5];
     whal_Error err;
     size_t end;
     size_t cur;
 
-#ifdef WHAL_CFG_SPI_NOR_SINGLE_INSTANCE
-    cfg = (whal_SpiNor_Cfg *)whal_SpiNor_Dev.cfg;
+#ifdef WHAL_CFG_SPI_NOR_FLASH_SINGLE_INSTANCE
+    cfg = (whal_SpiNor_Flash_Cfg *)whal_SpiNor_Flash_Dev.cfg;
     (void)flashDev;
 
     if (dataSz == 0)
@@ -1379,7 +1377,7 @@ whal_Error whal_SpiNor4bMode_Erase64k(whal_Flash *flashDev, size_t addr,
     if (!flashDev || !flashDev->cfg || dataSz == 0)
         return WHAL_EINVAL;
 
-    cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
+    cfg = (whal_SpiNor_Flash_Cfg *)flashDev->cfg;
 #endif
 
     if (addr >= cfg->capacity || dataSz > cfg->capacity - addr)
@@ -1429,7 +1427,7 @@ whal_Error whal_SpiNor4bMode_Erase64k(whal_Flash *flashDev, size_t addr,
  * Set the extended address register to select the 16 MB bank containing
  * the given address.
  */
-static whal_Error SpiNor_SetEAR(whal_SpiNor_Cfg *cfg, size_t addr)
+static whal_Error SpiNor_SetEAR(whal_SpiNor_Flash_Cfg *cfg, size_t addr)
 {
     uint8_t frame[2];
     whal_Error err;
@@ -1448,19 +1446,19 @@ static whal_Error SpiNor_SetEAR(whal_SpiNor_Cfg *cfg, size_t addr)
     return err;
 }
 
-whal_Error whal_SpiNor4bExReg_Read(whal_Flash *flashDev, size_t addr,
-                                   void *data, size_t dataSz)
+whal_Error whal_SpiNor_Flash_ExtAddr_ReadData_03h(whal_Flash *flashDev, size_t addr,
+                                                  void *data, size_t dataSz)
 {
     uint8_t *dataBuf = (uint8_t *)data;
-    whal_SpiNor_Cfg *cfg;
+    whal_SpiNor_Flash_Cfg *cfg;
     uint8_t frame[4];
     whal_Error err;
     size_t offset;
     size_t chunk;
     size_t bankRemaining;
 
-#ifdef WHAL_CFG_SPI_NOR_SINGLE_INSTANCE
-    cfg = (whal_SpiNor_Cfg *)whal_SpiNor_Dev.cfg;
+#ifdef WHAL_CFG_SPI_NOR_FLASH_SINGLE_INSTANCE
+    cfg = (whal_SpiNor_Flash_Cfg *)whal_SpiNor_Flash_Dev.cfg;
     (void)flashDev;
 
     if (!data || dataSz == 0)
@@ -1469,7 +1467,7 @@ whal_Error whal_SpiNor4bExReg_Read(whal_Flash *flashDev, size_t addr,
     if (!flashDev || !flashDev->cfg || !data || dataSz == 0)
         return WHAL_EINVAL;
 
-    cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
+    cfg = (whal_SpiNor_Flash_Cfg *)flashDev->cfg;
 #endif
 
     if (addr >= cfg->capacity || dataSz > cfg->capacity - addr)
@@ -1514,19 +1512,19 @@ whal_Error whal_SpiNor4bExReg_Read(whal_Flash *flashDev, size_t addr,
     return err;
 }
 
-whal_Error whal_SpiNor4bExReg_ReadFast(whal_Flash *flashDev, size_t addr,
-                                       void *data, size_t dataSz)
+whal_Error whal_SpiNor_Flash_ExtAddr_FastRead_0Bh(whal_Flash *flashDev, size_t addr,
+                                                  void *data, size_t dataSz)
 {
     uint8_t *dataBuf = (uint8_t *)data;
-    whal_SpiNor_Cfg *cfg;
+    whal_SpiNor_Flash_Cfg *cfg;
     uint8_t frame[5];
     whal_Error err;
     size_t offset;
     size_t chunk;
     size_t bankRemaining;
 
-#ifdef WHAL_CFG_SPI_NOR_SINGLE_INSTANCE
-    cfg = (whal_SpiNor_Cfg *)whal_SpiNor_Dev.cfg;
+#ifdef WHAL_CFG_SPI_NOR_FLASH_SINGLE_INSTANCE
+    cfg = (whal_SpiNor_Flash_Cfg *)whal_SpiNor_Flash_Dev.cfg;
     (void)flashDev;
 
     if (!data || dataSz == 0)
@@ -1535,7 +1533,7 @@ whal_Error whal_SpiNor4bExReg_ReadFast(whal_Flash *flashDev, size_t addr,
     if (!flashDev || !flashDev->cfg || !data || dataSz == 0)
         return WHAL_EINVAL;
 
-    cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
+    cfg = (whal_SpiNor_Flash_Cfg *)flashDev->cfg;
 #endif
 
     if (addr >= cfg->capacity || dataSz > cfg->capacity - addr)
@@ -1581,19 +1579,19 @@ whal_Error whal_SpiNor4bExReg_ReadFast(whal_Flash *flashDev, size_t addr,
     return err;
 }
 
-whal_Error whal_SpiNor4bExReg_Write(whal_Flash *flashDev, size_t addr,
-                                    const void *data, size_t dataSz)
+whal_Error whal_SpiNor_Flash_ExtAddr_PageProgram_02h(whal_Flash *flashDev, size_t addr,
+                                                     const void *data, size_t dataSz)
 {
     const uint8_t *dataBuf = (const uint8_t *)data;
-    whal_SpiNor_Cfg *cfg;
+    whal_SpiNor_Flash_Cfg *cfg;
     uint8_t frame[4];
     whal_Error err;
     size_t chunk;
     size_t offset;
     size_t pageRemaining;
 
-#ifdef WHAL_CFG_SPI_NOR_SINGLE_INSTANCE
-    cfg = (whal_SpiNor_Cfg *)whal_SpiNor_Dev.cfg;
+#ifdef WHAL_CFG_SPI_NOR_FLASH_SINGLE_INSTANCE
+    cfg = (whal_SpiNor_Flash_Cfg *)whal_SpiNor_Flash_Dev.cfg;
     (void)flashDev;
 
     if (!data || dataSz == 0)
@@ -1602,7 +1600,7 @@ whal_Error whal_SpiNor4bExReg_Write(whal_Flash *flashDev, size_t addr,
     if (!flashDev || !flashDev->cfg || !data || dataSz == 0)
         return WHAL_EINVAL;
 
-    cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
+    cfg = (whal_SpiNor_Flash_Cfg *)flashDev->cfg;
 #endif
 
     if (addr >= cfg->capacity || dataSz > cfg->capacity - addr)
@@ -1653,17 +1651,17 @@ whal_Error whal_SpiNor4bExReg_Write(whal_Flash *flashDev, size_t addr,
     return err;
 }
 
-whal_Error whal_SpiNor4bExReg_Erase4k(whal_Flash *flashDev, size_t addr,
-                                       size_t dataSz)
+whal_Error whal_SpiNor_Flash_ExtAddr_SectorErase_20h(whal_Flash *flashDev, size_t addr,
+                                                     size_t dataSz)
 {
-    whal_SpiNor_Cfg *cfg;
+    whal_SpiNor_Flash_Cfg *cfg;
     uint8_t frame[4];
     whal_Error err;
     size_t end;
     size_t cur;
 
-#ifdef WHAL_CFG_SPI_NOR_SINGLE_INSTANCE
-    cfg = (whal_SpiNor_Cfg *)whal_SpiNor_Dev.cfg;
+#ifdef WHAL_CFG_SPI_NOR_FLASH_SINGLE_INSTANCE
+    cfg = (whal_SpiNor_Flash_Cfg *)whal_SpiNor_Flash_Dev.cfg;
     (void)flashDev;
 
     if (dataSz == 0)
@@ -1672,7 +1670,7 @@ whal_Error whal_SpiNor4bExReg_Erase4k(whal_Flash *flashDev, size_t addr,
     if (!flashDev || !flashDev->cfg || dataSz == 0)
         return WHAL_EINVAL;
 
-    cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
+    cfg = (whal_SpiNor_Flash_Cfg *)flashDev->cfg;
 #endif
 
     if (addr >= cfg->capacity || dataSz > cfg->capacity - addr)
@@ -1720,17 +1718,17 @@ whal_Error whal_SpiNor4bExReg_Erase4k(whal_Flash *flashDev, size_t addr,
     return err;
 }
 
-whal_Error whal_SpiNor4bExReg_Erase32k(whal_Flash *flashDev, size_t addr,
-                                        size_t dataSz)
+whal_Error whal_SpiNor_Flash_ExtAddr_BlockErase32k_52h(whal_Flash *flashDev, size_t addr,
+                                                       size_t dataSz)
 {
-    whal_SpiNor_Cfg *cfg;
+    whal_SpiNor_Flash_Cfg *cfg;
     uint8_t frame[4];
     whal_Error err;
     size_t end;
     size_t cur;
 
-#ifdef WHAL_CFG_SPI_NOR_SINGLE_INSTANCE
-    cfg = (whal_SpiNor_Cfg *)whal_SpiNor_Dev.cfg;
+#ifdef WHAL_CFG_SPI_NOR_FLASH_SINGLE_INSTANCE
+    cfg = (whal_SpiNor_Flash_Cfg *)whal_SpiNor_Flash_Dev.cfg;
     (void)flashDev;
 
     if (dataSz == 0)
@@ -1739,7 +1737,7 @@ whal_Error whal_SpiNor4bExReg_Erase32k(whal_Flash *flashDev, size_t addr,
     if (!flashDev || !flashDev->cfg || dataSz == 0)
         return WHAL_EINVAL;
 
-    cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
+    cfg = (whal_SpiNor_Flash_Cfg *)flashDev->cfg;
 #endif
 
     if (addr >= cfg->capacity || dataSz > cfg->capacity - addr)
@@ -1787,17 +1785,17 @@ whal_Error whal_SpiNor4bExReg_Erase32k(whal_Flash *flashDev, size_t addr,
     return err;
 }
 
-whal_Error whal_SpiNor4bExReg_Erase64k(whal_Flash *flashDev, size_t addr,
-                                        size_t dataSz)
+whal_Error whal_SpiNor_Flash_ExtAddr_BlockErase64k_D8h(whal_Flash *flashDev, size_t addr,
+                                                       size_t dataSz)
 {
-    whal_SpiNor_Cfg *cfg;
+    whal_SpiNor_Flash_Cfg *cfg;
     uint8_t frame[4];
     whal_Error err;
     size_t end;
     size_t cur;
 
-#ifdef WHAL_CFG_SPI_NOR_SINGLE_INSTANCE
-    cfg = (whal_SpiNor_Cfg *)whal_SpiNor_Dev.cfg;
+#ifdef WHAL_CFG_SPI_NOR_FLASH_SINGLE_INSTANCE
+    cfg = (whal_SpiNor_Flash_Cfg *)whal_SpiNor_Flash_Dev.cfg;
     (void)flashDev;
 
     if (dataSz == 0)
@@ -1806,7 +1804,7 @@ whal_Error whal_SpiNor4bExReg_Erase64k(whal_Flash *flashDev, size_t addr,
     if (!flashDev || !flashDev->cfg || dataSz == 0)
         return WHAL_EINVAL;
 
-    cfg = (whal_SpiNor_Cfg *)flashDev->cfg;
+    cfg = (whal_SpiNor_Flash_Cfg *)flashDev->cfg;
 #endif
 
     if (addr >= cfg->capacity || dataSz > cfg->capacity - addr)
@@ -1854,12 +1852,12 @@ whal_Error whal_SpiNor4bExReg_Erase64k(whal_Flash *flashDev, size_t addr,
     return err;
 }
 
-const whal_FlashDriver whal_SpiNor_Driver = {
-    .Init = whal_SpiNor_Init,
-    .Deinit = whal_SpiNor_Deinit,
-    .Lock = whal_SpiNor_Lock,
-    .Unlock = whal_SpiNor_Unlock,
-    .Read = whal_SpiNor3b_Read,
-    .Write = whal_SpiNor3b_Write,
-    .Erase = whal_SpiNor3b_Erase4k,
+const whal_FlashDriver whal_SpiNor_Flash_Driver = {
+    .Init = whal_SpiNor_Flash_Init,
+    .Deinit = whal_SpiNor_Flash_Deinit,
+    .Lock = whal_SpiNor_Flash_Lock,
+    .Unlock = whal_SpiNor_Flash_Unlock,
+    .Read = whal_SpiNor_Flash_ReadData_03h,
+    .Write = whal_SpiNor_Flash_PageProgram_02h,
+    .Erase = whal_SpiNor_Flash_SectorErase_20h,
 };

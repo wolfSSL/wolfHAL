@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
  */
 
-#ifndef WHAL_SPI_NOR_H
-#define WHAL_SPI_NOR_H
+#ifndef WHAL_SPI_NOR_FLASH_H
+#define WHAL_SPI_NOR_FLASH_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -30,26 +30,29 @@
 #include <wolfHAL/timeout.h>
 
 /*
- * @file spi_nor.h
+ * @file spi_nor_flash.h
  * @brief SPI-NOR flash driver.
  *
  * Implements the whal_Flash interface for SPI-NOR flash devices using
  * standard JEDEC commands.
  *
- * The driver provides composable function variants for four addressing modes:
+ * Function names follow whal_SpiNor_Flash_[Mode_]Command_XXh, where
+ * Command is the datasheet command name and XXh is the opcode sent on the
+ * bus. Mode selects how addresses beyond 16 MB are reached:
  *
- * - **3b** — Standard 3-byte (24-bit) addressing. Supports up to 16 MB.
- * - **4b** — Dedicated 4-byte address opcodes (0x13, 0x12, 0x21, 0xDC).
+ * - (none): 3-byte (24-bit) addressing. Supports up to 16 MB.
+ * - **Addr4**: Dedicated 4-byte address opcodes (13h, 0Ch, 12h, 21h, DCh).
  *   Does not change global chip state. No 32 KB erase available.
- * - **4bMode** — Enter 4-Byte Address Mode (0xB7). Standard opcodes use
- *   4-byte addresses. All erase sizes available. Persists until exit or
- *   power cycle.
- * - **4bExReg** — Extended Address Register (0xC5/0xC8). Sets a bank
- *   register for the upper address bits. Standard opcodes address within
- *   the selected 16 MB bank. All erase sizes available.
+ * - **Addr4Mode**: Enter 4-Byte Address Mode (B7h) at init, after which
+ *   the standard opcodes take 4-byte addresses. All erase sizes available.
+ *   Persists until exit or power cycle.
+ * - **ExtAddr**: Write Extended Address Register (C5h) before each command
+ *   to select the 16 MB bank, then use the standard 3-byte opcodes. All
+ *   erase sizes available.
  *
- * Users compose a whal_FlashDriver vtable from these functions to match
- * their specific flash part. Unused functions are stripped by the linker.
+ * Users compose a whal_FlashDriver vtable from these functions by picking
+ * a mode the part supports, then the commands whose opcodes appear in the
+ * part's datasheet. Unused functions are stripped by the linker.
  *
  * The driver requires a SPI bus device and a GPIO pin for chip select.
  * Page size and total capacity are configurable to support a range of
@@ -59,7 +62,7 @@
 /*
  * @brief SPI-NOR device configuration.
  */
-typedef struct whal_SpiNor_Cfg {
+typedef struct whal_SpiNor_Flash_Cfg {
     whal_Spi *spiDev;           /* SPI bus device */
     whal_Spi_ComCfg *spiComCfg; /* SPI session config for StartCom */
     whal_Gpio *gpioDev;         /* GPIO device for chip select */
@@ -67,20 +70,20 @@ typedef struct whal_SpiNor_Cfg {
     whal_Timeout *timeout;
     size_t pageSz;              /* Page program size in bytes, a power of two */
     size_t capacity;            /* Total flash capacity in bytes */
-} whal_SpiNor_Cfg;
+} whal_SpiNor_Flash_Cfg;
 
 /*
  * @brief Single-instance device struct. Defined in the driver TU
- * from the WHAL_CFG_SPI_NOR_DEV initializer in wolfHAL_board.h.
+ * from the WHAL_CFG_SPI_NOR_FLASH_DEV initializer in wolfHAL_board.h.
  */
-#ifdef WHAL_CFG_SPI_NOR_SINGLE_INSTANCE
-extern const whal_Flash whal_SpiNor_Dev;
+#ifdef WHAL_CFG_SPI_NOR_FLASH_SINGLE_INSTANCE
+extern const whal_Flash whal_SpiNor_Flash_Dev;
 #endif
 
 /*
  * @brief Default driver vtable using 3-byte addressing with 4 KB erase.
  */
-extern const whal_FlashDriver whal_SpiNor_Driver;
+extern const whal_FlashDriver whal_SpiNor_Flash_Driver;
 
 /*
  * @brief Initialize a SPI-NOR device in 3-byte address mode.
@@ -95,7 +98,7 @@ extern const whal_FlashDriver whal_SpiNor_Driver;
  * @retval WHAL_EHARDWARE  No device detected (JEDEC ID 0x00 or 0xFF).
  * @retval WHAL_ETIMEOUT   Device did not become ready.
  */
-whal_Error whal_SpiNor_Init(whal_Flash *flashDev);
+whal_Error whal_SpiNor_Flash_Init(whal_Flash *flashDev);
 
 /*
  * @brief Deinitialize a SPI-NOR device.
@@ -107,13 +110,13 @@ whal_Error whal_SpiNor_Init(whal_Flash *flashDev);
  * @retval WHAL_SUCCESS Deinit completed.
  * @retval WHAL_EINVAL  Null pointer.
  */
-whal_Error whal_SpiNor_Deinit(whal_Flash *flashDev);
+whal_Error whal_SpiNor_Flash_Deinit(whal_Flash *flashDev);
 
 /*
  * @brief Lock the entire device by setting all block protect bits.
  *
  * Writes SR1_BP0|BP1|BP2 to Status Register 1. The @p addr and @p len
- * parameters are ignored — the entire device is locked.
+ * parameters are ignored; the entire device is locked.
  *
  * @param flashDev Flash device instance.
  * @param addr     Ignored.
@@ -123,13 +126,13 @@ whal_Error whal_SpiNor_Deinit(whal_Flash *flashDev);
  * @retval WHAL_EINVAL     Null pointer.
  * @retval WHAL_EHARDWARE  Write enable failed.
  */
-whal_Error whal_SpiNor_Lock(whal_Flash *flashDev, size_t addr, size_t len);
+whal_Error whal_SpiNor_Flash_Lock(whal_Flash *flashDev, size_t addr, size_t len);
 
 /*
  * @brief Unlock the entire device by clearing all block protect bits.
  *
  * Writes 0x00 to Status Register 1. The @p addr and @p len parameters
- * are ignored — the entire device is unlocked.
+ * are ignored; the entire device is unlocked.
  *
  * @param flashDev Flash device instance.
  * @param addr     Ignored.
@@ -139,18 +142,18 @@ whal_Error whal_SpiNor_Lock(whal_Flash *flashDev, size_t addr, size_t len);
  * @retval WHAL_EINVAL     Null pointer.
  * @retval WHAL_EHARDWARE  Write enable failed.
  */
-whal_Error whal_SpiNor_Unlock(whal_Flash *flashDev, size_t addr, size_t len);
+whal_Error whal_SpiNor_Flash_Unlock(whal_Flash *flashDev, size_t addr, size_t len);
 
 /* -------------------------------------------------------------------- */
-/*  Init / Deinit — 4-byte address mode                                 */
+/*  Init / Deinit: 4-byte address mode                                  */
 /* -------------------------------------------------------------------- */
 
 /*
  * @brief Initialize a SPI-NOR device and enter 4-byte address mode.
  *
- * Performs standard initialization via whal_SpiNor_Init(), then sends the
- * Enter 4-Byte Address Mode command (0xB7). After this call, all 4bMode
- * variant functions can be used. The device remains in 4-byte mode until
+ * Performs standard initialization via whal_SpiNor_Flash_Init(), then
+ * sends the Enter 4-Byte Address Mode command (0xB7). After this call, all
+ * Addr4Mode functions can be used. The device remains in 4-byte mode until
  * power cycle or an explicit exit command.
  *
  * @param flashDev Flash device instance.
@@ -159,10 +162,10 @@ whal_Error whal_SpiNor_Unlock(whal_Flash *flashDev, size_t addr, size_t len);
  * @retval WHAL_EINVAL     Null pointer or invalid configuration.
  * @retval WHAL_EHARDWARE  No device detected.
  */
-whal_Error whal_SpiNor4bMode_Init(whal_Flash *flashDev);
+whal_Error whal_SpiNor_Flash_Addr4Mode_Init(whal_Flash *flashDev);
 
 /* -------------------------------------------------------------------- */
-/*  Read — 3-byte address                                               */
+/*  Read: 3-byte address                                                */
 /* -------------------------------------------------------------------- */
 
 /*
@@ -178,7 +181,8 @@ whal_Error whal_SpiNor4bMode_Init(whal_Flash *flashDev);
  * @retval WHAL_SUCCESS Read completed.
  * @retval WHAL_EINVAL  Null pointer, zero size, or out of bounds.
  */
-whal_Error whal_SpiNor3b_Read(whal_Flash *flashDev, size_t addr, void *data, size_t dataSz);
+whal_Error whal_SpiNor_Flash_ReadData_03h(whal_Flash *flashDev, size_t addr, void *data,
+                                          size_t dataSz);
 
 /*
  * @brief Read data using the Fast Read command (0x0B) with 3-byte address.
@@ -194,10 +198,11 @@ whal_Error whal_SpiNor3b_Read(whal_Flash *flashDev, size_t addr, void *data, siz
  * @retval WHAL_SUCCESS Read completed.
  * @retval WHAL_EINVAL  Null pointer, zero size, or out of bounds.
  */
-whal_Error whal_SpiNor3b_ReadFast(whal_Flash *flashDev, size_t addr, void *data, size_t dataSz);
+whal_Error whal_SpiNor_Flash_FastRead_0Bh(whal_Flash *flashDev, size_t addr,
+                                          void *data, size_t dataSz);
 
 /* -------------------------------------------------------------------- */
-/*  Read — dedicated 4-byte address commands                            */
+/*  Read: dedicated 4-byte address commands                             */
 /* -------------------------------------------------------------------- */
 
 /*
@@ -214,7 +219,8 @@ whal_Error whal_SpiNor3b_ReadFast(whal_Flash *flashDev, size_t addr, void *data,
  * @retval WHAL_SUCCESS Read completed.
  * @retval WHAL_EINVAL  Null pointer, zero size, or out of bounds.
  */
-whal_Error whal_SpiNor4b_Read(whal_Flash *flashDev, size_t addr, void *data, size_t dataSz);
+whal_Error whal_SpiNor_Flash_Addr4_ReadData_13h(whal_Flash *flashDev, size_t addr,
+                                                void *data, size_t dataSz);
 
 /*
  * @brief Read data using the dedicated 4-byte Fast Read command (0x0C).
@@ -230,16 +236,17 @@ whal_Error whal_SpiNor4b_Read(whal_Flash *flashDev, size_t addr, void *data, siz
  * @retval WHAL_SUCCESS Read completed.
  * @retval WHAL_EINVAL  Null pointer, zero size, or out of bounds.
  */
-whal_Error whal_SpiNor4b_ReadFast(whal_Flash *flashDev, size_t addr, void *data, size_t dataSz);
+whal_Error whal_SpiNor_Flash_Addr4_FastRead_0Ch(whal_Flash *flashDev, size_t addr,
+                                                void *data, size_t dataSz);
 
 /* -------------------------------------------------------------------- */
-/*  Read — 4-byte address mode (after 0xB7)                             */
+/*  Read: 4-byte address mode (after 0xB7)                              */
 /* -------------------------------------------------------------------- */
 
 /*
  * @brief Read data using Read (0x03) in 4-byte address mode.
  *
- * Requires prior call to whal_SpiNor4bMode_Init(). Uses the standard
+ * Requires prior call to whal_SpiNor_Flash_Addr4Mode_Init(). Uses the standard
  * opcode with a 4-byte address frame.
  *
  * @param flashDev Flash device instance.
@@ -250,12 +257,13 @@ whal_Error whal_SpiNor4b_ReadFast(whal_Flash *flashDev, size_t addr, void *data,
  * @retval WHAL_SUCCESS Read completed.
  * @retval WHAL_EINVAL  Null pointer, zero size, or out of bounds.
  */
-whal_Error whal_SpiNor4bMode_Read(whal_Flash *flashDev, size_t addr, void *data, size_t dataSz);
+whal_Error whal_SpiNor_Flash_Addr4Mode_ReadData_03h(whal_Flash *flashDev, size_t addr,
+                                                    void *data, size_t dataSz);
 
 /*
  * @brief Read data using Fast Read (0x0B) in 4-byte address mode.
  *
- * Requires prior call to whal_SpiNor4bMode_Init(). Uses the standard
+ * Requires prior call to whal_SpiNor_Flash_Addr4Mode_Init(). Uses the standard
  * opcode with a 4-byte address frame and one dummy byte.
  *
  * @param flashDev Flash device instance.
@@ -266,10 +274,11 @@ whal_Error whal_SpiNor4bMode_Read(whal_Flash *flashDev, size_t addr, void *data,
  * @retval WHAL_SUCCESS Read completed.
  * @retval WHAL_EINVAL  Null pointer, zero size, or out of bounds.
  */
-whal_Error whal_SpiNor4bMode_ReadFast(whal_Flash *flashDev, size_t addr, void *data, size_t dataSz);
+whal_Error whal_SpiNor_Flash_Addr4Mode_FastRead_0Bh(whal_Flash *flashDev, size_t addr,
+                                                    void *data, size_t dataSz);
 
 /* -------------------------------------------------------------------- */
-/*  Read — extended address register (bank select)                      */
+/*  Read: extended address register (bank select)                       */
 /* -------------------------------------------------------------------- */
 
 /*
@@ -287,7 +296,8 @@ whal_Error whal_SpiNor4bMode_ReadFast(whal_Flash *flashDev, size_t addr, void *d
  * @retval WHAL_SUCCESS Read completed.
  * @retval WHAL_EINVAL  Null pointer, zero size, or out of bounds.
  */
-whal_Error whal_SpiNor4bExReg_Read(whal_Flash *flashDev, size_t addr, void *data, size_t dataSz);
+whal_Error whal_SpiNor_Flash_ExtAddr_ReadData_03h(whal_Flash *flashDev, size_t addr,
+                                                  void *data, size_t dataSz);
 
 /*
  * @brief Read data using Fast Read (0x0B) with extended address register.
@@ -303,10 +313,11 @@ whal_Error whal_SpiNor4bExReg_Read(whal_Flash *flashDev, size_t addr, void *data
  * @retval WHAL_SUCCESS Read completed.
  * @retval WHAL_EINVAL  Null pointer, zero size, or out of bounds.
  */
-whal_Error whal_SpiNor4bExReg_ReadFast(whal_Flash *flashDev, size_t addr, void *data, size_t dataSz);
+whal_Error whal_SpiNor_Flash_ExtAddr_FastRead_0Bh(whal_Flash *flashDev, size_t addr,
+                                                  void *data, size_t dataSz);
 
 /* -------------------------------------------------------------------- */
-/*  Write — 3-byte address                                              */
+/*  Write: 3-byte address                                               */
 /* -------------------------------------------------------------------- */
 
 /*
@@ -323,17 +334,18 @@ whal_Error whal_SpiNor4bExReg_ReadFast(whal_Flash *flashDev, size_t addr, void *
  * @retval WHAL_SUCCESS Write completed.
  * @retval WHAL_EINVAL  Null pointer, zero size, or out of bounds.
  */
-whal_Error whal_SpiNor3b_Write(whal_Flash *flashDev, size_t addr, const void *data, size_t dataSz);
+whal_Error whal_SpiNor_Flash_PageProgram_02h(whal_Flash *flashDev, size_t addr,
+                                             const void *data, size_t dataSz);
 
 /* -------------------------------------------------------------------- */
-/*  Write — dedicated 4-byte address command                            */
+/*  Write: dedicated 4-byte address command                             */
 /* -------------------------------------------------------------------- */
 
 /*
  * @brief Program data using the dedicated 4-byte Page Program (0x12).
  *
- * Same behavior as whal_SpiNor3b_Write() but uses the dedicated 4-byte
- * opcode. Does not require entering 4-byte address mode.
+ * Same behavior as whal_SpiNor_Flash_PageProgram_02h() but uses the
+ * dedicated 4-byte opcode. Does not require entering 4-byte address mode.
  *
  * @param flashDev Flash device instance.
  * @param addr     Byte address to start writing at (up to 32 bits).
@@ -343,16 +355,17 @@ whal_Error whal_SpiNor3b_Write(whal_Flash *flashDev, size_t addr, const void *da
  * @retval WHAL_SUCCESS Write completed.
  * @retval WHAL_EINVAL  Null pointer, zero size, or out of bounds.
  */
-whal_Error whal_SpiNor4b_Write(whal_Flash *flashDev, size_t addr, const void *data, size_t dataSz);
+whal_Error whal_SpiNor_Flash_Addr4_PageProgram_12h(whal_Flash *flashDev, size_t addr,
+                                                   const void *data, size_t dataSz);
 
 /* -------------------------------------------------------------------- */
-/*  Write — 4-byte address mode (after 0xB7)                            */
+/*  Write: 4-byte address mode (after 0xB7)                             */
 /* -------------------------------------------------------------------- */
 
 /*
  * @brief Program data using Page Program (0x02) in 4-byte address mode.
  *
- * Requires prior call to whal_SpiNor4bMode_Init(). Uses the standard
+ * Requires prior call to whal_SpiNor_Flash_Addr4Mode_Init(). Uses the standard
  * opcode with a 4-byte address frame.
  *
  * @param flashDev Flash device instance.
@@ -363,10 +376,11 @@ whal_Error whal_SpiNor4b_Write(whal_Flash *flashDev, size_t addr, const void *da
  * @retval WHAL_SUCCESS Write completed.
  * @retval WHAL_EINVAL  Null pointer, zero size, or out of bounds.
  */
-whal_Error whal_SpiNor4bMode_Write(whal_Flash *flashDev, size_t addr, const void *data, size_t dataSz);
+whal_Error whal_SpiNor_Flash_Addr4Mode_PageProgram_02h(whal_Flash *flashDev, size_t addr,
+                                                       const void *data, size_t dataSz);
 
 /* -------------------------------------------------------------------- */
-/*  Write — extended address register                                   */
+/*  Write: extended address register                                    */
 /* -------------------------------------------------------------------- */
 
 /*
@@ -384,10 +398,11 @@ whal_Error whal_SpiNor4bMode_Write(whal_Flash *flashDev, size_t addr, const void
  * @retval WHAL_SUCCESS Write completed.
  * @retval WHAL_EINVAL  Null pointer, zero size, or out of bounds.
  */
-whal_Error whal_SpiNor4bExReg_Write(whal_Flash *flashDev, size_t addr, const void *data, size_t dataSz);
+whal_Error whal_SpiNor_Flash_ExtAddr_PageProgram_02h(whal_Flash *flashDev, size_t addr,
+                                                     const void *data, size_t dataSz);
 
 /* -------------------------------------------------------------------- */
-/*  Erase — 3-byte address                                              */
+/*  Erase: 3-byte address                                               */
 /* -------------------------------------------------------------------- */
 
 /*
@@ -402,7 +417,8 @@ whal_Error whal_SpiNor4bExReg_Write(whal_Flash *flashDev, size_t addr, const voi
  * @retval WHAL_SUCCESS Erase completed.
  * @retval WHAL_EINVAL  Null pointer, zero size, out of bounds, or unaligned.
  */
-whal_Error whal_SpiNor3b_Erase4k(whal_Flash *flashDev, size_t addr, size_t dataSz);
+whal_Error whal_SpiNor_Flash_SectorErase_20h(whal_Flash *flashDev, size_t addr,
+                                             size_t dataSz);
 
 /*
  * @brief Erase using 32 KB Block Erase (0x52) with 3-byte address.
@@ -416,7 +432,8 @@ whal_Error whal_SpiNor3b_Erase4k(whal_Flash *flashDev, size_t addr, size_t dataS
  * @retval WHAL_SUCCESS Erase completed.
  * @retval WHAL_EINVAL  Null pointer, zero size, out of bounds, or unaligned.
  */
-whal_Error whal_SpiNor3b_Erase32k(whal_Flash *flashDev, size_t addr, size_t dataSz);
+whal_Error whal_SpiNor_Flash_BlockErase32k_52h(whal_Flash *flashDev, size_t addr,
+                                               size_t dataSz);
 
 /*
  * @brief Erase using 64 KB Block Erase (0xD8) with 3-byte address.
@@ -430,7 +447,8 @@ whal_Error whal_SpiNor3b_Erase32k(whal_Flash *flashDev, size_t addr, size_t data
  * @retval WHAL_SUCCESS Erase completed.
  * @retval WHAL_EINVAL  Null pointer, zero size, out of bounds, or unaligned.
  */
-whal_Error whal_SpiNor3b_Erase64k(whal_Flash *flashDev, size_t addr, size_t dataSz);
+whal_Error whal_SpiNor_Flash_BlockErase64k_D8h(whal_Flash *flashDev, size_t addr,
+                                               size_t dataSz);
 
 /*
  * @brief Erase the entire device using Chip Erase (0xC7).
@@ -444,10 +462,11 @@ whal_Error whal_SpiNor3b_Erase64k(whal_Flash *flashDev, size_t addr, size_t data
  * @retval WHAL_SUCCESS Chip erase completed.
  * @retval WHAL_EINVAL  Null pointer.
  */
-whal_Error whal_SpiNor_EraseChip(whal_Flash *flashDev, size_t addr, size_t dataSz);
+whal_Error whal_SpiNor_Flash_ChipErase_C7h(whal_Flash *flashDev, size_t addr,
+                                           size_t dataSz);
 
 /* -------------------------------------------------------------------- */
-/*  Erase — dedicated 4-byte address commands                           */
+/*  Erase: dedicated 4-byte address commands                            */
 /* -------------------------------------------------------------------- */
 
 /*
@@ -463,7 +482,8 @@ whal_Error whal_SpiNor_EraseChip(whal_Flash *flashDev, size_t addr, size_t dataS
  * @retval WHAL_SUCCESS Erase completed.
  * @retval WHAL_EINVAL  Null pointer, zero size, out of bounds, or unaligned.
  */
-whal_Error whal_SpiNor4b_Erase4k(whal_Flash *flashDev, size_t addr, size_t dataSz);
+whal_Error whal_SpiNor_Flash_Addr4_SectorErase_21h(whal_Flash *flashDev, size_t addr,
+                                                   size_t dataSz);
 
 /*
  * @brief Erase using dedicated 4-byte Block Erase (0xDC).
@@ -477,16 +497,17 @@ whal_Error whal_SpiNor4b_Erase4k(whal_Flash *flashDev, size_t addr, size_t dataS
  * @retval WHAL_SUCCESS Erase completed.
  * @retval WHAL_EINVAL  Null pointer, zero size, out of bounds, or unaligned.
  */
-whal_Error whal_SpiNor4b_Erase64k(whal_Flash *flashDev, size_t addr, size_t dataSz);
+whal_Error whal_SpiNor_Flash_Addr4_BlockErase64k_DCh(whal_Flash *flashDev, size_t addr,
+                                                     size_t dataSz);
 
 /* -------------------------------------------------------------------- */
-/*  Erase — 4-byte address mode (after 0xB7)                            */
+/*  Erase: 4-byte address mode (after 0xB7)                             */
 /* -------------------------------------------------------------------- */
 
 /*
  * @brief Erase using Sector Erase (0x20) in 4-byte address mode.
  *
- * Requires prior call to whal_SpiNor4bMode_Init(). Address must be
+ * Requires prior call to whal_SpiNor_Flash_Addr4Mode_Init(). Address must be
  * 4 KB aligned.
  *
  * @param flashDev Flash device instance.
@@ -496,12 +517,13 @@ whal_Error whal_SpiNor4b_Erase64k(whal_Flash *flashDev, size_t addr, size_t data
  * @retval WHAL_SUCCESS Erase completed.
  * @retval WHAL_EINVAL  Null pointer, zero size, out of bounds, or unaligned.
  */
-whal_Error whal_SpiNor4bMode_Erase4k(whal_Flash *flashDev, size_t addr, size_t dataSz);
+whal_Error whal_SpiNor_Flash_Addr4Mode_SectorErase_20h(whal_Flash *flashDev, size_t addr,
+                                                       size_t dataSz);
 
 /*
  * @brief Erase using Block Erase (0x52) in 4-byte address mode.
  *
- * Requires prior call to whal_SpiNor4bMode_Init(). Address must be
+ * Requires prior call to whal_SpiNor_Flash_Addr4Mode_Init(). Address must be
  * 32 KB aligned.
  *
  * @param flashDev Flash device instance.
@@ -511,12 +533,13 @@ whal_Error whal_SpiNor4bMode_Erase4k(whal_Flash *flashDev, size_t addr, size_t d
  * @retval WHAL_SUCCESS Erase completed.
  * @retval WHAL_EINVAL  Null pointer, zero size, out of bounds, or unaligned.
  */
-whal_Error whal_SpiNor4bMode_Erase32k(whal_Flash *flashDev, size_t addr, size_t dataSz);
+whal_Error whal_SpiNor_Flash_Addr4Mode_BlockErase32k_52h(whal_Flash *flashDev, size_t addr,
+                                                         size_t dataSz);
 
 /*
  * @brief Erase using Block Erase (0xD8) in 4-byte address mode.
  *
- * Requires prior call to whal_SpiNor4bMode_Init(). Address must be
+ * Requires prior call to whal_SpiNor_Flash_Addr4Mode_Init(). Address must be
  * 64 KB aligned.
  *
  * @param flashDev Flash device instance.
@@ -526,10 +549,11 @@ whal_Error whal_SpiNor4bMode_Erase32k(whal_Flash *flashDev, size_t addr, size_t 
  * @retval WHAL_SUCCESS Erase completed.
  * @retval WHAL_EINVAL  Null pointer, zero size, out of bounds, or unaligned.
  */
-whal_Error whal_SpiNor4bMode_Erase64k(whal_Flash *flashDev, size_t addr, size_t dataSz);
+whal_Error whal_SpiNor_Flash_Addr4Mode_BlockErase64k_D8h(whal_Flash *flashDev, size_t addr,
+                                                         size_t dataSz);
 
 /* -------------------------------------------------------------------- */
-/*  Erase — extended address register                                   */
+/*  Erase: extended address register                                    */
 /* -------------------------------------------------------------------- */
 
 /*
@@ -545,7 +569,8 @@ whal_Error whal_SpiNor4bMode_Erase64k(whal_Flash *flashDev, size_t addr, size_t 
  * @retval WHAL_SUCCESS Erase completed.
  * @retval WHAL_EINVAL  Null pointer, zero size, out of bounds, or unaligned.
  */
-whal_Error whal_SpiNor4bExReg_Erase4k(whal_Flash *flashDev, size_t addr, size_t dataSz);
+whal_Error whal_SpiNor_Flash_ExtAddr_SectorErase_20h(whal_Flash *flashDev, size_t addr,
+                                                     size_t dataSz);
 
 /*
  * @brief Erase using Block Erase (0x52) with extended address register.
@@ -560,7 +585,8 @@ whal_Error whal_SpiNor4bExReg_Erase4k(whal_Flash *flashDev, size_t addr, size_t 
  * @retval WHAL_SUCCESS Erase completed.
  * @retval WHAL_EINVAL  Null pointer, zero size, out of bounds, or unaligned.
  */
-whal_Error whal_SpiNor4bExReg_Erase32k(whal_Flash *flashDev, size_t addr, size_t dataSz);
+whal_Error whal_SpiNor_Flash_ExtAddr_BlockErase32k_52h(whal_Flash *flashDev, size_t addr,
+                                                       size_t dataSz);
 
 /*
  * @brief Erase using Block Erase (0xD8) with extended address register.
@@ -575,6 +601,7 @@ whal_Error whal_SpiNor4bExReg_Erase32k(whal_Flash *flashDev, size_t addr, size_t
  * @retval WHAL_SUCCESS Erase completed.
  * @retval WHAL_EINVAL  Null pointer, zero size, out of bounds, or unaligned.
  */
-whal_Error whal_SpiNor4bExReg_Erase64k(whal_Flash *flashDev, size_t addr, size_t dataSz);
+whal_Error whal_SpiNor_Flash_ExtAddr_BlockErase64k_D8h(whal_Flash *flashDev, size_t addr,
+                                                       size_t dataSz);
 
-#endif /* WHAL_SPI_NOR_H */
+#endif /* WHAL_SPI_NOR_FLASH_H */
