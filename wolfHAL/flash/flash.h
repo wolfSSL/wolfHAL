@@ -57,7 +57,7 @@ typedef struct {
  * @brief Flash device instance tying configuration to a driver implementation.
  */
 struct whal_Flash {
-    const size_t base;
+    const uintptr_t base;
     const whal_FlashDriver *driver;
     void *cfg;
 };

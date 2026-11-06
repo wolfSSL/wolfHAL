@@ -54,7 +54,7 @@ typedef struct {
  * @brief Watchdog device instance with a base address, driver vtable, and platform-specific cfg.
  */
 struct whal_Watchdog {
-    const size_t base;
+    const uintptr_t base;
     const whal_WatchdogDriver *driver;
     void *cfg;
 };

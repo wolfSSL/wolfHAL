@@ -21,17 +21,36 @@
 
 #include <wolfHAL/reg.h>
 
-whal_Error whal_Reg_ReadPoll(size_t base, size_t offset,
-                             size_t mask, size_t value,
-                             whal_Timeout *timeout)
+whal_Error whal_Reg32_ReadPoll(uintptr_t base, uint32_t offset,
+                               uint32_t mask, uint32_t value,
+                               whal_Timeout *timeout)
 {
 #ifdef WHAL_CFG_NO_TIMEOUT
     (void)(timeout);
 #endif
     WHAL_TIMEOUT_START(timeout);
-    while ((whal_Reg_Read(base, offset) & mask) != value) {
-        if (WHAL_TIMEOUT_EXPIRED(timeout))
+    while ((whal_Reg32_Read(base, offset) & mask) != value) {
+        if (WHAL_TIMEOUT_EXPIRED(timeout)) {
             return WHAL_ETIMEOUT;
+        }
     }
     return WHAL_SUCCESS;
 }
+
+#ifdef WHAL_HAVE_REG64
+whal_Error whal_Reg64_ReadPoll(uintptr_t base, uint32_t offset,
+                               uint64_t mask, uint64_t value,
+                               whal_Timeout *timeout)
+{
+#ifdef WHAL_CFG_NO_TIMEOUT
+    (void)(timeout);
+#endif
+    WHAL_TIMEOUT_START(timeout);
+    while ((whal_Reg64_Read(base, offset) & mask) != value) {
+        if (WHAL_TIMEOUT_EXPIRED(timeout)) {
+            return WHAL_ETIMEOUT;
+        }
+    }
+    return WHAL_SUCCESS;
+}
+#endif /* WHAL_HAVE_REG64 */

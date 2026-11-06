@@ -92,7 +92,7 @@ typedef struct {
  * controller. DMA1 uses DMAMUX channels starting at 0; DMA2 starts at 7.
  */
 typedef struct {
-    size_t dmamuxBase;       /* DMAMUX1 register base address */
+    uintptr_t dmamuxBase;    /* DMAMUX1 register base address */
     uint8_t dmamuxChOffset;  /* First DMAMUX channel index for this controller */
     uint8_t numChannels;     /* Number of channels (7 for DMA1, 5 for DMA2) */
 } whal_Stm32wb_Dma_Cfg;

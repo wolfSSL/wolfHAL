@@ -91,7 +91,7 @@ typedef struct {
  * @brief PWM device instance tying a driver and configuration.
  */
 struct whal_Pwm {
-    const size_t base;
+    const uintptr_t base;
     const whal_PwmDriver *driver;
     void *cfg;
 };

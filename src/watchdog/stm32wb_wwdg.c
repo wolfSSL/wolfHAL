@@ -58,7 +58,7 @@ whal_Error whal_Stm32wb_Wwdg_Init(whal_Watchdog *wdgDev)
 {
     const whal_Stm32wb_Wwdg_Cfg *cfg =
         (const whal_Stm32wb_Wwdg_Cfg *)whal_Stm32wb_Wwdg_Dev.cfg;
-    size_t base = whal_Stm32wb_Wwdg_Dev.base;
+    uintptr_t base = whal_Stm32wb_Wwdg_Dev.base;
     (void)wdgDev;
 
     /* Counter and window must keep T6 set or the MCU resets immediately */
@@ -67,14 +67,14 @@ whal_Error whal_Stm32wb_Wwdg_Init(whal_Watchdog *wdgDev)
         return WHAL_EINVAL;
 
     /* Configure window and prescaler */
-    whal_Reg_Update(base, CFR_REG, CFR_W_Msk | CFR_WDGTB_Msk,
-                    whal_SetBits(CFR_W_Msk, CFR_W_Pos, cfg->window) |
-                    whal_SetBits(CFR_WDGTB_Msk, CFR_WDGTB_Pos, cfg->prescaler));
+    whal_Reg32_Update(base, CFR_REG, CFR_W_Msk | CFR_WDGTB_Msk,
+                      whal_SetBits(CFR_W_Msk, CFR_W_Pos, cfg->window) |
+                      whal_SetBits(CFR_WDGTB_Msk, CFR_WDGTB_Pos, cfg->prescaler));
 
     /* Set counter and enable WWDG */
-    whal_Reg_Update(base, CR_REG, CR_T_Msk | CR_WDGA_Msk,
-                    whal_SetBits(CR_T_Msk, CR_T_Pos, cfg->counter) |
-                    whal_SetBits(CR_WDGA_Msk, CR_WDGA_Pos, 1));
+    whal_Reg32_Update(base, CR_REG, CR_T_Msk | CR_WDGA_Msk,
+                      whal_SetBits(CR_T_Msk, CR_T_Pos, cfg->counter) |
+                      whal_SetBits(CR_WDGA_Msk, CR_WDGA_Pos, 1));
 
     return WHAL_SUCCESS;
 }
@@ -89,11 +89,11 @@ whal_Error whal_Stm32wb_Wwdg_Refresh(whal_Watchdog *wdgDev)
 {
     const whal_Stm32wb_Wwdg_Cfg *cfg =
         (const whal_Stm32wb_Wwdg_Cfg *)whal_Stm32wb_Wwdg_Dev.cfg;
-    size_t base = whal_Stm32wb_Wwdg_Dev.base;
+    uintptr_t base = whal_Stm32wb_Wwdg_Dev.base;
     (void)wdgDev;
 
-    whal_Reg_Update(base, CR_REG, CR_T_Msk,
-                    whal_SetBits(CR_T_Msk, CR_T_Pos, cfg->counter));
+    whal_Reg32_Update(base, CR_REG, CR_T_Msk,
+                      whal_SetBits(CR_T_Msk, CR_T_Pos, cfg->counter));
 
     return WHAL_SUCCESS;
 }

@@ -166,7 +166,7 @@ const whal_Crypto whal_Stm32wb_Pka_Dev = WHAL_CFG_STM32WB_PKA_DEV;
 
 /* Write a big-endian integer into the PKA RAM at offset as a little-endian
  * 32-bit word array, with the mandatory trailing zero word. */
-static void WriteOperand(size_t base, size_t offset,
+static void WriteOperand(uintptr_t base, size_t offset,
                          const uint8_t *data, size_t dataSz)
 {
     size_t numWords = (dataSz + 3) / 4;
@@ -179,20 +179,20 @@ static void WriteOperand(size_t base, size_t offset,
             if (bytePos < dataSz)
                 word |= (uint32_t)data[dataSz - 1 - bytePos] << (b * 8);
         }
-        whal_Reg_Write(base, offset + i * 4, word);
+        whal_Reg32_Write(base, offset + i * 4, word);
     }
-    whal_Reg_Write(base, offset + numWords * 4, 0);
+    whal_Reg32_Write(base, offset + numWords * 4, 0);
 }
 
 /* Read a little-endian word array from PKA RAM into a big-endian byte array. */
-static void ReadOperand(size_t base, size_t offset,
+static void ReadOperand(uintptr_t base, size_t offset,
                         uint8_t *data, size_t dataSz)
 {
     size_t numWords = (dataSz + 3) / 4;
     size_t i, b;
 
     for (i = 0; i < numWords; i++) {
-        uint32_t word = whal_Reg_Read(base, offset + i * 4);
+        uint32_t word = whal_Reg32_Read(base, offset + i * 4);
         for (b = 0; b < 4; b++) {
             size_t bytePos = i * 4 + b;
             if (bytePos < dataSz)
@@ -205,24 +205,24 @@ static void ReadOperand(size_t base, size_t offset,
  * numWords data words plus the one trailing word. Called after every op,
  * whatever its result, so the PKA RAM never carries stale operand or result
  * bytes into the next operation. */
-static void ZeroOperand(size_t base, size_t offset, size_t dataSz)
+static void ZeroOperand(uintptr_t base, size_t offset, size_t dataSz)
 {
     size_t numWords = (dataSz + 3) / 4;
     size_t i;
 
     for (i = 0; i <= numWords; i++)
-        whal_Reg_Write(base, offset + i * 4, 0);
+        whal_Reg32_Write(base, offset + i * 4, 0);
 }
 
-static void ZeroRam(size_t base)
+static void ZeroRam(uintptr_t base)
 {
     size_t off;
 
     for (off = 0; off < PKA_RAM_SIZE; off += 4)
-        whal_Reg_Write(base, PKA_RAM_REG + off, 0);
+        whal_Reg32_Write(base, PKA_RAM_REG + off, 0);
 }
 
-static whal_Error WaitForProcEnd(size_t base, whal_Timeout *timeout)
+static whal_Error WaitForProcEnd(uintptr_t base, whal_Timeout *timeout)
 {
     const uint32_t errFlags  = PKA_SR_ADDRERRF_Msk | PKA_SR_RAMERRF_Msk;
     const uint32_t doneFlags = errFlags | PKA_SR_PROCENDF_Msk;
@@ -233,16 +233,16 @@ static whal_Error WaitForProcEnd(size_t base, whal_Timeout *timeout)
     WHAL_TIMEOUT_START(timeout);
 
     while (1) {
-        uint32_t sr = whal_Reg_Read(base, PKA_SR_REG);
+        uint32_t sr = whal_Reg32_Read(base, PKA_SR_REG);
         if (sr & doneFlags) {
-            whal_Reg_Write(base, PKA_CLRFR_REG, clrFlags);
+            whal_Reg32_Write(base, PKA_CLRFR_REG, clrFlags);
             return (sr & errFlags) ? WHAL_EHARDWARE : WHAL_SUCCESS;
         }
         if (WHAL_TIMEOUT_EXPIRED(timeout)) {
             /* Abort the operation so the PKA RAM is writable again */
-            whal_Reg_Update(base, PKA_CR_REG, PKA_CR_EN_Msk, 0);
-            whal_Reg_Write(base, PKA_CLRFR_REG, clrFlags);
-            whal_Reg_Update(base, PKA_CR_REG, PKA_CR_EN_Msk, PKA_CR_EN_Msk);
+            whal_Reg32_Update(base, PKA_CR_REG, PKA_CR_EN_Msk, 0);
+            whal_Reg32_Write(base, PKA_CLRFR_REG, clrFlags);
+            whal_Reg32_Update(base, PKA_CR_REG, PKA_CR_EN_Msk, PKA_CR_EN_Msk);
             return WHAL_ETIMEOUT;
         }
     }
@@ -252,18 +252,18 @@ static whal_Error WaitForProcEnd(size_t base, whal_Timeout *timeout)
 
 whal_Error whal_Stm32wb_Pka_Init(whal_Crypto *dev)
 {
-    size_t base = whal_Stm32wb_Pka_Dev.base;
+    uintptr_t base = whal_Stm32wb_Pka_Dev.base;
     (void)dev;
-    whal_Reg_Update(base, PKA_CR_REG, PKA_CR_EN_Msk, PKA_CR_EN_Msk);
+    whal_Reg32_Update(base, PKA_CR_REG, PKA_CR_EN_Msk, PKA_CR_EN_Msk);
     return WHAL_SUCCESS;
 }
 
 whal_Error whal_Stm32wb_Pka_Deinit(whal_Crypto *dev)
 {
-    size_t base = whal_Stm32wb_Pka_Dev.base;
+    uintptr_t base = whal_Stm32wb_Pka_Dev.base;
     (void)dev;
     ZeroRam(base);
-    whal_Reg_Update(base, PKA_CR_REG, PKA_CR_EN_Msk, 0);
+    whal_Reg32_Update(base, PKA_CR_REG, PKA_CR_EN_Msk, 0);
     return WHAL_SUCCESS;
 }
 
@@ -279,7 +279,7 @@ whal_Error whal_Stm32wb_Pka_ModExp(const uint8_t *A, size_t ASz,
                                    const uint8_t *N, size_t NSz,
                                    uint8_t *result, size_t resultSz)
 {
-    size_t base = whal_Stm32wb_Pka_Dev.base;
+    uintptr_t base = whal_Stm32wb_Pka_Dev.base;
     const whal_Stm32wb_Pka_Cfg *cfg =
         (const whal_Stm32wb_Pka_Cfg *)whal_Stm32wb_Pka_Dev.cfg;
     whal_Error err;
@@ -291,22 +291,22 @@ whal_Error whal_Stm32wb_Pka_ModExp(const uint8_t *A, size_t ASz,
         ASz != NSz || eSz != NSz || resultSz != NSz)
         return WHAL_ENOTSUP;
 
-    whal_Reg_Write(base, PKA_MODEXP_EXP_LEN, (uint32_t)(eSz * 8));
-    whal_Reg_Write(base, PKA_MODEXP_OP_LEN,  (uint32_t)(NSz * 8));
+    whal_Reg32_Write(base, PKA_MODEXP_EXP_LEN, (uint32_t)(eSz * 8));
+    whal_Reg32_Write(base, PKA_MODEXP_OP_LEN,  (uint32_t)(NSz * 8));
     WriteOperand(base, PKA_MODEXP_A, A, ASz);
     WriteOperand(base, PKA_MODEXP_E, e, eSz);
     WriteOperand(base, PKA_MODEXP_N, N, NSz);
 
-    whal_Reg_Update(base, PKA_CR_REG, PKA_CR_MODE_Msk,
-                    (uint32_t)PKA_MODE_MODEXP_NORMAL << PKA_CR_MODE_Pos);
-    whal_Reg_Update(base, PKA_CR_REG, PKA_CR_START_Msk, PKA_CR_START_Msk);
+    whal_Reg32_Update(base, PKA_CR_REG, PKA_CR_MODE_Msk,
+                      (uint32_t)PKA_MODE_MODEXP_NORMAL << PKA_CR_MODE_Pos);
+    whal_Reg32_Update(base, PKA_CR_REG, PKA_CR_START_Msk, PKA_CR_START_Msk);
 
     err = WaitForProcEnd(base, cfg->timeout);
     if (err == WHAL_SUCCESS)
         ReadOperand(base, PKA_MODEXP_RESULT, result, resultSz);
 
-    whal_Reg_Write(base, PKA_MODEXP_EXP_LEN, 0);
-    whal_Reg_Write(base, PKA_MODEXP_OP_LEN,  0);
+    whal_Reg32_Write(base, PKA_MODEXP_EXP_LEN, 0);
+    whal_Reg32_Write(base, PKA_MODEXP_OP_LEN,  0);
     ZeroOperand(base, PKA_MODEXP_A,      ASz);
     ZeroOperand(base, PKA_MODEXP_E,      eSz);
     ZeroOperand(base, PKA_MODEXP_N,      NSz);
@@ -318,7 +318,7 @@ whal_Error whal_Stm32wb_Pka_ModInv(const uint8_t *A, size_t ASz,
                                    const uint8_t *N, size_t NSz,
                                    uint8_t *result, size_t resultSz)
 {
-    size_t base = whal_Stm32wb_Pka_Dev.base;
+    uintptr_t base = whal_Stm32wb_Pka_Dev.base;
     const whal_Stm32wb_Pka_Cfg *cfg =
         (const whal_Stm32wb_Pka_Cfg *)whal_Stm32wb_Pka_Dev.cfg;
     whal_Error err;
@@ -329,19 +329,19 @@ whal_Error whal_Stm32wb_Pka_ModInv(const uint8_t *A, size_t ASz,
     if (NSz * 8 > 3136 || ASz != NSz || resultSz != NSz)
         return WHAL_ENOTSUP;
 
-    whal_Reg_Write(base, PKA_MODINV_OP_LEN, (uint32_t)(NSz * 8));
+    whal_Reg32_Write(base, PKA_MODINV_OP_LEN, (uint32_t)(NSz * 8));
     WriteOperand(base, PKA_MODINV_A, A, ASz);
     WriteOperand(base, PKA_MODINV_N, N, NSz);
 
-    whal_Reg_Update(base, PKA_CR_REG, PKA_CR_MODE_Msk,
-                    (uint32_t)PKA_MODE_MODINV << PKA_CR_MODE_Pos);
-    whal_Reg_Update(base, PKA_CR_REG, PKA_CR_START_Msk, PKA_CR_START_Msk);
+    whal_Reg32_Update(base, PKA_CR_REG, PKA_CR_MODE_Msk,
+                      (uint32_t)PKA_MODE_MODINV << PKA_CR_MODE_Pos);
+    whal_Reg32_Update(base, PKA_CR_REG, PKA_CR_START_Msk, PKA_CR_START_Msk);
 
     err = WaitForProcEnd(base, cfg->timeout);
     if (err == WHAL_SUCCESS)
         ReadOperand(base, PKA_MODINV_RESULT, result, resultSz);
 
-    whal_Reg_Write(base, PKA_MODINV_OP_LEN, 0);
+    whal_Reg32_Write(base, PKA_MODINV_OP_LEN, 0);
     ZeroOperand(base, PKA_MODINV_A,      ASz);
     ZeroOperand(base, PKA_MODINV_N,      NSz);
     ZeroOperand(base, PKA_MODINV_RESULT, resultSz);
@@ -352,7 +352,7 @@ whal_Error whal_Stm32wb_Pka_ModReduce(const uint8_t *A, size_t ASz,
                                       const uint8_t *N, size_t NSz,
                                       uint8_t *result, size_t resultSz)
 {
-    size_t base = whal_Stm32wb_Pka_Dev.base;
+    uintptr_t base = whal_Stm32wb_Pka_Dev.base;
     const whal_Stm32wb_Pka_Cfg *cfg =
         (const whal_Stm32wb_Pka_Cfg *)whal_Stm32wb_Pka_Dev.cfg;
     whal_Error err;
@@ -363,21 +363,21 @@ whal_Error whal_Stm32wb_Pka_ModReduce(const uint8_t *A, size_t ASz,
     if (NSz * 8 > 3136 || ASz != NSz || resultSz != NSz)
         return WHAL_ENOTSUP;
 
-    whal_Reg_Write(base, PKA_MOD_REDUCE_OP_LEN,  (uint32_t)(ASz * 8));
-    whal_Reg_Write(base, PKA_MOD_REDUCE_MOD_LEN, (uint32_t)(NSz * 8));
+    whal_Reg32_Write(base, PKA_MOD_REDUCE_OP_LEN,  (uint32_t)(ASz * 8));
+    whal_Reg32_Write(base, PKA_MOD_REDUCE_MOD_LEN, (uint32_t)(NSz * 8));
     WriteOperand(base, PKA_MOD_REDUCE_A, A, ASz);
     WriteOperand(base, PKA_MOD_REDUCE_N, N, NSz);
 
-    whal_Reg_Update(base, PKA_CR_REG, PKA_CR_MODE_Msk,
-                    (uint32_t)PKA_MODE_MOD_REDUCE << PKA_CR_MODE_Pos);
-    whal_Reg_Update(base, PKA_CR_REG, PKA_CR_START_Msk, PKA_CR_START_Msk);
+    whal_Reg32_Update(base, PKA_CR_REG, PKA_CR_MODE_Msk,
+                      (uint32_t)PKA_MODE_MOD_REDUCE << PKA_CR_MODE_Pos);
+    whal_Reg32_Update(base, PKA_CR_REG, PKA_CR_START_Msk, PKA_CR_START_Msk);
 
     err = WaitForProcEnd(base, cfg->timeout);
     if (err == WHAL_SUCCESS)
         ReadOperand(base, PKA_MOD_REDUCE_RESULT, result, resultSz);
 
-    whal_Reg_Write(base, PKA_MOD_REDUCE_OP_LEN,  0);
-    whal_Reg_Write(base, PKA_MOD_REDUCE_MOD_LEN, 0);
+    whal_Reg32_Write(base, PKA_MOD_REDUCE_OP_LEN,  0);
+    whal_Reg32_Write(base, PKA_MOD_REDUCE_MOD_LEN, 0);
     ZeroOperand(base, PKA_MOD_REDUCE_A,      ASz);
     ZeroOperand(base, PKA_MOD_REDUCE_N,      NSz);
     ZeroOperand(base, PKA_MOD_REDUCE_RESULT, resultSz);
@@ -388,7 +388,7 @@ whal_Error whal_Stm32wb_Pka_IntMul(const uint8_t *A, size_t ASz,
                                    const uint8_t *B, size_t BSz,
                                    uint8_t *result, size_t resultSz)
 {
-    size_t base = whal_Stm32wb_Pka_Dev.base;
+    uintptr_t base = whal_Stm32wb_Pka_Dev.base;
     const whal_Stm32wb_Pka_Cfg *cfg =
         (const whal_Stm32wb_Pka_Cfg *)whal_Stm32wb_Pka_Dev.cfg;
     whal_Error err;
@@ -399,19 +399,19 @@ whal_Error whal_Stm32wb_Pka_IntMul(const uint8_t *A, size_t ASz,
     if (ASz * 8 > 3136 || ASz != BSz || resultSz != 2 * ASz)
         return WHAL_ENOTSUP;
 
-    whal_Reg_Write(base, PKA_INT_MUL_OP_LEN, (uint32_t)(ASz * 8));
+    whal_Reg32_Write(base, PKA_INT_MUL_OP_LEN, (uint32_t)(ASz * 8));
     WriteOperand(base, PKA_INT_MUL_A, A, ASz);
     WriteOperand(base, PKA_INT_MUL_B, B, BSz);
 
-    whal_Reg_Update(base, PKA_CR_REG, PKA_CR_MODE_Msk,
-                    (uint32_t)PKA_MODE_INT_MUL << PKA_CR_MODE_Pos);
-    whal_Reg_Update(base, PKA_CR_REG, PKA_CR_START_Msk, PKA_CR_START_Msk);
+    whal_Reg32_Update(base, PKA_CR_REG, PKA_CR_MODE_Msk,
+                      (uint32_t)PKA_MODE_INT_MUL << PKA_CR_MODE_Pos);
+    whal_Reg32_Update(base, PKA_CR_REG, PKA_CR_START_Msk, PKA_CR_START_Msk);
 
     err = WaitForProcEnd(base, cfg->timeout);
     if (err == WHAL_SUCCESS)
         ReadOperand(base, PKA_INT_MUL_RESULT, result, resultSz);
 
-    whal_Reg_Write(base, PKA_INT_MUL_OP_LEN, 0);
+    whal_Reg32_Write(base, PKA_INT_MUL_OP_LEN, 0);
     ZeroOperand(base, PKA_INT_MUL_A,      ASz);
     ZeroOperand(base, PKA_INT_MUL_B,      BSz);
     ZeroOperand(base, PKA_INT_MUL_RESULT, resultSz);
@@ -422,7 +422,7 @@ whal_Error whal_Stm32wb_Pka_IntSub(const uint8_t *A, size_t ASz,
                                    const uint8_t *B, size_t BSz,
                                    uint8_t *result, size_t resultSz)
 {
-    size_t base = whal_Stm32wb_Pka_Dev.base;
+    uintptr_t base = whal_Stm32wb_Pka_Dev.base;
     const whal_Stm32wb_Pka_Cfg *cfg =
         (const whal_Stm32wb_Pka_Cfg *)whal_Stm32wb_Pka_Dev.cfg;
     whal_Error err;
@@ -433,19 +433,19 @@ whal_Error whal_Stm32wb_Pka_IntSub(const uint8_t *A, size_t ASz,
     if (ASz * 8 > 3136 || ASz != BSz || resultSz != ASz)
         return WHAL_ENOTSUP;
 
-    whal_Reg_Write(base, PKA_INT_SUB_OP_LEN, (uint32_t)(ASz * 8));
+    whal_Reg32_Write(base, PKA_INT_SUB_OP_LEN, (uint32_t)(ASz * 8));
     WriteOperand(base, PKA_INT_SUB_A, A, ASz);
     WriteOperand(base, PKA_INT_SUB_B, B, BSz);
 
-    whal_Reg_Update(base, PKA_CR_REG, PKA_CR_MODE_Msk,
-                    (uint32_t)PKA_MODE_INT_SUB << PKA_CR_MODE_Pos);
-    whal_Reg_Update(base, PKA_CR_REG, PKA_CR_START_Msk, PKA_CR_START_Msk);
+    whal_Reg32_Update(base, PKA_CR_REG, PKA_CR_MODE_Msk,
+                      (uint32_t)PKA_MODE_INT_SUB << PKA_CR_MODE_Pos);
+    whal_Reg32_Update(base, PKA_CR_REG, PKA_CR_START_Msk, PKA_CR_START_Msk);
 
     err = WaitForProcEnd(base, cfg->timeout);
     if (err == WHAL_SUCCESS)
         ReadOperand(base, PKA_INT_SUB_RESULT, result, resultSz);
 
-    whal_Reg_Write(base, PKA_INT_SUB_OP_LEN, 0);
+    whal_Reg32_Write(base, PKA_INT_SUB_OP_LEN, 0);
     ZeroOperand(base, PKA_INT_SUB_A,      ASz);
     ZeroOperand(base, PKA_INT_SUB_B,      BSz);
     ZeroOperand(base, PKA_INT_SUB_RESULT, resultSz);
@@ -460,7 +460,7 @@ whal_Error whal_Stm32wb_Pka_RsaCrtExp(const uint8_t *A,    size_t ASz,
                                       const uint8_t *q,    size_t qSz,
                                       uint8_t *result, size_t resultSz)
 {
-    size_t base = whal_Stm32wb_Pka_Dev.base;
+    uintptr_t base = whal_Stm32wb_Pka_Dev.base;
     const whal_Stm32wb_Pka_Cfg *cfg =
         (const whal_Stm32wb_Pka_Cfg *)whal_Stm32wb_Pka_Dev.cfg;
     whal_Error err;
@@ -475,8 +475,8 @@ whal_Error whal_Stm32wb_Pka_RsaCrtExp(const uint8_t *A,    size_t ASz,
         ASz != pSz + qSz || resultSz != pSz + qSz)
         return WHAL_ENOTSUP;
 
-    whal_Reg_Write(base, PKA_RSA_CRT_OP_LEN,
-                   (uint32_t)((pSz + qSz) * 8));
+    whal_Reg32_Write(base, PKA_RSA_CRT_OP_LEN,
+                     (uint32_t)((pSz + qSz) * 8));
     WriteOperand(base, PKA_RSA_CRT_DP,   dP,   dPSz);
     WriteOperand(base, PKA_RSA_CRT_DQ,   dQ,   dQSz);
     WriteOperand(base, PKA_RSA_CRT_QINV, qInv, qInvSz);
@@ -484,15 +484,15 @@ whal_Error whal_Stm32wb_Pka_RsaCrtExp(const uint8_t *A,    size_t ASz,
     WriteOperand(base, PKA_RSA_CRT_Q,    q,    qSz);
     WriteOperand(base, PKA_RSA_CRT_A,    A,    ASz);
 
-    whal_Reg_Update(base, PKA_CR_REG, PKA_CR_MODE_Msk,
-                    (uint32_t)PKA_MODE_RSA_CRT_EXP << PKA_CR_MODE_Pos);
-    whal_Reg_Update(base, PKA_CR_REG, PKA_CR_START_Msk, PKA_CR_START_Msk);
+    whal_Reg32_Update(base, PKA_CR_REG, PKA_CR_MODE_Msk,
+                      (uint32_t)PKA_MODE_RSA_CRT_EXP << PKA_CR_MODE_Pos);
+    whal_Reg32_Update(base, PKA_CR_REG, PKA_CR_START_Msk, PKA_CR_START_Msk);
 
     err = WaitForProcEnd(base, cfg->timeout);
     if (err == WHAL_SUCCESS)
         ReadOperand(base, PKA_RSA_CRT_RESULT, result, resultSz);
 
-    whal_Reg_Write(base, PKA_RSA_CRT_OP_LEN, 0);
+    whal_Reg32_Write(base, PKA_RSA_CRT_OP_LEN, 0);
     ZeroOperand(base, PKA_RSA_CRT_DP,     dPSz);
     ZeroOperand(base, PKA_RSA_CRT_DQ,     dQSz);
     ZeroOperand(base, PKA_RSA_CRT_QINV,   qInvSz);

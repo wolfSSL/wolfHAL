@@ -53,7 +53,7 @@ Most device types share the same three fields in their struct
 - `.cfg` — driver-specific configuration settings (pins, baud rate, etc.).
 ```c
 struct whal_Uart {
-    const size_t base;             /* register block address */
+    const uintptr_t base;          /* register block address */
     const whal_UartDriver *driver; /* driver vtable */
     void *cfg;                     /* driver-specific config */
 };
@@ -95,7 +95,7 @@ from the device handle the caller passes in:
 ```c
 whal_Error whal_Stm32wb_Uart_Send(whal_Uart *dev, ...)
 {
-    size_t base = dev->base;
+    uintptr_t base = dev->base;
     whal_Stm32wb_Uart_Cfg *cfg = (whal_Stm32wb_Uart_Cfg *)dev->cfg;
     /* ... */
 }
@@ -114,7 +114,7 @@ const whal_Rng whal_Stm32wb_Rng_Dev = WHAL_CFG_STM32WB_RNG_DEV;
 
 whal_Error whal_Stm32wb_Rng_Generate(whal_Rng *dev, ...)
 {
-    size_t base = whal_Stm32wb_Rng_Dev.base;
+    uintptr_t base = whal_Stm32wb_Rng_Dev.base;
     (void)dev;
     /* ... */
 }
