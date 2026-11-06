@@ -83,18 +83,18 @@ static inline whal_Error whal_Stm32l1_Pwr_SetVosRange(
 {
     whal_Error err;
 
-    err = whal_Reg_ReadPoll(WHAL_STM32L1_PWR_BASE, WHAL_STM32L1_PWR_CSR_REG,
-                            WHAL_STM32L1_PWR_CSR_VOSF_Msk, 0, timeout);
+    err = whal_Reg32_ReadPoll(WHAL_STM32L1_PWR_BASE, WHAL_STM32L1_PWR_CSR_REG,
+                              WHAL_STM32L1_PWR_CSR_VOSF_Msk, 0, timeout);
     if (err)
         return err;
 
-    whal_Reg_Update(WHAL_STM32L1_PWR_BASE, WHAL_STM32L1_PWR_CR_REG,
-                    WHAL_STM32L1_PWR_CR_VOS_Msk,
-                    whal_SetBits(WHAL_STM32L1_PWR_CR_VOS_Msk,
-                                 WHAL_STM32L1_PWR_CR_VOS_Pos, range));
+    whal_Reg32_Update(WHAL_STM32L1_PWR_BASE, WHAL_STM32L1_PWR_CR_REG,
+                      WHAL_STM32L1_PWR_CR_VOS_Msk,
+                      whal_SetBits(WHAL_STM32L1_PWR_CR_VOS_Msk,
+                                   WHAL_STM32L1_PWR_CR_VOS_Pos, range));
 
-    return whal_Reg_ReadPoll(WHAL_STM32L1_PWR_BASE, WHAL_STM32L1_PWR_CSR_REG,
-                             WHAL_STM32L1_PWR_CSR_VOSF_Msk, 0, timeout);
+    return whal_Reg32_ReadPoll(WHAL_STM32L1_PWR_BASE, WHAL_STM32L1_PWR_CSR_REG,
+                               WHAL_STM32L1_PWR_CSR_VOSF_Msk, 0, timeout);
 }
 
 #endif /* WHAL_STM32L1_PWR_H */

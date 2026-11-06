@@ -57,7 +57,7 @@ const whal_Gpio whal_Stm32wb0_Gpio_Dev = WHAL_CFG_STM32WB0_GPIO_DEV;
 static inline whal_Error whal_Stm32wb0_Gpio_InitPin(whal_Stm32wb0_Gpio_PinCfg cfg)
 {
     uint8_t pin = WHAL_STM32WB0_GPIO_GET_PIN(cfg);
-    size_t portBase;
+    uintptr_t portBase;
     uint8_t pos2;
     size_t mask2, mask1;
 
@@ -70,22 +70,22 @@ static inline whal_Error whal_Stm32wb0_Gpio_InitPin(whal_Stm32wb0_Gpio_PinCfg cf
     mask2 = WHAL_BITMASK(2) << pos2;
     mask1 = 1UL << pin;
 
-    whal_Reg_Update(portBase, GPIO_MODE_REG, mask2,
-                    WHAL_STM32WB0_GPIO_GET_MODE(cfg) << pos2);
-    whal_Reg_Update(portBase, GPIO_SPEED_REG, mask2,
-                    WHAL_STM32WB0_GPIO_GET_SPEED(cfg) << pos2);
-    whal_Reg_Update(portBase, GPIO_PULL_REG, mask2,
-                    WHAL_STM32WB0_GPIO_GET_PULL(cfg) << pos2);
-    whal_Reg_Update(portBase, GPIO_OUTTYPE_REG, mask1,
-                    WHAL_STM32WB0_GPIO_GET_OUTTYPE(cfg) << pin);
+    whal_Reg32_Update(portBase, GPIO_MODE_REG, mask2,
+                      WHAL_STM32WB0_GPIO_GET_MODE(cfg) << pos2);
+    whal_Reg32_Update(portBase, GPIO_SPEED_REG, mask2,
+                      WHAL_STM32WB0_GPIO_GET_SPEED(cfg) << pos2);
+    whal_Reg32_Update(portBase, GPIO_PULL_REG, mask2,
+                      WHAL_STM32WB0_GPIO_GET_PULL(cfg) << pos2);
+    whal_Reg32_Update(portBase, GPIO_OUTTYPE_REG, mask1,
+                      WHAL_STM32WB0_GPIO_GET_OUTTYPE(cfg) << pin);
 
     if (WHAL_STM32WB0_GPIO_GET_MODE(cfg) == WHAL_STM32WB0_GPIO_MODE_ALTFN) {
         uint8_t afPos = (pin & 7) << 2;
 
-        whal_Reg_Update(portBase,
-                        (pin < 8) ? GPIO_ALTFNL_REG : GPIO_ALTFNH_REG,
-                        WHAL_BITMASK(4) << afPos,
-                        WHAL_STM32WB0_GPIO_GET_ALTFN(cfg) << afPos);
+        whal_Reg32_Update(portBase,
+                          (pin < 8) ? GPIO_ALTFNL_REG : GPIO_ALTFNH_REG,
+                          WHAL_BITMASK(4) << afPos,
+                          WHAL_STM32WB0_GPIO_GET_ALTFN(cfg) << afPos);
     }
 
     return WHAL_SUCCESS;
@@ -120,7 +120,8 @@ static whal_Error whal_Stm32wb0_Gpio_SetOrGet(whal_Gpio *gpioDev, size_t idx,
         (const whal_Stm32wb0_Gpio_Cfg *)whal_Stm32wb0_Gpio_Dev.cfg;
     whal_Stm32wb0_Gpio_PinCfg pinCfg;
     uint8_t port, pin;
-    size_t portBase, mask;
+    uintptr_t portBase;
+    uint32_t mask, bit;
     (void)gpioDev;
 
     if (!value || idx >= cfg->pinCount)
@@ -134,10 +135,11 @@ static whal_Error whal_Stm32wb0_Gpio_SetOrGet(whal_Gpio *gpioDev, size_t idx,
     mask = 1UL << pin;
 
     if (set) {
-        whal_Reg_Write(portBase, GPIO_BSRR_REG,
-                       *value ? mask : (mask << GPIO_BSRR_BR_Pos));
+        whal_Reg32_Write(portBase, GPIO_BSRR_REG,
+                         *value ? mask : (mask << GPIO_BSRR_BR_Pos));
     } else {
-        whal_Reg_Get(portBase, GPIO_IDR_REG, mask, pin, value);
+        whal_Reg32_Get(portBase, GPIO_IDR_REG, mask, pin, &bit);
+        *value = bit;
     }
     return WHAL_SUCCESS;
 }

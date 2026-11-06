@@ -245,7 +245,7 @@ constness to the generic struct's `cfg` field.
 ```c
 whal_Error whal_<Plat>_<Type>_<Member>(<params>)
 {
-    size_t base = whal_<Plat>_<Type>_Dev.base;
+    uintptr_t base = whal_<Plat>_<Type>_Dev.base;
     whal_<Plat>_<Type>_Cfg *cfg =
         (whal_<Plat>_<Type>_Cfg *)whal_<Plat>_<Type>_Dev.cfg;
     (void)<dev>;
@@ -267,12 +267,12 @@ the pointer, the default branch validates the pointer and reads base/cfg from it
 whal_Error whal_<Plat>_<Type>_<Member>(<params>)
 {
 #ifdef WHAL_CFG_<PLAT>_<TYPE>_SINGLE_INSTANCE
-    size_t base = whal_<Plat>_<Type>_Dev.base;
+    uintptr_t base = whal_<Plat>_<Type>_Dev.base;
     whal_<Plat>_<Type>_Cfg *cfg =
         (whal_<Plat>_<Type>_Cfg *)whal_<Plat>_<Type>_Dev.cfg;
     (void)<dev>;
 #else
-    size_t base;
+    uintptr_t base;
     whal_<Plat>_<Type>_Cfg *cfg;
 
     if (!<dev> || !<dev>->cfg)
@@ -296,7 +296,7 @@ Notes for the bodies:
   trailing `/* validate the remaining args */` line — there is nothing else to check.
 - Keep `(void)base;` / `(void)cfg;` so the stub compiles with `-Werror` before the bodies are
   filled in. Remove them as soon as `base`/`cfg` get used.
-- Add a `whal_Timeout`-based wait (`WHAL_TIMEOUT_*` or `whal_Reg_ReadPoll`) wherever the real
+- Add a `whal_Timeout`-based wait (`WHAL_TIMEOUT_*` or `whal_Reg32_ReadPoll`) wherever the real
   implementation will poll hardware — never a bare `while`. Leave a TODO noting it.
 
 ---
@@ -379,9 +379,9 @@ takes **`void`** (so the header compiles before any structs/enums are defined), 
 static inline whal_Error whal_<Plat>_<Type>_Enable(void)
 {
     /* TODO: implement — write WHAL_<PLAT>_<TYPE>_BASE registers via
-     * whal_Reg_Update / whal_Reg_Get. Poll any ready bit before returning.
+     * whal_Reg32_Update / whal_Reg32_Get. Poll any ready bit before returning.
      * Clock bring-up runs before the system timer, so a bare do/while on the
-     * ready bit is acceptable there; elsewhere prefer whal_Reg_ReadPoll with a
+     * ready bit is acceptable there; elsewhere prefer whal_Reg32_ReadPoll with a
      * whal_Timeout. */
     return WHAL_SUCCESS;
 }

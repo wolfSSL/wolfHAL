@@ -24,6 +24,7 @@
 
 #include <wolfHAL/error.h>
 #include <stddef.h>
+#include <stdint.h>
 
 /*
  * @file irq.h
@@ -55,7 +56,7 @@ typedef struct {
  * @brief Interrupt controller device instance.
  */
 struct whal_Irq {
-    const size_t base;
+    const uintptr_t base;
     const whal_IrqDriver *driver;
     const void *cfg;
 };

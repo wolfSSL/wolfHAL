@@ -209,11 +209,11 @@ whal_Error whal_Pic32cz_Uart_Init(whal_Uart *uartDev)
 #ifdef WHAL_CFG_PIC32CZ_UART_SINGLE_INSTANCE
     whal_Pic32cz_Uart_Cfg *cfg =
         (whal_Pic32cz_Uart_Cfg *)whal_Pic32cz_Uart_Dev.cfg;
-    size_t base = whal_Pic32cz_Uart_Dev.base;
+    uintptr_t base = whal_Pic32cz_Uart_Dev.base;
     (void)uartDev;
 #else
     whal_Pic32cz_Uart_Cfg *cfg;
-    size_t base;
+    uintptr_t base;
 
     if (!uartDev || !uartDev->cfg) {
         return WHAL_EINVAL;
@@ -224,61 +224,61 @@ whal_Error whal_Pic32cz_Uart_Init(whal_Uart *uartDev)
 #endif
 
     /* Configure CTRLA: internal clock, async mode, LSB first, 16x sampling */
-    whal_Reg_Update(base, USART_CTRLA_REG,
-                    USART_CTRLA_MODE_Msk |
-                    USART_CTRLA_SAMPR_Msk |
-                    USART_CTRLA_TXPO_Msk |
-                    USART_CTRLA_RXPO_Msk |
-                    USART_CTRLA_FORM_Msk |
-                    USART_CTRLA_CMODE_Msk |
-                    USART_CTRLA_DORD_Msk,
-                    whal_SetBits(USART_CTRLA_MODE_Msk, USART_CTRLA_MODE_Pos, USART_CTRLA_MODE_USART_INT_CLK) |
-                    whal_SetBits(USART_CTRLA_SAMPR_Msk, USART_CTRLA_SAMPR_Pos, USART_CTRLA_SAMPR_16X_ARITH) |
-                    whal_SetBits(USART_CTRLA_TXPO_Msk, USART_CTRLA_TXPO_Pos, cfg->txPad) |
-                    whal_SetBits(USART_CTRLA_RXPO_Msk, USART_CTRLA_RXPO_Pos, cfg->rxPad) |
-                    whal_SetBits(USART_CTRLA_FORM_Msk, USART_CTRLA_FORM_Pos, USART_CTRLA_FORM_USART) |
-                    whal_SetBits(USART_CTRLA_CMODE_Msk, USART_CTRLA_CMODE_Pos, 0) |  /* Async mode */
-                    whal_SetBits(USART_CTRLA_DORD_Msk, USART_CTRLA_DORD_Pos, 1));   /* LSB first */
+    whal_Reg32_Update(base, USART_CTRLA_REG,
+                      USART_CTRLA_MODE_Msk |
+                      USART_CTRLA_SAMPR_Msk |
+                      USART_CTRLA_TXPO_Msk |
+                      USART_CTRLA_RXPO_Msk |
+                      USART_CTRLA_FORM_Msk |
+                      USART_CTRLA_CMODE_Msk |
+                      USART_CTRLA_DORD_Msk,
+                      whal_SetBits(USART_CTRLA_MODE_Msk, USART_CTRLA_MODE_Pos, USART_CTRLA_MODE_USART_INT_CLK) |
+                      whal_SetBits(USART_CTRLA_SAMPR_Msk, USART_CTRLA_SAMPR_Pos, USART_CTRLA_SAMPR_16X_ARITH) |
+                      whal_SetBits(USART_CTRLA_TXPO_Msk, USART_CTRLA_TXPO_Pos, cfg->txPad) |
+                      whal_SetBits(USART_CTRLA_RXPO_Msk, USART_CTRLA_RXPO_Pos, cfg->rxPad) |
+                      whal_SetBits(USART_CTRLA_FORM_Msk, USART_CTRLA_FORM_Pos, USART_CTRLA_FORM_USART) |
+                      whal_SetBits(USART_CTRLA_CMODE_Msk, USART_CTRLA_CMODE_Pos, 0) |  /* Async mode */
+                      whal_SetBits(USART_CTRLA_DORD_Msk, USART_CTRLA_DORD_Pos, 1));   /* LSB first */
 
     /* Configure CTRLB: 8-bit char size, 1 stop bit, no parity */
-    whal_Reg_Update(base, USART_CTRLB_REG,
-                    USART_CTRLB_CHSIZE_Msk |
-                    USART_CTRLB_SBMODE_Msk |
-                    USART_CTRLB_PMODE_Msk,
-                    whal_SetBits(USART_CTRLB_CHSIZE_Msk, USART_CTRLB_CHSIZE_Pos, USART_CTRLB_CHSIZE_8BIT) |
-                    whal_SetBits(USART_CTRLB_SBMODE_Msk, USART_CTRLB_SBMODE_Pos, 0) |
-                    whal_SetBits(USART_CTRLB_PMODE_Msk, USART_CTRLB_PMODE_Pos, 0));
+    whal_Reg32_Update(base, USART_CTRLB_REG,
+                      USART_CTRLB_CHSIZE_Msk |
+                      USART_CTRLB_SBMODE_Msk |
+                      USART_CTRLB_PMODE_Msk,
+                      whal_SetBits(USART_CTRLB_CHSIZE_Msk, USART_CTRLB_CHSIZE_Pos, USART_CTRLB_CHSIZE_8BIT) |
+                      whal_SetBits(USART_CTRLB_SBMODE_Msk, USART_CTRLB_SBMODE_Pos, 0) |
+                      whal_SetBits(USART_CTRLB_PMODE_Msk, USART_CTRLB_PMODE_Pos, 0));
 
     /* Wait for CTRLB sync */
-    err = whal_Reg_ReadPoll(base, USART_SYNCBUSY_REG,
+    err = whal_Reg32_ReadPoll(base, USART_SYNCBUSY_REG,
                                     USART_SYNCBUSY_CTRLB_Msk, 0, cfg->timeout);
     if (err != WHAL_SUCCESS)
         return err;
 
     /* Set baud rate */
-    whal_Reg_Update(base, USART_BAUD_REG,
-                    0xFFFF,
-                    cfg->baud);
+    whal_Reg32_Update(base, USART_BAUD_REG,
+                      0xFFFF,
+                      cfg->baud);
 
     /* Enable transmitter and receiver */
-    whal_Reg_Update(base, USART_CTRLB_REG,
-                    USART_CTRLB_TXEN_Msk | USART_CTRLB_RXEN_Msk,
-                    whal_SetBits(USART_CTRLB_TXEN_Msk, USART_CTRLB_TXEN_Pos, 1) |
-                    whal_SetBits(USART_CTRLB_RXEN_Msk, USART_CTRLB_RXEN_Pos, 1));
+    whal_Reg32_Update(base, USART_CTRLB_REG,
+                      USART_CTRLB_TXEN_Msk | USART_CTRLB_RXEN_Msk,
+                      whal_SetBits(USART_CTRLB_TXEN_Msk, USART_CTRLB_TXEN_Pos, 1) |
+                      whal_SetBits(USART_CTRLB_RXEN_Msk, USART_CTRLB_RXEN_Pos, 1));
 
     /* Wait for CTRLB sync */
-    err = whal_Reg_ReadPoll(base, USART_SYNCBUSY_REG,
+    err = whal_Reg32_ReadPoll(base, USART_SYNCBUSY_REG,
                                     USART_SYNCBUSY_CTRLB_Msk, 0, cfg->timeout);
     if (err != WHAL_SUCCESS)
         return err;
 
     /* Enable SERCOM USART */
-    whal_Reg_Update(base, USART_CTRLA_REG,
-                    USART_CTRLA_ENABLE_Msk,
-                    whal_SetBits(USART_CTRLA_ENABLE_Msk, USART_CTRLA_ENABLE_Pos, 1));
+    whal_Reg32_Update(base, USART_CTRLA_REG,
+                      USART_CTRLA_ENABLE_Msk,
+                      whal_SetBits(USART_CTRLA_ENABLE_Msk, USART_CTRLA_ENABLE_Pos, 1));
 
     /* Wait for enable sync */
-    err = whal_Reg_ReadPoll(base, USART_SYNCBUSY_REG,
+    err = whal_Reg32_ReadPoll(base, USART_SYNCBUSY_REG,
                                     USART_SYNCBUSY_ENABLE_Msk, 0, cfg->timeout);
     if (err != WHAL_SUCCESS)
         return err;
@@ -292,10 +292,10 @@ whal_Error whal_Pic32cz_Uart_Deinit(whal_Uart *uartDev)
 #ifdef WHAL_CFG_PIC32CZ_UART_SINGLE_INSTANCE
     whal_Pic32cz_Uart_Cfg *cfg =
         (whal_Pic32cz_Uart_Cfg *)whal_Pic32cz_Uart_Dev.cfg;
-    size_t base = whal_Pic32cz_Uart_Dev.base;
+    uintptr_t base = whal_Pic32cz_Uart_Dev.base;
     (void)uartDev;
 #else
-    size_t base;
+    uintptr_t base;
     whal_Pic32cz_Uart_Cfg *cfg;
 
     if (!uartDev || !uartDev->cfg) {
@@ -307,24 +307,24 @@ whal_Error whal_Pic32cz_Uart_Deinit(whal_Uart *uartDev)
 #endif
 
     /* Disable SERCOM USART */
-    whal_Reg_Update(base, USART_CTRLA_REG,
-                    USART_CTRLA_ENABLE_Msk,
-                    whal_SetBits(USART_CTRLA_ENABLE_Msk, USART_CTRLA_ENABLE_Pos, 0));
+    whal_Reg32_Update(base, USART_CTRLA_REG,
+                      USART_CTRLA_ENABLE_Msk,
+                      whal_SetBits(USART_CTRLA_ENABLE_Msk, USART_CTRLA_ENABLE_Pos, 0));
 
     /* Wait for disable sync */
-    err = whal_Reg_ReadPoll(base, USART_SYNCBUSY_REG,
+    err = whal_Reg32_ReadPoll(base, USART_SYNCBUSY_REG,
                                     USART_SYNCBUSY_ENABLE_Msk, 0, cfg->timeout);
     if (err != WHAL_SUCCESS)
         return err;
 
     /* Disable transmitter and receiver */
-    whal_Reg_Update(base, USART_CTRLB_REG,
-                    USART_CTRLB_TXEN_Msk | USART_CTRLB_RXEN_Msk,
-                    whal_SetBits(USART_CTRLB_TXEN_Msk, USART_CTRLB_TXEN_Pos, 0) |
-                    whal_SetBits(USART_CTRLB_RXEN_Msk, USART_CTRLB_RXEN_Pos, 0));
+    whal_Reg32_Update(base, USART_CTRLB_REG,
+                      USART_CTRLB_TXEN_Msk | USART_CTRLB_RXEN_Msk,
+                      whal_SetBits(USART_CTRLB_TXEN_Msk, USART_CTRLB_TXEN_Pos, 0) |
+                      whal_SetBits(USART_CTRLB_RXEN_Msk, USART_CTRLB_RXEN_Pos, 0));
 
     /* Wait for CTRLB sync */
-    err = whal_Reg_ReadPoll(base, USART_SYNCBUSY_REG,
+    err = whal_Reg32_ReadPoll(base, USART_SYNCBUSY_REG,
                                     USART_SYNCBUSY_CTRLB_Msk, 0, cfg->timeout);
     if (err != WHAL_SUCCESS)
         return err;
@@ -339,14 +339,14 @@ whal_Error whal_Pic32cz_Uart_Send(whal_Uart *uartDev, const void *data, size_t d
 #ifdef WHAL_CFG_PIC32CZ_UART_SINGLE_INSTANCE
     whal_Pic32cz_Uart_Cfg *cfg =
         (whal_Pic32cz_Uart_Cfg *)whal_Pic32cz_Uart_Dev.cfg;
-    size_t base = whal_Pic32cz_Uart_Dev.base;
+    uintptr_t base = whal_Pic32cz_Uart_Dev.base;
     (void)uartDev;
 
     if (!data) {
         return WHAL_EINVAL;
     }
 #else
-    size_t base;
+    uintptr_t base;
     whal_Pic32cz_Uart_Cfg *cfg;
 
     if (!uartDev || !uartDev->cfg || !data) {
@@ -362,27 +362,27 @@ whal_Error whal_Pic32cz_Uart_Send(whal_Uart *uartDev, const void *data, size_t d
 
     for (size_t i = 0; i < dataSz; ++i) {
         /* Wait for data register to be empty */
-        err = whal_Reg_ReadPoll(base, USART_INTFLAG_REG,
-                                USART_INTFLAG_DRE_Msk, USART_INTFLAG_DRE_Msk,
-                                cfg->timeout);
+        err = whal_Reg32_ReadPoll(base, USART_INTFLAG_REG,
+                                  USART_INTFLAG_DRE_Msk, USART_INTFLAG_DRE_Msk,
+                                  cfg->timeout);
         if (err)
             return err;
 
         /* Write data to transmit register */
-        whal_Reg_Write(base, USART_DATA_REG,
+        whal_Reg32_Write(base, USART_DATA_REG,
                         whal_SetBits(USART_DATA_Msk, USART_DATA_Pos, buf[i]));
     }
 
     /* Wait for transmission complete */
-    err = whal_Reg_ReadPoll(base, USART_INTFLAG_REG,
-                            USART_INTFLAG_TXC_Msk, USART_INTFLAG_TXC_Msk,
-                            cfg->timeout);
+    err = whal_Reg32_ReadPoll(base, USART_INTFLAG_REG,
+                              USART_INTFLAG_TXC_Msk, USART_INTFLAG_TXC_Msk,
+                              cfg->timeout);
     if (err)
         return err;
 
     /* Clear TXC flag by writing 1 (W1C: write only this bit, 0 elsewhere) */
-    whal_Reg_Write(base, USART_INTFLAG_REG,
-                   whal_SetBits(USART_INTFLAG_TXC_Msk, USART_INTFLAG_TXC_Pos, 1));
+    whal_Reg32_Write(base, USART_INTFLAG_REG,
+                     whal_SetBits(USART_INTFLAG_TXC_Msk, USART_INTFLAG_TXC_Pos, 1));
 
     return WHAL_SUCCESS;
 }
@@ -393,14 +393,14 @@ whal_Error whal_Pic32cz_Uart_Recv(whal_Uart *uartDev, void *data, size_t dataSz)
 #ifdef WHAL_CFG_PIC32CZ_UART_SINGLE_INSTANCE
     whal_Pic32cz_Uart_Cfg *cfg =
         (whal_Pic32cz_Uart_Cfg *)whal_Pic32cz_Uart_Dev.cfg;
-    size_t base = whal_Pic32cz_Uart_Dev.base;
+    uintptr_t base = whal_Pic32cz_Uart_Dev.base;
     (void)uartDev;
 
     if (!data) {
         return WHAL_EINVAL;
     }
 #else
-    size_t base;
+    uintptr_t base;
     whal_Pic32cz_Uart_Cfg *cfg;
 
     if (!uartDev || !uartDev->cfg || !data) {
@@ -412,30 +412,30 @@ whal_Error whal_Pic32cz_Uart_Recv(whal_Uart *uartDev, void *data, size_t dataSz)
 #endif
 
     for (size_t i = 0; i < dataSz; ++i) {
-        size_t rxData;
-        size_t status;
+        uint32_t rxData;
+        uint32_t status;
         whal_Error err;
 
         /* Wait for receive complete */
-        err = whal_Reg_ReadPoll(base, USART_INTFLAG_REG,
-                                USART_INTFLAG_RXC_Msk, USART_INTFLAG_RXC_Msk,
-                                cfg->timeout);
+        err = whal_Reg32_ReadPoll(base, USART_INTFLAG_REG,
+                                  USART_INTFLAG_RXC_Msk, USART_INTFLAG_RXC_Msk,
+                                  cfg->timeout);
         if (err)
             return err;
 
-        status = (whal_Reg_Read(base, USART_INTFLAG_REG) >>
+        status = (whal_Reg32_Read(base, USART_INTFLAG_REG) >>
                   USART_STATUS_WORD_Pos) & USART_STATUS_ERR_Msk;
 
         /* Read received data */
-        whal_Reg_Get(base, USART_DATA_REG,
-                     USART_DATA_Msk, USART_DATA_Pos, &rxData);
+        whal_Reg32_Get(base, USART_DATA_REG,
+                       USART_DATA_Msk, USART_DATA_Pos, &rxData);
 
         buf[i] = (uint8_t)rxData;
 
         if (status) {
-            whal_Reg_Write(base, USART_INTFLAG_REG,
-                           (status << USART_STATUS_WORD_Pos) |
-                           USART_INTFLAG_ERROR_Msk);
+            whal_Reg32_Write(base, USART_INTFLAG_REG,
+                             (status << USART_STATUS_WORD_Pos) |
+                             USART_INTFLAG_ERROR_Msk);
             return WHAL_EHARDWARE;
         }
     }

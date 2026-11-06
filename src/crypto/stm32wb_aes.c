@@ -126,83 +126,83 @@ const whal_AesCcm  whal_Stm32wb_AesCcm_Dev   = WHAL_CFG_STM32WB_AES_CCM_DEV;
 #define AES_GCMPH_PAYLOAD 0x2
 #define AES_GCMPH_FINAL   0x3
 
-static void WriteKey(size_t base, const uint8_t *key, size_t keySz)
+static void WriteKey(uintptr_t base, const uint8_t *key, size_t keySz)
 {
     const uint8_t *k = key;
     if (keySz == 32) {
-        whal_Reg_Write(base, AES_KEYR7_REG, whal_LoadBe32(k));
-        whal_Reg_Write(base, AES_KEYR6_REG, whal_LoadBe32(k + 4));
-        whal_Reg_Write(base, AES_KEYR5_REG, whal_LoadBe32(k + 8));
-        whal_Reg_Write(base, AES_KEYR4_REG, whal_LoadBe32(k + 12));
+        whal_Reg32_Write(base, AES_KEYR7_REG, whal_LoadBe32(k));
+        whal_Reg32_Write(base, AES_KEYR6_REG, whal_LoadBe32(k + 4));
+        whal_Reg32_Write(base, AES_KEYR5_REG, whal_LoadBe32(k + 8));
+        whal_Reg32_Write(base, AES_KEYR4_REG, whal_LoadBe32(k + 12));
         k += 16;
     }
-    whal_Reg_Write(base, AES_KEYR3_REG, whal_LoadBe32(k));
-    whal_Reg_Write(base, AES_KEYR2_REG, whal_LoadBe32(k + 4));
-    whal_Reg_Write(base, AES_KEYR1_REG, whal_LoadBe32(k + 8));
-    whal_Reg_Write(base, AES_KEYR0_REG, whal_LoadBe32(k + 12));
+    whal_Reg32_Write(base, AES_KEYR3_REG, whal_LoadBe32(k));
+    whal_Reg32_Write(base, AES_KEYR2_REG, whal_LoadBe32(k + 4));
+    whal_Reg32_Write(base, AES_KEYR1_REG, whal_LoadBe32(k + 8));
+    whal_Reg32_Write(base, AES_KEYR0_REG, whal_LoadBe32(k + 12));
 }
 
-static void WriteIv(size_t base, const uint8_t *iv)
+static void WriteIv(uintptr_t base, const uint8_t *iv)
 {
-    whal_Reg_Write(base, AES_IVR3_REG, whal_LoadBe32(iv));
-    whal_Reg_Write(base, AES_IVR2_REG, whal_LoadBe32(iv + 4));
-    whal_Reg_Write(base, AES_IVR1_REG, whal_LoadBe32(iv + 8));
-    whal_Reg_Write(base, AES_IVR0_REG, whal_LoadBe32(iv + 12));
+    whal_Reg32_Write(base, AES_IVR3_REG, whal_LoadBe32(iv));
+    whal_Reg32_Write(base, AES_IVR2_REG, whal_LoadBe32(iv + 4));
+    whal_Reg32_Write(base, AES_IVR1_REG, whal_LoadBe32(iv + 8));
+    whal_Reg32_Write(base, AES_IVR0_REG, whal_LoadBe32(iv + 12));
 }
 
 /* Wipe key and IV/counter material from the peripheral registers. Callers must
  * clear EN first (key registers are only writable while disabled). */
-static void ZeroKeyIv(size_t base)
+static void ZeroKeyIv(uintptr_t base)
 {
-    whal_Reg_Write(base, AES_KEYR7_REG, 0);
-    whal_Reg_Write(base, AES_KEYR6_REG, 0);
-    whal_Reg_Write(base, AES_KEYR5_REG, 0);
-    whal_Reg_Write(base, AES_KEYR4_REG, 0);
-    whal_Reg_Write(base, AES_KEYR3_REG, 0);
-    whal_Reg_Write(base, AES_KEYR2_REG, 0);
-    whal_Reg_Write(base, AES_KEYR1_REG, 0);
-    whal_Reg_Write(base, AES_KEYR0_REG, 0);
-    whal_Reg_Write(base, AES_IVR3_REG, 0);
-    whal_Reg_Write(base, AES_IVR2_REG, 0);
-    whal_Reg_Write(base, AES_IVR1_REG, 0);
-    whal_Reg_Write(base, AES_IVR0_REG, 0);
+    whal_Reg32_Write(base, AES_KEYR7_REG, 0);
+    whal_Reg32_Write(base, AES_KEYR6_REG, 0);
+    whal_Reg32_Write(base, AES_KEYR5_REG, 0);
+    whal_Reg32_Write(base, AES_KEYR4_REG, 0);
+    whal_Reg32_Write(base, AES_KEYR3_REG, 0);
+    whal_Reg32_Write(base, AES_KEYR2_REG, 0);
+    whal_Reg32_Write(base, AES_KEYR1_REG, 0);
+    whal_Reg32_Write(base, AES_KEYR0_REG, 0);
+    whal_Reg32_Write(base, AES_IVR3_REG, 0);
+    whal_Reg32_Write(base, AES_IVR2_REG, 0);
+    whal_Reg32_Write(base, AES_IVR1_REG, 0);
+    whal_Reg32_Write(base, AES_IVR0_REG, 0);
 }
 
-static void WriteBlock(size_t base, const uint8_t *in)
+static void WriteBlock(uintptr_t base, const uint8_t *in)
 {
-    whal_Reg_Write(base, AES_DINR_REG, whal_LoadBe32(in));
-    whal_Reg_Write(base, AES_DINR_REG, whal_LoadBe32(in + 4));
-    whal_Reg_Write(base, AES_DINR_REG, whal_LoadBe32(in + 8));
-    whal_Reg_Write(base, AES_DINR_REG, whal_LoadBe32(in + 12));
+    whal_Reg32_Write(base, AES_DINR_REG, whal_LoadBe32(in));
+    whal_Reg32_Write(base, AES_DINR_REG, whal_LoadBe32(in + 4));
+    whal_Reg32_Write(base, AES_DINR_REG, whal_LoadBe32(in + 8));
+    whal_Reg32_Write(base, AES_DINR_REG, whal_LoadBe32(in + 12));
 }
 
-static void ReadBlock(size_t base, uint8_t *out)
+static void ReadBlock(uintptr_t base, uint8_t *out)
 {
-    whal_StoreBe32(out,      whal_Reg_Read(base, AES_DOUTR_REG));
-    whal_StoreBe32(out + 4,  whal_Reg_Read(base, AES_DOUTR_REG));
-    whal_StoreBe32(out + 8,  whal_Reg_Read(base, AES_DOUTR_REG));
-    whal_StoreBe32(out + 12, whal_Reg_Read(base, AES_DOUTR_REG));
+    whal_StoreBe32(out,      whal_Reg32_Read(base, AES_DOUTR_REG));
+    whal_StoreBe32(out + 4,  whal_Reg32_Read(base, AES_DOUTR_REG));
+    whal_StoreBe32(out + 8,  whal_Reg32_Read(base, AES_DOUTR_REG));
+    whal_StoreBe32(out + 12, whal_Reg32_Read(base, AES_DOUTR_REG));
 }
 
 /* Discard any output block left in DOUTR. */
-static void DrainOutput(size_t base)
+static void DrainOutput(uintptr_t base)
 {
-    (void)whal_Reg_Read(base, AES_DOUTR_REG);
-    (void)whal_Reg_Read(base, AES_DOUTR_REG);
-    (void)whal_Reg_Read(base, AES_DOUTR_REG);
-    (void)whal_Reg_Read(base, AES_DOUTR_REG);
+    (void)whal_Reg32_Read(base, AES_DOUTR_REG);
+    (void)whal_Reg32_Read(base, AES_DOUTR_REG);
+    (void)whal_Reg32_Read(base, AES_DOUTR_REG);
+    (void)whal_Reg32_Read(base, AES_DOUTR_REG);
 }
 
-static whal_Error WaitForCCF(size_t base, whal_Timeout *timeout)
+static whal_Error WaitForCCF(uintptr_t base, whal_Timeout *timeout)
 {
     whal_Error err;
-    err = whal_Reg_ReadPoll(base, AES_SR_REG, AES_SR_CCF_Msk,
-                            AES_SR_CCF_Msk, timeout);
+    err = whal_Reg32_ReadPoll(base, AES_SR_REG, AES_SR_CCF_Msk,
+                              AES_SR_CCF_Msk, timeout);
     if (err) {
         DrainOutput(base);
         return err;
     }
-    whal_Reg_Update(base, AES_CR_REG, AES_CR_CCFC_Msk, AES_CR_CCFC_Msk);
+    whal_Reg32_Update(base, AES_CR_REG, AES_CR_CCFC_Msk, AES_CR_CCFC_Msk);
     return WHAL_SUCCESS;
 }
 
@@ -212,7 +212,7 @@ static whal_Error ProcessBlockCipher(whal_Crypto *cryptoDev,
 {
     const whal_Stm32wb_Aes_Cfg *cfg =
         (const whal_Stm32wb_Aes_Cfg *)cryptoDev->cfg;
-    size_t base = cryptoDev->base;
+    uintptr_t base = cryptoDev->base;
     whal_Error err;
     size_t i;
 
@@ -220,7 +220,7 @@ static whal_Error ProcessBlockCipher(whal_Crypto *cryptoDev,
         return WHAL_SUCCESS;
 
     if (!in || !out || (sz & 0xF) != 0) {
-        whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
+        whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
         ZeroKeyIv(base);
         return WHAL_EINVAL;
     }
@@ -229,7 +229,7 @@ static whal_Error ProcessBlockCipher(whal_Crypto *cryptoDev,
         WriteBlock(base, in + i);
         err = WaitForCCF(base, cfg->timeout);
         if (err) {
-            whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
+            whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
             ZeroKeyIv(base);
             return err;
         }
@@ -241,7 +241,7 @@ static whal_Error ProcessBlockCipher(whal_Crypto *cryptoDev,
 
 static void DisableAes(whal_Crypto *cryptoDev)
 {
-    whal_Reg_Update(cryptoDev->base, AES_CR_REG, AES_CR_EN_Msk, 0);
+    whal_Reg32_Update(cryptoDev->base, AES_CR_REG, AES_CR_EN_Msk, 0);
 }
 
 static whal_Error StopBlockCipher(whal_Crypto *cryptoDev)
@@ -323,7 +323,7 @@ whal_Error whal_Stm32wb_AesEcb_Oneshot(whal_AesEcb *dev, whal_Crypto_Dir dir,
                               const void *in, void *out, size_t sz)
 {
     whal_Crypto *crypto = whal_Stm32wb_AesEcb_Dev.crypto;
-    size_t base = crypto->base;
+    uintptr_t base = crypto->base;
     size_t mode;
     size_t keySizeBit;
     whal_Error err;
@@ -340,22 +340,22 @@ whal_Error whal_Stm32wb_AesEcb_Oneshot(whal_AesEcb *dev, whal_Crypto_Dir dir,
     mode = (dir == WHAL_CRYPTO_ENCRYPT)
         ? AES_MODE_ENCRYPT : AES_MODE_KEYDERIV_DECRYPT;
 
-    whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
+    whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
 
-    whal_Reg_Update(base, AES_CR_REG,
-                    AES_CR_MODE_Msk | AES_CR_CHMOD_Msk | AES_CR_CHMOD2_Msk |
-                    AES_CR_DATATYPE_Msk | AES_CR_KEYSIZE_Msk,
-                    whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos, mode) |
-                    whal_SetBits(AES_CR_CHMOD_Msk, AES_CR_CHMOD_Pos,
-                                 AES_CHMOD_ECB) |
-                    whal_SetBits(AES_CR_DATATYPE_Msk, AES_CR_DATATYPE_Pos,
-                                 AES_DATATYPE_NONE) |
-                    whal_SetBits(AES_CR_KEYSIZE_Msk, AES_CR_KEYSIZE_Pos,
-                                 keySizeBit));
+    whal_Reg32_Update(base, AES_CR_REG,
+                      AES_CR_MODE_Msk | AES_CR_CHMOD_Msk | AES_CR_CHMOD2_Msk |
+                      AES_CR_DATATYPE_Msk | AES_CR_KEYSIZE_Msk,
+                      whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos, mode) |
+                      whal_SetBits(AES_CR_CHMOD_Msk, AES_CR_CHMOD_Pos,
+                                   AES_CHMOD_ECB) |
+                      whal_SetBits(AES_CR_DATATYPE_Msk, AES_CR_DATATYPE_Pos,
+                                   AES_DATATYPE_NONE) |
+                      whal_SetBits(AES_CR_KEYSIZE_Msk, AES_CR_KEYSIZE_Pos,
+                                   keySizeBit));
 
     WriteKey(base, key, keySz);
 
-    whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
+    whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
 
     err = ProcessBlockCipher(crypto, in, out, sz);
     DisableAes(crypto);
@@ -367,7 +367,7 @@ whal_Error whal_Stm32wb_AesEcb_Start(whal_AesEcb *dev, whal_Crypto_Dir dir,
                             const void *key, size_t keySz)
 {
     whal_Crypto *crypto = whal_Stm32wb_AesEcb_Dev.crypto;
-    size_t base = crypto->base;
+    uintptr_t base = crypto->base;
     size_t mode;
     size_t keySizeBit;
 
@@ -383,23 +383,23 @@ whal_Error whal_Stm32wb_AesEcb_Start(whal_AesEcb *dev, whal_Crypto_Dir dir,
     mode = (dir == WHAL_CRYPTO_ENCRYPT)
         ? AES_MODE_ENCRYPT : AES_MODE_KEYDERIV_DECRYPT;
 
-    whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
+    whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
     ZeroKeyIv(base);
 
-    whal_Reg_Update(base, AES_CR_REG,
-                    AES_CR_MODE_Msk | AES_CR_CHMOD_Msk | AES_CR_CHMOD2_Msk |
-                    AES_CR_DATATYPE_Msk | AES_CR_KEYSIZE_Msk,
-                    whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos, mode) |
-                    whal_SetBits(AES_CR_CHMOD_Msk, AES_CR_CHMOD_Pos,
-                                 AES_CHMOD_ECB) |
-                    whal_SetBits(AES_CR_DATATYPE_Msk, AES_CR_DATATYPE_Pos,
-                                 AES_DATATYPE_NONE) |
-                    whal_SetBits(AES_CR_KEYSIZE_Msk, AES_CR_KEYSIZE_Pos,
-                                 keySizeBit));
+    whal_Reg32_Update(base, AES_CR_REG,
+                      AES_CR_MODE_Msk | AES_CR_CHMOD_Msk | AES_CR_CHMOD2_Msk |
+                      AES_CR_DATATYPE_Msk | AES_CR_KEYSIZE_Msk,
+                      whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos, mode) |
+                      whal_SetBits(AES_CR_CHMOD_Msk, AES_CR_CHMOD_Pos,
+                                   AES_CHMOD_ECB) |
+                      whal_SetBits(AES_CR_DATATYPE_Msk, AES_CR_DATATYPE_Pos,
+                                   AES_DATATYPE_NONE) |
+                      whal_SetBits(AES_CR_KEYSIZE_Msk, AES_CR_KEYSIZE_Pos,
+                                   keySizeBit));
 
     WriteKey(base, key, keySz);
 
-    whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
+    whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
 
     return WHAL_SUCCESS;
 }
@@ -433,7 +433,7 @@ whal_Error whal_Stm32wb_AesCbc_Oneshot(whal_AesCbc *dev, whal_Crypto_Dir dir,
                               const void *in, void *out, size_t sz)
 {
     whal_Crypto *crypto = whal_Stm32wb_AesCbc_Dev.crypto;
-    size_t base = crypto->base;
+    uintptr_t base = crypto->base;
     size_t mode;
     size_t keySizeBit;
     whal_Error err;
@@ -450,23 +450,23 @@ whal_Error whal_Stm32wb_AesCbc_Oneshot(whal_AesCbc *dev, whal_Crypto_Dir dir,
     mode = (dir == WHAL_CRYPTO_ENCRYPT)
         ? AES_MODE_ENCRYPT : AES_MODE_KEYDERIV_DECRYPT;
 
-    whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
+    whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
 
-    whal_Reg_Update(base, AES_CR_REG,
-                    AES_CR_MODE_Msk | AES_CR_CHMOD_Msk | AES_CR_CHMOD2_Msk |
-                    AES_CR_DATATYPE_Msk | AES_CR_KEYSIZE_Msk,
-                    whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos, mode) |
-                    whal_SetBits(AES_CR_CHMOD_Msk, AES_CR_CHMOD_Pos,
-                                 AES_CHMOD_CBC) |
-                    whal_SetBits(AES_CR_DATATYPE_Msk, AES_CR_DATATYPE_Pos,
-                                 AES_DATATYPE_NONE) |
-                    whal_SetBits(AES_CR_KEYSIZE_Msk, AES_CR_KEYSIZE_Pos,
-                                 keySizeBit));
+    whal_Reg32_Update(base, AES_CR_REG,
+                      AES_CR_MODE_Msk | AES_CR_CHMOD_Msk | AES_CR_CHMOD2_Msk |
+                      AES_CR_DATATYPE_Msk | AES_CR_KEYSIZE_Msk,
+                      whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos, mode) |
+                      whal_SetBits(AES_CR_CHMOD_Msk, AES_CR_CHMOD_Pos,
+                                   AES_CHMOD_CBC) |
+                      whal_SetBits(AES_CR_DATATYPE_Msk, AES_CR_DATATYPE_Pos,
+                                   AES_DATATYPE_NONE) |
+                      whal_SetBits(AES_CR_KEYSIZE_Msk, AES_CR_KEYSIZE_Pos,
+                                   keySizeBit));
 
     WriteKey(base, key, keySz);
     WriteIv(base, iv);
 
-    whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
+    whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
 
     err = ProcessBlockCipher(crypto, in, out, sz);
     DisableAes(crypto);
@@ -479,7 +479,7 @@ whal_Error whal_Stm32wb_AesCbc_Start(whal_AesCbc *dev, whal_Crypto_Dir dir,
                             const void *iv)
 {
     whal_Crypto *crypto = whal_Stm32wb_AesCbc_Dev.crypto;
-    size_t base = crypto->base;
+    uintptr_t base = crypto->base;
     size_t mode;
     size_t keySizeBit;
 
@@ -495,24 +495,24 @@ whal_Error whal_Stm32wb_AesCbc_Start(whal_AesCbc *dev, whal_Crypto_Dir dir,
     mode = (dir == WHAL_CRYPTO_ENCRYPT)
         ? AES_MODE_ENCRYPT : AES_MODE_KEYDERIV_DECRYPT;
 
-    whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
+    whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
     ZeroKeyIv(base);
 
-    whal_Reg_Update(base, AES_CR_REG,
-                    AES_CR_MODE_Msk | AES_CR_CHMOD_Msk | AES_CR_CHMOD2_Msk |
-                    AES_CR_DATATYPE_Msk | AES_CR_KEYSIZE_Msk,
-                    whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos, mode) |
-                    whal_SetBits(AES_CR_CHMOD_Msk, AES_CR_CHMOD_Pos,
-                                 AES_CHMOD_CBC) |
-                    whal_SetBits(AES_CR_DATATYPE_Msk, AES_CR_DATATYPE_Pos,
-                                 AES_DATATYPE_NONE) |
-                    whal_SetBits(AES_CR_KEYSIZE_Msk, AES_CR_KEYSIZE_Pos,
-                                 keySizeBit));
+    whal_Reg32_Update(base, AES_CR_REG,
+                      AES_CR_MODE_Msk | AES_CR_CHMOD_Msk | AES_CR_CHMOD2_Msk |
+                      AES_CR_DATATYPE_Msk | AES_CR_KEYSIZE_Msk,
+                      whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos, mode) |
+                      whal_SetBits(AES_CR_CHMOD_Msk, AES_CR_CHMOD_Pos,
+                                   AES_CHMOD_CBC) |
+                      whal_SetBits(AES_CR_DATATYPE_Msk, AES_CR_DATATYPE_Pos,
+                                   AES_DATATYPE_NONE) |
+                      whal_SetBits(AES_CR_KEYSIZE_Msk, AES_CR_KEYSIZE_Pos,
+                                   keySizeBit));
 
     WriteKey(base, key, keySz);
     WriteIv(base, iv);
 
-    whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
+    whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
 
     return WHAL_SUCCESS;
 }
@@ -546,7 +546,7 @@ whal_Error whal_Stm32wb_AesCtr_Oneshot(whal_AesCtr *dev, whal_Crypto_Dir dir,
                               const void *in, void *out, size_t sz)
 {
     whal_Crypto *crypto = whal_Stm32wb_AesCtr_Dev.crypto;
-    size_t base = crypto->base;
+    uintptr_t base = crypto->base;
     size_t keySizeBit;
     whal_Error err;
 
@@ -560,24 +560,24 @@ whal_Error whal_Stm32wb_AesCtr_Oneshot(whal_AesCtr *dev, whal_Crypto_Dir dir,
 
     keySizeBit = (keySz == 32) ? 1 : 0;
 
-    whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
+    whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
 
-    whal_Reg_Update(base, AES_CR_REG,
-                    AES_CR_MODE_Msk | AES_CR_CHMOD_Msk | AES_CR_CHMOD2_Msk |
-                    AES_CR_DATATYPE_Msk | AES_CR_KEYSIZE_Msk,
-                    whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
-                                 AES_MODE_ENCRYPT) |
-                    whal_SetBits(AES_CR_CHMOD_Msk, AES_CR_CHMOD_Pos,
-                                 AES_CHMOD_CTR) |
-                    whal_SetBits(AES_CR_DATATYPE_Msk, AES_CR_DATATYPE_Pos,
-                                 AES_DATATYPE_NONE) |
-                    whal_SetBits(AES_CR_KEYSIZE_Msk, AES_CR_KEYSIZE_Pos,
-                                 keySizeBit));
+    whal_Reg32_Update(base, AES_CR_REG,
+                      AES_CR_MODE_Msk | AES_CR_CHMOD_Msk | AES_CR_CHMOD2_Msk |
+                      AES_CR_DATATYPE_Msk | AES_CR_KEYSIZE_Msk,
+                      whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
+                                   AES_MODE_ENCRYPT) |
+                      whal_SetBits(AES_CR_CHMOD_Msk, AES_CR_CHMOD_Pos,
+                                   AES_CHMOD_CTR) |
+                      whal_SetBits(AES_CR_DATATYPE_Msk, AES_CR_DATATYPE_Pos,
+                                   AES_DATATYPE_NONE) |
+                      whal_SetBits(AES_CR_KEYSIZE_Msk, AES_CR_KEYSIZE_Pos,
+                                   keySizeBit));
 
     WriteKey(base, key, keySz);
     WriteIv(base, iv);
 
-    whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
+    whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
 
     err = ProcessBlockCipher(crypto, in, out, sz);
     DisableAes(crypto);
@@ -590,7 +590,7 @@ whal_Error whal_Stm32wb_AesCtr_Start(whal_AesCtr *dev, whal_Crypto_Dir dir,
                             const void *iv)
 {
     whal_Crypto *crypto = whal_Stm32wb_AesCtr_Dev.crypto;
-    size_t base = crypto->base;
+    uintptr_t base = crypto->base;
     size_t keySizeBit;
 
     (void)dev;
@@ -603,25 +603,25 @@ whal_Error whal_Stm32wb_AesCtr_Start(whal_AesCtr *dev, whal_Crypto_Dir dir,
 
     keySizeBit = (keySz == 32) ? 1 : 0;
 
-    whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
+    whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
     ZeroKeyIv(base);
 
-    whal_Reg_Update(base, AES_CR_REG,
-                    AES_CR_MODE_Msk | AES_CR_CHMOD_Msk | AES_CR_CHMOD2_Msk |
-                    AES_CR_DATATYPE_Msk | AES_CR_KEYSIZE_Msk,
-                    whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
-                                 AES_MODE_ENCRYPT) |
-                    whal_SetBits(AES_CR_CHMOD_Msk, AES_CR_CHMOD_Pos,
-                                 AES_CHMOD_CTR) |
-                    whal_SetBits(AES_CR_DATATYPE_Msk, AES_CR_DATATYPE_Pos,
-                                 AES_DATATYPE_NONE) |
-                    whal_SetBits(AES_CR_KEYSIZE_Msk, AES_CR_KEYSIZE_Pos,
-                                 keySizeBit));
+    whal_Reg32_Update(base, AES_CR_REG,
+                      AES_CR_MODE_Msk | AES_CR_CHMOD_Msk | AES_CR_CHMOD2_Msk |
+                      AES_CR_DATATYPE_Msk | AES_CR_KEYSIZE_Msk,
+                      whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
+                                   AES_MODE_ENCRYPT) |
+                      whal_SetBits(AES_CR_CHMOD_Msk, AES_CR_CHMOD_Pos,
+                                   AES_CHMOD_CTR) |
+                      whal_SetBits(AES_CR_DATATYPE_Msk, AES_CR_DATATYPE_Pos,
+                                   AES_DATATYPE_NONE) |
+                      whal_SetBits(AES_CR_KEYSIZE_Msk, AES_CR_KEYSIZE_Pos,
+                                   keySizeBit));
 
     WriteKey(base, key, keySz);
     WriteIv(base, iv);
 
-    whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
+    whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
 
     return WHAL_SUCCESS;
 }
@@ -659,7 +659,7 @@ whal_Error whal_Stm32wb_AesGcm_Oneshot(whal_AesGcm *dev, whal_Crypto_Dir dir,
     whal_Crypto *crypto = whal_Stm32wb_AesGcm_Dev.crypto;
     const whal_Stm32wb_Aes_Cfg *cfg =
         (const whal_Stm32wb_Aes_Cfg *)crypto->cfg;
-    size_t base = crypto->base;
+    uintptr_t base = crypto->base;
     const uint8_t *ivBytes = (const uint8_t *)iv;
     const uint8_t *aadBytes = (const uint8_t *)aad;
     size_t keySizeBit;
@@ -693,31 +693,31 @@ whal_Error whal_Stm32wb_AesGcm_Oneshot(whal_AesGcm *dev, whal_Crypto_Dir dir,
     keySizeBit = (keySz == 32) ? 1 : 0;
 
     /* Init phase */
-    whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
+    whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
 
-    whal_Reg_Update(base, AES_CR_REG,
-                    AES_CR_MODE_Msk | AES_CR_CHMOD_Msk | AES_CR_CHMOD2_Msk |
-                    AES_CR_DATATYPE_Msk | AES_CR_KEYSIZE_Msk |
-                    AES_CR_GCMPH_Msk | AES_CR_NPBLB_Msk,
-                    whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
-                                 AES_MODE_ENCRYPT) |
-                    whal_SetBits(AES_CR_CHMOD_Msk, AES_CR_CHMOD_Pos,
-                                 AES_CHMOD_GCM) |
-                    whal_SetBits(AES_CR_DATATYPE_Msk, AES_CR_DATATYPE_Pos,
-                                 AES_DATATYPE_NONE) |
-                    whal_SetBits(AES_CR_KEYSIZE_Msk, AES_CR_KEYSIZE_Pos,
-                                 keySizeBit) |
-                    whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
-                                 AES_GCMPH_INIT));
+    whal_Reg32_Update(base, AES_CR_REG,
+                      AES_CR_MODE_Msk | AES_CR_CHMOD_Msk | AES_CR_CHMOD2_Msk |
+                      AES_CR_DATATYPE_Msk | AES_CR_KEYSIZE_Msk |
+                      AES_CR_GCMPH_Msk | AES_CR_NPBLB_Msk,
+                      whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
+                                   AES_MODE_ENCRYPT) |
+                      whal_SetBits(AES_CR_CHMOD_Msk, AES_CR_CHMOD_Pos,
+                                   AES_CHMOD_GCM) |
+                      whal_SetBits(AES_CR_DATATYPE_Msk, AES_CR_DATATYPE_Pos,
+                                   AES_DATATYPE_NONE) |
+                      whal_SetBits(AES_CR_KEYSIZE_Msk, AES_CR_KEYSIZE_Pos,
+                                   keySizeBit) |
+                      whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
+                                   AES_GCMPH_INIT));
 
     WriteKey(base, key, keySz);
 
-    whal_Reg_Write(base, AES_IVR3_REG, whal_LoadBe32(ivBytes));
-    whal_Reg_Write(base, AES_IVR2_REG, whal_LoadBe32(ivBytes + 4));
-    whal_Reg_Write(base, AES_IVR1_REG, whal_LoadBe32(ivBytes + 8));
-    whal_Reg_Write(base, AES_IVR0_REG, 0x00000002);
+    whal_Reg32_Write(base, AES_IVR3_REG, whal_LoadBe32(ivBytes));
+    whal_Reg32_Write(base, AES_IVR2_REG, whal_LoadBe32(ivBytes + 4));
+    whal_Reg32_Write(base, AES_IVR1_REG, whal_LoadBe32(ivBytes + 8));
+    whal_Reg32_Write(base, AES_IVR0_REG, 0x00000002);
 
-    whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
+    whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
 
     err = WaitForCCF(base, cfg->timeout);
     if (err)
@@ -725,14 +725,14 @@ whal_Error whal_Stm32wb_AesGcm_Oneshot(whal_AesGcm *dev, whal_Crypto_Dir dir,
 
     /* Header phase (AAD) */
     if (aadSz > 0) {
-        whal_Reg_Update(base, AES_CR_REG,
-                        AES_CR_MODE_Msk | AES_CR_GCMPH_Msk,
-                        whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
-                                     AES_MODE_ENCRYPT) |
-                        whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
-                                     AES_GCMPH_HEADER));
+        whal_Reg32_Update(base, AES_CR_REG,
+                          AES_CR_MODE_Msk | AES_CR_GCMPH_Msk,
+                          whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
+                                       AES_MODE_ENCRYPT) |
+                          whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
+                                       AES_GCMPH_HEADER));
 
-        whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
+        whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
 
         for (i = 0; i < aadSz; i += 16) {
             const uint8_t *blkAad = aadBytes + i;
@@ -759,15 +759,15 @@ whal_Error whal_Stm32wb_AesGcm_Oneshot(whal_AesGcm *dev, whal_Crypto_Dir dir,
         mode = (dir == WHAL_CRYPTO_ENCRYPT)
             ? AES_MODE_ENCRYPT : AES_MODE_DECRYPT;
 
-        whal_Reg_Update(base, AES_CR_REG,
-                        AES_CR_MODE_Msk | AES_CR_GCMPH_Msk,
-                        whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
-                                     mode) |
-                        whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
-                                     AES_GCMPH_PAYLOAD));
+        whal_Reg32_Update(base, AES_CR_REG,
+                          AES_CR_MODE_Msk | AES_CR_GCMPH_Msk,
+                          whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
+                                       mode) |
+                          whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
+                                       AES_GCMPH_PAYLOAD));
 
         if (aadSz == 0)
-            whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
+            whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
 
         for (i = 0; i < sz; i += 16) {
             const uint8_t *inBlk = (const uint8_t *)in + i;
@@ -780,10 +780,10 @@ whal_Error whal_Stm32wb_AesGcm_Oneshot(whal_AesGcm *dev, whal_Crypto_Dir dir,
                 WriteBlock(base, inBlk);
             } else {
                 if (mode == AES_MODE_ENCRYPT) {
-                    whal_Reg_Update(base, AES_CR_REG, AES_CR_NPBLB_Msk,
-                                    whal_SetBits(AES_CR_NPBLB_Msk,
-                                                 AES_CR_NPBLB_Pos,
-                                                 16 - remain));
+                    whal_Reg32_Update(base, AES_CR_REG, AES_CR_NPBLB_Msk,
+                                      whal_SetBits(AES_CR_NPBLB_Msk,
+                                                   AES_CR_NPBLB_Pos,
+                                                   16 - remain));
                 }
                 for (j = 0; j < remain; j++)
                     block[j] = inBlk[j];
@@ -805,22 +805,22 @@ whal_Error whal_Stm32wb_AesGcm_Oneshot(whal_AesGcm *dev, whal_Crypto_Dir dir,
     }
 
     /* Final phase (tag) */
-    whal_Reg_Update(base, AES_CR_REG,
-                    AES_CR_MODE_Msk | AES_CR_GCMPH_Msk,
-                    whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
-                                 AES_MODE_ENCRYPT) |
-                    whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
-                                 AES_GCMPH_FINAL));
+    whal_Reg32_Update(base, AES_CR_REG,
+                      AES_CR_MODE_Msk | AES_CR_GCMPH_Msk,
+                      whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
+                                   AES_MODE_ENCRYPT) |
+                      whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
+                                   AES_GCMPH_FINAL));
 
     if (aadSz == 0 && sz == 0)
-        whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
+        whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
 
     aadBits = (uint64_t)aadSz * 8;
     payloadBits = (uint64_t)sz * 8;
-    whal_Reg_Write(base, AES_DINR_REG, (uint32_t)(aadBits >> 32));
-    whal_Reg_Write(base, AES_DINR_REG, (uint32_t)aadBits);
-    whal_Reg_Write(base, AES_DINR_REG, (uint32_t)(payloadBits >> 32));
-    whal_Reg_Write(base, AES_DINR_REG, (uint32_t)payloadBits);
+    whal_Reg32_Write(base, AES_DINR_REG, (uint32_t)(aadBits >> 32));
+    whal_Reg32_Write(base, AES_DINR_REG, (uint32_t)aadBits);
+    whal_Reg32_Write(base, AES_DINR_REG, (uint32_t)(payloadBits >> 32));
+    whal_Reg32_Write(base, AES_DINR_REG, (uint32_t)payloadBits);
 
     err = WaitForCCF(base, cfg->timeout);
     if (err)
@@ -832,7 +832,7 @@ whal_Error whal_Stm32wb_AesGcm_Oneshot(whal_AesGcm *dev, whal_Crypto_Dir dir,
         ((uint8_t *)tag)[i] = tagBuf[i];
 
 cleanup:
-    whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
+    whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
     ZeroKeyIv(base);
     return err;
 }
@@ -845,7 +845,7 @@ whal_Error whal_Stm32wb_AesGcm_Start(whal_AesGcm *dev, whal_Crypto_Dir dir,
     whal_Crypto *crypto = whal_Stm32wb_AesGcm_Dev.crypto;
     const whal_Stm32wb_Aes_Cfg *cfg =
         (const whal_Stm32wb_Aes_Cfg *)crypto->cfg;
-    size_t base = crypto->base;
+    uintptr_t base = crypto->base;
     const uint8_t *ivBytes = (const uint8_t *)iv;
     const uint8_t *aadBytes = (const uint8_t *)aad;
     size_t keySizeBit;
@@ -870,31 +870,31 @@ whal_Error whal_Stm32wb_AesGcm_Start(whal_AesGcm *dev, whal_Crypto_Dir dir,
     keySizeBit = (keySz == 32) ? 1 : 0;
 
     /* Init phase */
-    whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
+    whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
 
-    whal_Reg_Update(base, AES_CR_REG,
-                    AES_CR_MODE_Msk | AES_CR_CHMOD_Msk | AES_CR_CHMOD2_Msk |
-                    AES_CR_DATATYPE_Msk | AES_CR_KEYSIZE_Msk |
-                    AES_CR_GCMPH_Msk | AES_CR_NPBLB_Msk,
-                    whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
-                                 AES_MODE_ENCRYPT) |
-                    whal_SetBits(AES_CR_CHMOD_Msk, AES_CR_CHMOD_Pos,
-                                 AES_CHMOD_GCM) |
-                    whal_SetBits(AES_CR_DATATYPE_Msk, AES_CR_DATATYPE_Pos,
-                                 AES_DATATYPE_NONE) |
-                    whal_SetBits(AES_CR_KEYSIZE_Msk, AES_CR_KEYSIZE_Pos,
-                                 keySizeBit) |
-                    whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
-                                 AES_GCMPH_INIT));
+    whal_Reg32_Update(base, AES_CR_REG,
+                      AES_CR_MODE_Msk | AES_CR_CHMOD_Msk | AES_CR_CHMOD2_Msk |
+                      AES_CR_DATATYPE_Msk | AES_CR_KEYSIZE_Msk |
+                      AES_CR_GCMPH_Msk | AES_CR_NPBLB_Msk,
+                      whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
+                                   AES_MODE_ENCRYPT) |
+                      whal_SetBits(AES_CR_CHMOD_Msk, AES_CR_CHMOD_Pos,
+                                   AES_CHMOD_GCM) |
+                      whal_SetBits(AES_CR_DATATYPE_Msk, AES_CR_DATATYPE_Pos,
+                                   AES_DATATYPE_NONE) |
+                      whal_SetBits(AES_CR_KEYSIZE_Msk, AES_CR_KEYSIZE_Pos,
+                                   keySizeBit) |
+                      whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
+                                   AES_GCMPH_INIT));
 
     WriteKey(base, key, keySz);
 
-    whal_Reg_Write(base, AES_IVR3_REG, whal_LoadBe32(ivBytes));
-    whal_Reg_Write(base, AES_IVR2_REG, whal_LoadBe32(ivBytes + 4));
-    whal_Reg_Write(base, AES_IVR1_REG, whal_LoadBe32(ivBytes + 8));
-    whal_Reg_Write(base, AES_IVR0_REG, 0x00000002);
+    whal_Reg32_Write(base, AES_IVR3_REG, whal_LoadBe32(ivBytes));
+    whal_Reg32_Write(base, AES_IVR2_REG, whal_LoadBe32(ivBytes + 4));
+    whal_Reg32_Write(base, AES_IVR1_REG, whal_LoadBe32(ivBytes + 8));
+    whal_Reg32_Write(base, AES_IVR0_REG, 0x00000002);
 
-    whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
+    whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
 
     err = WaitForCCF(base, cfg->timeout);
     if (err)
@@ -902,14 +902,14 @@ whal_Error whal_Stm32wb_AesGcm_Start(whal_AesGcm *dev, whal_Crypto_Dir dir,
 
     /* Header phase (AAD) */
     if (aadSz > 0) {
-        whal_Reg_Update(base, AES_CR_REG,
-                        AES_CR_MODE_Msk | AES_CR_GCMPH_Msk,
-                        whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
-                                     AES_MODE_ENCRYPT) |
-                        whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
-                                     AES_GCMPH_HEADER));
+        whal_Reg32_Update(base, AES_CR_REG,
+                          AES_CR_MODE_Msk | AES_CR_GCMPH_Msk,
+                          whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
+                                       AES_MODE_ENCRYPT) |
+                          whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
+                                       AES_GCMPH_HEADER));
 
-        whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
+        whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
 
         for (i = 0; i < aadSz; i += 16) {
             const uint8_t *blkAad = aadBytes + i;
@@ -935,14 +935,14 @@ whal_Error whal_Stm32wb_AesGcm_Start(whal_AesGcm *dev, whal_Crypto_Dir dir,
     mode = (dir == WHAL_CRYPTO_ENCRYPT)
         ? AES_MODE_ENCRYPT : AES_MODE_DECRYPT;
 
-    whal_Reg_Update(base, AES_CR_REG,
-                    AES_CR_MODE_Msk | AES_CR_GCMPH_Msk,
-                    whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos, mode) |
-                    whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
-                                 AES_GCMPH_PAYLOAD));
+    whal_Reg32_Update(base, AES_CR_REG,
+                      AES_CR_MODE_Msk | AES_CR_GCMPH_Msk,
+                      whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos, mode) |
+                      whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
+                                   AES_GCMPH_PAYLOAD));
 
     if (aadSz == 0)
-        whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
+        whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
 
     {
         whal_Stm32wb_AesGcm_State *st =
@@ -955,7 +955,7 @@ whal_Error whal_Stm32wb_AesGcm_Start(whal_AesGcm *dev, whal_Crypto_Dir dir,
     return WHAL_SUCCESS;
 
 cleanup:
-    whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
+    whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
     ZeroKeyIv(base);
     return err;
 }
@@ -966,7 +966,7 @@ whal_Error whal_Stm32wb_AesGcm_Process(whal_AesGcm *dev,
     whal_Crypto *crypto = whal_Stm32wb_AesGcm_Dev.crypto;
     const whal_Stm32wb_Aes_Cfg *cfg =
         (const whal_Stm32wb_Aes_Cfg *)crypto->cfg;
-    size_t base = crypto->base;
+    uintptr_t base = crypto->base;
     whal_Stm32wb_AesGcm_State *st =
         (whal_Stm32wb_AesGcm_State *)whal_Stm32wb_AesGcm_Dev.state;
     size_t mode;
@@ -979,20 +979,20 @@ whal_Error whal_Stm32wb_AesGcm_Process(whal_AesGcm *dev,
         return WHAL_SUCCESS;
 
     if (!in || !out) {
-        whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
+        whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
         ZeroKeyIv(base);
         return WHAL_EINVAL;
     }
 
     /* Only the last Process call may end in a partial block */
     if (st->partial) {
-        whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
+        whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
         ZeroKeyIv(base);
         return WHAL_EINVAL;
     }
 
     mode = whal_GetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
-                        whal_Reg_Read(base, AES_CR_REG));
+                        whal_Reg32_Read(base, AES_CR_REG));
 
     for (i = 0; i < sz; i += 16) {
         const uint8_t *inBlk = (const uint8_t *)in + i;
@@ -1005,10 +1005,10 @@ whal_Error whal_Stm32wb_AesGcm_Process(whal_AesGcm *dev,
             WriteBlock(base, inBlk);
         } else {
             if (mode == AES_MODE_ENCRYPT) {
-                whal_Reg_Update(base, AES_CR_REG, AES_CR_NPBLB_Msk,
-                                whal_SetBits(AES_CR_NPBLB_Msk,
-                                             AES_CR_NPBLB_Pos,
-                                             16 - remain));
+                whal_Reg32_Update(base, AES_CR_REG, AES_CR_NPBLB_Msk,
+                                  whal_SetBits(AES_CR_NPBLB_Msk,
+                                               AES_CR_NPBLB_Pos,
+                                               16 - remain));
             }
             for (j = 0; j < remain; j++)
                 block[j] = inBlk[j];
@@ -1017,7 +1017,7 @@ whal_Error whal_Stm32wb_AesGcm_Process(whal_AesGcm *dev,
 
         err = WaitForCCF(base, cfg->timeout);
         if (err) {
-            whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
+            whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
             ZeroKeyIv(base);
             return err;
         }
@@ -1044,7 +1044,7 @@ whal_Error whal_Stm32wb_AesGcm_Finalize(whal_AesGcm *dev,
     whal_Crypto *crypto = whal_Stm32wb_AesGcm_Dev.crypto;
     const whal_Stm32wb_Aes_Cfg *cfg =
         (const whal_Stm32wb_Aes_Cfg *)crypto->cfg;
-    size_t base = crypto->base;
+    uintptr_t base = crypto->base;
     whal_Stm32wb_AesGcm_State *st =
         (whal_Stm32wb_AesGcm_State *)whal_Stm32wb_AesGcm_Dev.state;
     uint8_t tagBuf[16];
@@ -1056,32 +1056,32 @@ whal_Error whal_Stm32wb_AesGcm_Finalize(whal_AesGcm *dev,
     (void)dev;
 
     if (!tag || tagSz == 0 || tagSz > 16) {
-        whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
+        whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
         ZeroKeyIv(base);
         return WHAL_EINVAL;
     }
 
     /* Final phase (tag) */
-    whal_Reg_Update(base, AES_CR_REG,
-                    AES_CR_MODE_Msk | AES_CR_GCMPH_Msk,
-                    whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
-                                 AES_MODE_ENCRYPT) |
-                    whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
-                                 AES_GCMPH_FINAL));
+    whal_Reg32_Update(base, AES_CR_REG,
+                      AES_CR_MODE_Msk | AES_CR_GCMPH_Msk,
+                      whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
+                                   AES_MODE_ENCRYPT) |
+                      whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
+                                   AES_GCMPH_FINAL));
 
     if (st->aadSz == 0 && st->dataSz == 0)
-        whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
+        whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
 
     aadBits = (uint64_t)st->aadSz * 8;
     payloadBits = st->dataSz * 8;
-    whal_Reg_Write(base, AES_DINR_REG, (uint32_t)(aadBits >> 32));
-    whal_Reg_Write(base, AES_DINR_REG, (uint32_t)aadBits);
-    whal_Reg_Write(base, AES_DINR_REG, (uint32_t)(payloadBits >> 32));
-    whal_Reg_Write(base, AES_DINR_REG, (uint32_t)payloadBits);
+    whal_Reg32_Write(base, AES_DINR_REG, (uint32_t)(aadBits >> 32));
+    whal_Reg32_Write(base, AES_DINR_REG, (uint32_t)aadBits);
+    whal_Reg32_Write(base, AES_DINR_REG, (uint32_t)(payloadBits >> 32));
+    whal_Reg32_Write(base, AES_DINR_REG, (uint32_t)payloadBits);
 
     err = WaitForCCF(base, cfg->timeout);
     if (err) {
-        whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
+        whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
         ZeroKeyIv(base);
         return err;
     }
@@ -1091,7 +1091,7 @@ whal_Error whal_Stm32wb_AesGcm_Finalize(whal_AesGcm *dev,
     for (i = 0; i < tagSz; i++)
         ((uint8_t *)tag)[i] = tagBuf[i];
 
-    whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
+    whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
     ZeroKeyIv(base);
     return WHAL_SUCCESS;
 }
@@ -1115,7 +1115,7 @@ whal_Error whal_Stm32wb_AesGmac_Oneshot(whal_AesGmac *dev,
     whal_Crypto *crypto = whal_Stm32wb_AesGmac_Dev.crypto;
     const whal_Stm32wb_Aes_Cfg *cfg =
         (const whal_Stm32wb_Aes_Cfg *)crypto->cfg;
-    size_t base = crypto->base;
+    uintptr_t base = crypto->base;
     const uint8_t *ivBytes = (const uint8_t *)iv;
     const uint8_t *aadBytes = (const uint8_t *)aad;
     size_t keySizeBit;
@@ -1144,31 +1144,31 @@ whal_Error whal_Stm32wb_AesGmac_Oneshot(whal_AesGmac *dev,
     keySizeBit = (keySz == 32) ? 1 : 0;
 
     /* Init phase */
-    whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
+    whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
 
-    whal_Reg_Update(base, AES_CR_REG,
-                    AES_CR_MODE_Msk | AES_CR_CHMOD_Msk | AES_CR_CHMOD2_Msk |
-                    AES_CR_DATATYPE_Msk | AES_CR_KEYSIZE_Msk |
-                    AES_CR_GCMPH_Msk | AES_CR_NPBLB_Msk,
-                    whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
-                                 AES_MODE_ENCRYPT) |
-                    whal_SetBits(AES_CR_CHMOD_Msk, AES_CR_CHMOD_Pos,
-                                 AES_CHMOD_GCM) |
-                    whal_SetBits(AES_CR_DATATYPE_Msk, AES_CR_DATATYPE_Pos,
-                                 AES_DATATYPE_NONE) |
-                    whal_SetBits(AES_CR_KEYSIZE_Msk, AES_CR_KEYSIZE_Pos,
-                                 keySizeBit) |
-                    whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
-                                 AES_GCMPH_INIT));
+    whal_Reg32_Update(base, AES_CR_REG,
+                      AES_CR_MODE_Msk | AES_CR_CHMOD_Msk | AES_CR_CHMOD2_Msk |
+                      AES_CR_DATATYPE_Msk | AES_CR_KEYSIZE_Msk |
+                      AES_CR_GCMPH_Msk | AES_CR_NPBLB_Msk,
+                      whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
+                                   AES_MODE_ENCRYPT) |
+                      whal_SetBits(AES_CR_CHMOD_Msk, AES_CR_CHMOD_Pos,
+                                   AES_CHMOD_GCM) |
+                      whal_SetBits(AES_CR_DATATYPE_Msk, AES_CR_DATATYPE_Pos,
+                                   AES_DATATYPE_NONE) |
+                      whal_SetBits(AES_CR_KEYSIZE_Msk, AES_CR_KEYSIZE_Pos,
+                                   keySizeBit) |
+                      whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
+                                   AES_GCMPH_INIT));
 
     WriteKey(base, key, keySz);
 
-    whal_Reg_Write(base, AES_IVR3_REG, whal_LoadBe32(ivBytes));
-    whal_Reg_Write(base, AES_IVR2_REG, whal_LoadBe32(ivBytes + 4));
-    whal_Reg_Write(base, AES_IVR1_REG, whal_LoadBe32(ivBytes + 8));
-    whal_Reg_Write(base, AES_IVR0_REG, 0x00000002);
+    whal_Reg32_Write(base, AES_IVR3_REG, whal_LoadBe32(ivBytes));
+    whal_Reg32_Write(base, AES_IVR2_REG, whal_LoadBe32(ivBytes + 4));
+    whal_Reg32_Write(base, AES_IVR1_REG, whal_LoadBe32(ivBytes + 8));
+    whal_Reg32_Write(base, AES_IVR0_REG, 0x00000002);
 
-    whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
+    whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
 
     err = WaitForCCF(base, cfg->timeout);
     if (err)
@@ -1176,14 +1176,14 @@ whal_Error whal_Stm32wb_AesGmac_Oneshot(whal_AesGmac *dev,
 
     /* Header phase (AAD) */
     if (aadSz > 0) {
-        whal_Reg_Update(base, AES_CR_REG,
-                        AES_CR_MODE_Msk | AES_CR_GCMPH_Msk,
-                        whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
-                                     AES_MODE_ENCRYPT) |
-                        whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
-                                     AES_GCMPH_HEADER));
+        whal_Reg32_Update(base, AES_CR_REG,
+                          AES_CR_MODE_Msk | AES_CR_GCMPH_Msk,
+                          whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
+                                       AES_MODE_ENCRYPT) |
+                          whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
+                                       AES_GCMPH_HEADER));
 
-        whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
+        whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
 
         for (i = 0; i < aadSz; i += 16) {
             const uint8_t *blkAad = aadBytes + i;
@@ -1206,21 +1206,21 @@ whal_Error whal_Stm32wb_AesGmac_Oneshot(whal_AesGmac *dev,
     }
 
     /* Final phase (tag) -- no payload for GMAC */
-    whal_Reg_Update(base, AES_CR_REG,
-                    AES_CR_MODE_Msk | AES_CR_GCMPH_Msk,
-                    whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
-                                 AES_MODE_ENCRYPT) |
-                    whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
-                                 AES_GCMPH_FINAL));
+    whal_Reg32_Update(base, AES_CR_REG,
+                      AES_CR_MODE_Msk | AES_CR_GCMPH_Msk,
+                      whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
+                                   AES_MODE_ENCRYPT) |
+                      whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
+                                   AES_GCMPH_FINAL));
 
     if (aadSz == 0)
-        whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
+        whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
 
     aadBits = (uint64_t)aadSz * 8;
-    whal_Reg_Write(base, AES_DINR_REG, (uint32_t)(aadBits >> 32));
-    whal_Reg_Write(base, AES_DINR_REG, (uint32_t)aadBits);
-    whal_Reg_Write(base, AES_DINR_REG, 0);
-    whal_Reg_Write(base, AES_DINR_REG, 0);
+    whal_Reg32_Write(base, AES_DINR_REG, (uint32_t)(aadBits >> 32));
+    whal_Reg32_Write(base, AES_DINR_REG, (uint32_t)aadBits);
+    whal_Reg32_Write(base, AES_DINR_REG, 0);
+    whal_Reg32_Write(base, AES_DINR_REG, 0);
 
     err = WaitForCCF(base, cfg->timeout);
     if (err)
@@ -1232,7 +1232,7 @@ whal_Error whal_Stm32wb_AesGmac_Oneshot(whal_AesGmac *dev,
         ((uint8_t *)tag)[i] = tagBuf[i];
 
 cleanup:
-    whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
+    whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
     ZeroKeyIv(base);
     return err;
 }
@@ -1254,7 +1254,7 @@ whal_Error whal_Stm32wb_AesCcm_Oneshot(whal_AesCcm *dev, whal_Crypto_Dir dir,
     whal_Crypto *crypto = whal_Stm32wb_AesCcm_Dev.crypto;
     const whal_Stm32wb_Aes_Cfg *cfg =
         (const whal_Stm32wb_Aes_Cfg *)crypto->cfg;
-    size_t base = crypto->base;
+    uintptr_t base = crypto->base;
     const uint8_t *nonceBytes = (const uint8_t *)nonce;
     const uint8_t *aadBytes = (const uint8_t *)aad;
     size_t keySizeBit;
@@ -1312,27 +1312,27 @@ whal_Error whal_Stm32wb_AesCcm_Oneshot(whal_AesCcm *dev, whal_Crypto_Dir dir,
     }
 
     /* Init phase */
-    whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
+    whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
 
-    whal_Reg_Update(base, AES_CR_REG,
-                    AES_CR_MODE_Msk | AES_CR_CHMOD_Msk | AES_CR_CHMOD2_Msk |
-                    AES_CR_DATATYPE_Msk | AES_CR_KEYSIZE_Msk |
-                    AES_CR_GCMPH_Msk | AES_CR_NPBLB_Msk,
-                    whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
-                                 AES_MODE_ENCRYPT) |
-                    whal_SetBits(AES_CR_CHMOD_Msk, AES_CR_CHMOD_Pos, 0) |
-                    AES_CR_CHMOD2_Msk |
-                    whal_SetBits(AES_CR_DATATYPE_Msk, AES_CR_DATATYPE_Pos,
-                                 AES_DATATYPE_NONE) |
-                    whal_SetBits(AES_CR_KEYSIZE_Msk, AES_CR_KEYSIZE_Pos,
-                                 keySizeBit) |
-                    whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
-                                 AES_GCMPH_INIT));
+    whal_Reg32_Update(base, AES_CR_REG,
+                      AES_CR_MODE_Msk | AES_CR_CHMOD_Msk | AES_CR_CHMOD2_Msk |
+                      AES_CR_DATATYPE_Msk | AES_CR_KEYSIZE_Msk |
+                      AES_CR_GCMPH_Msk | AES_CR_NPBLB_Msk,
+                      whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
+                                   AES_MODE_ENCRYPT) |
+                      whal_SetBits(AES_CR_CHMOD_Msk, AES_CR_CHMOD_Pos, 0) |
+                      AES_CR_CHMOD2_Msk |
+                      whal_SetBits(AES_CR_DATATYPE_Msk, AES_CR_DATATYPE_Pos,
+                                   AES_DATATYPE_NONE) |
+                      whal_SetBits(AES_CR_KEYSIZE_Msk, AES_CR_KEYSIZE_Pos,
+                                   keySizeBit) |
+                      whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
+                                   AES_GCMPH_INIT));
 
     WriteKey(base, key, keySz);
     WriteIv(base, b0);
 
-    whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
+    whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
 
     err = WaitForCCF(base, cfg->timeout);
     if (err)
@@ -1340,14 +1340,14 @@ whal_Error whal_Stm32wb_AesCcm_Oneshot(whal_AesCcm *dev, whal_Crypto_Dir dir,
 
     /* Header phase (AAD) */
     if (aadSz > 0) {
-        whal_Reg_Update(base, AES_CR_REG,
-                        AES_CR_MODE_Msk | AES_CR_GCMPH_Msk,
-                        whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
-                                     AES_MODE_ENCRYPT) |
-                        whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
-                                     AES_GCMPH_HEADER));
+        whal_Reg32_Update(base, AES_CR_REG,
+                          AES_CR_MODE_Msk | AES_CR_GCMPH_Msk,
+                          whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
+                                       AES_MODE_ENCRYPT) |
+                          whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
+                                       AES_GCMPH_HEADER));
 
-        whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
+        whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
 
         {
             uint8_t hdrBuf[16] = {0};
@@ -1398,15 +1398,15 @@ whal_Error whal_Stm32wb_AesCcm_Oneshot(whal_AesCcm *dev, whal_Crypto_Dir dir,
         mode = (dir == WHAL_CRYPTO_ENCRYPT)
             ? AES_MODE_ENCRYPT : AES_MODE_DECRYPT;
 
-        whal_Reg_Update(base, AES_CR_REG,
-                        AES_CR_MODE_Msk | AES_CR_GCMPH_Msk,
-                        whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
-                                     mode) |
-                        whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
-                                     AES_GCMPH_PAYLOAD));
+        whal_Reg32_Update(base, AES_CR_REG,
+                          AES_CR_MODE_Msk | AES_CR_GCMPH_Msk,
+                          whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
+                                       mode) |
+                          whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
+                                       AES_GCMPH_PAYLOAD));
 
         if (aadSz == 0)
-            whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
+            whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
 
         for (i = 0; i < sz; i += 16) {
             const uint8_t *inBlk = (const uint8_t *)in + i;
@@ -1419,10 +1419,10 @@ whal_Error whal_Stm32wb_AesCcm_Oneshot(whal_AesCcm *dev, whal_Crypto_Dir dir,
                 WriteBlock(base, inBlk);
             } else {
                 if (mode == AES_MODE_DECRYPT) {
-                    whal_Reg_Update(base, AES_CR_REG, AES_CR_NPBLB_Msk,
-                                    whal_SetBits(AES_CR_NPBLB_Msk,
-                                                 AES_CR_NPBLB_Pos,
-                                                 16 - remain));
+                    whal_Reg32_Update(base, AES_CR_REG, AES_CR_NPBLB_Msk,
+                                      whal_SetBits(AES_CR_NPBLB_Msk,
+                                                   AES_CR_NPBLB_Pos,
+                                                   16 - remain));
                 }
                 for (j = 0; j < remain; j++)
                     block[j] = inBlk[j];
@@ -1444,20 +1444,20 @@ whal_Error whal_Stm32wb_AesCcm_Oneshot(whal_AesCcm *dev, whal_Crypto_Dir dir,
     }
 
     /* Final phase (tag) */
-    whal_Reg_Update(base, AES_CR_REG,
-                    AES_CR_MODE_Msk | AES_CR_GCMPH_Msk,
-                    whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
-                                 AES_MODE_ENCRYPT) |
-                    whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
-                                 AES_GCMPH_FINAL));
+    whal_Reg32_Update(base, AES_CR_REG,
+                      AES_CR_MODE_Msk | AES_CR_GCMPH_Msk,
+                      whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
+                                   AES_MODE_ENCRYPT) |
+                      whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
+                                   AES_GCMPH_FINAL));
 
     if (aadSz == 0 && sz == 0)
-        whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
+        whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
 
-    whal_Reg_Write(base, AES_DINR_REG, 0);
-    whal_Reg_Write(base, AES_DINR_REG, 0);
-    whal_Reg_Write(base, AES_DINR_REG, 0);
-    whal_Reg_Write(base, AES_DINR_REG, 0);
+    whal_Reg32_Write(base, AES_DINR_REG, 0);
+    whal_Reg32_Write(base, AES_DINR_REG, 0);
+    whal_Reg32_Write(base, AES_DINR_REG, 0);
+    whal_Reg32_Write(base, AES_DINR_REG, 0);
 
     err = WaitForCCF(base, cfg->timeout);
     if (err)
@@ -1469,7 +1469,7 @@ whal_Error whal_Stm32wb_AesCcm_Oneshot(whal_AesCcm *dev, whal_Crypto_Dir dir,
         ((uint8_t *)tag)[i] = tagBuf[i];
 
 cleanup:
-    whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
+    whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
     ZeroKeyIv(base);
     return err;
 }
@@ -1483,7 +1483,7 @@ whal_Error whal_Stm32wb_AesCcm_Start(whal_AesCcm *dev, whal_Crypto_Dir dir,
     whal_Crypto *crypto = whal_Stm32wb_AesCcm_Dev.crypto;
     const whal_Stm32wb_Aes_Cfg *cfg =
         (const whal_Stm32wb_Aes_Cfg *)crypto->cfg;
-    size_t base = crypto->base;
+    uintptr_t base = crypto->base;
     const uint8_t *nonceBytes = (const uint8_t *)nonce;
     const uint8_t *aadBytes = (const uint8_t *)aad;
     size_t keySizeBit;
@@ -1537,27 +1537,27 @@ whal_Error whal_Stm32wb_AesCcm_Start(whal_AesCcm *dev, whal_Crypto_Dir dir,
     }
 
     /* Init phase */
-    whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
+    whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
 
-    whal_Reg_Update(base, AES_CR_REG,
-                    AES_CR_MODE_Msk | AES_CR_CHMOD_Msk | AES_CR_CHMOD2_Msk |
-                    AES_CR_DATATYPE_Msk | AES_CR_KEYSIZE_Msk |
-                    AES_CR_GCMPH_Msk | AES_CR_NPBLB_Msk,
-                    whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
-                                 AES_MODE_ENCRYPT) |
-                    whal_SetBits(AES_CR_CHMOD_Msk, AES_CR_CHMOD_Pos, 0) |
-                    AES_CR_CHMOD2_Msk |
-                    whal_SetBits(AES_CR_DATATYPE_Msk, AES_CR_DATATYPE_Pos,
-                                 AES_DATATYPE_NONE) |
-                    whal_SetBits(AES_CR_KEYSIZE_Msk, AES_CR_KEYSIZE_Pos,
-                                 keySizeBit) |
-                    whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
-                                 AES_GCMPH_INIT));
+    whal_Reg32_Update(base, AES_CR_REG,
+                      AES_CR_MODE_Msk | AES_CR_CHMOD_Msk | AES_CR_CHMOD2_Msk |
+                      AES_CR_DATATYPE_Msk | AES_CR_KEYSIZE_Msk |
+                      AES_CR_GCMPH_Msk | AES_CR_NPBLB_Msk,
+                      whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
+                                   AES_MODE_ENCRYPT) |
+                      whal_SetBits(AES_CR_CHMOD_Msk, AES_CR_CHMOD_Pos, 0) |
+                      AES_CR_CHMOD2_Msk |
+                      whal_SetBits(AES_CR_DATATYPE_Msk, AES_CR_DATATYPE_Pos,
+                                   AES_DATATYPE_NONE) |
+                      whal_SetBits(AES_CR_KEYSIZE_Msk, AES_CR_KEYSIZE_Pos,
+                                   keySizeBit) |
+                      whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
+                                   AES_GCMPH_INIT));
 
     WriteKey(base, key, keySz);
     WriteIv(base, b0);
 
-    whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
+    whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
 
     err = WaitForCCF(base, cfg->timeout);
     if (err)
@@ -1565,14 +1565,14 @@ whal_Error whal_Stm32wb_AesCcm_Start(whal_AesCcm *dev, whal_Crypto_Dir dir,
 
     /* Header phase (AAD) */
     if (aadSz > 0) {
-        whal_Reg_Update(base, AES_CR_REG,
-                        AES_CR_MODE_Msk | AES_CR_GCMPH_Msk,
-                        whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
-                                     AES_MODE_ENCRYPT) |
-                        whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
-                                     AES_GCMPH_HEADER));
+        whal_Reg32_Update(base, AES_CR_REG,
+                          AES_CR_MODE_Msk | AES_CR_GCMPH_Msk,
+                          whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
+                                       AES_MODE_ENCRYPT) |
+                          whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
+                                       AES_GCMPH_HEADER));
 
-        whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
+        whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
 
         {
             uint8_t hdrBuf[16] = {0};
@@ -1622,14 +1622,14 @@ whal_Error whal_Stm32wb_AesCcm_Start(whal_AesCcm *dev, whal_Crypto_Dir dir,
     mode = (dir == WHAL_CRYPTO_ENCRYPT)
         ? AES_MODE_ENCRYPT : AES_MODE_DECRYPT;
 
-    whal_Reg_Update(base, AES_CR_REG,
-                    AES_CR_MODE_Msk | AES_CR_GCMPH_Msk,
-                    whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos, mode) |
-                    whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
-                                 AES_GCMPH_PAYLOAD));
+    whal_Reg32_Update(base, AES_CR_REG,
+                      AES_CR_MODE_Msk | AES_CR_GCMPH_Msk,
+                      whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos, mode) |
+                      whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
+                                   AES_GCMPH_PAYLOAD));
 
     if (aadSz == 0)
-        whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
+        whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
 
     {
         whal_Stm32wb_AesCcm_State *st =
@@ -1644,7 +1644,7 @@ whal_Error whal_Stm32wb_AesCcm_Start(whal_AesCcm *dev, whal_Crypto_Dir dir,
     return WHAL_SUCCESS;
 
 cleanup:
-    whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
+    whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
     ZeroKeyIv(base);
     return err;
 }
@@ -1655,7 +1655,7 @@ whal_Error whal_Stm32wb_AesCcm_Process(whal_AesCcm *dev,
     whal_Crypto *crypto = whal_Stm32wb_AesCcm_Dev.crypto;
     const whal_Stm32wb_Aes_Cfg *cfg =
         (const whal_Stm32wb_Aes_Cfg *)crypto->cfg;
-    size_t base = crypto->base;
+    uintptr_t base = crypto->base;
     whal_Stm32wb_AesCcm_State *st =
         (whal_Stm32wb_AesCcm_State *)whal_Stm32wb_AesCcm_Dev.state;
     size_t mode;
@@ -1668,7 +1668,7 @@ whal_Error whal_Stm32wb_AesCcm_Process(whal_AesCcm *dev,
         return WHAL_SUCCESS;
 
     if (!in || !out) {
-        whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
+        whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
         ZeroKeyIv(base);
         return WHAL_EINVAL;
     }
@@ -1676,13 +1676,13 @@ whal_Error whal_Stm32wb_AesCcm_Process(whal_AesCcm *dev,
     /* Only the last Process call may end in a partial block, and the
      * total may not exceed the payload length declared at Start */
     if (st->partial || sz > st->msgSz - st->dataSz) {
-        whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
+        whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
         ZeroKeyIv(base);
         return WHAL_EINVAL;
     }
 
     mode = whal_GetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
-                        whal_Reg_Read(base, AES_CR_REG));
+                        whal_Reg32_Read(base, AES_CR_REG));
 
     for (i = 0; i < sz; i += 16) {
         const uint8_t *inBlk = (const uint8_t *)in + i;
@@ -1695,10 +1695,10 @@ whal_Error whal_Stm32wb_AesCcm_Process(whal_AesCcm *dev,
             WriteBlock(base, inBlk);
         } else {
             if (mode == AES_MODE_DECRYPT) {
-                whal_Reg_Update(base, AES_CR_REG, AES_CR_NPBLB_Msk,
-                                whal_SetBits(AES_CR_NPBLB_Msk,
-                                             AES_CR_NPBLB_Pos,
-                                             16 - remain));
+                whal_Reg32_Update(base, AES_CR_REG, AES_CR_NPBLB_Msk,
+                                  whal_SetBits(AES_CR_NPBLB_Msk,
+                                               AES_CR_NPBLB_Pos,
+                                               16 - remain));
             }
             for (j = 0; j < remain; j++)
                 block[j] = inBlk[j];
@@ -1707,7 +1707,7 @@ whal_Error whal_Stm32wb_AesCcm_Process(whal_AesCcm *dev,
 
         err = WaitForCCF(base, cfg->timeout);
         if (err) {
-            whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
+            whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
             ZeroKeyIv(base);
             return err;
         }
@@ -1734,7 +1734,7 @@ whal_Error whal_Stm32wb_AesCcm_Finalize(whal_AesCcm *dev,
     whal_Crypto *crypto = whal_Stm32wb_AesCcm_Dev.crypto;
     const whal_Stm32wb_Aes_Cfg *cfg =
         (const whal_Stm32wb_Aes_Cfg *)crypto->cfg;
-    size_t base = crypto->base;
+    uintptr_t base = crypto->base;
     whal_Stm32wb_AesCcm_State *st =
         (whal_Stm32wb_AesCcm_State *)whal_Stm32wb_AesCcm_Dev.state;
     uint8_t tagBuf[16];
@@ -1746,30 +1746,30 @@ whal_Error whal_Stm32wb_AesCcm_Finalize(whal_AesCcm *dev,
     /* Tag length and payload length must match what Start encoded in B0 */
     if (!tag || tagSz < 4 || tagSz > 16 || (tagSz & 1) != 0 ||
         tagSz != st->tagSz || st->dataSz != st->msgSz) {
-        whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
+        whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
         ZeroKeyIv(base);
         return WHAL_EINVAL;
     }
 
     /* Final phase (tag) */
-    whal_Reg_Update(base, AES_CR_REG,
-                    AES_CR_MODE_Msk | AES_CR_GCMPH_Msk,
-                    whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
-                                 AES_MODE_ENCRYPT) |
-                    whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
-                                 AES_GCMPH_FINAL));
+    whal_Reg32_Update(base, AES_CR_REG,
+                      AES_CR_MODE_Msk | AES_CR_GCMPH_Msk,
+                      whal_SetBits(AES_CR_MODE_Msk, AES_CR_MODE_Pos,
+                                   AES_MODE_ENCRYPT) |
+                      whal_SetBits(AES_CR_GCMPH_Msk, AES_CR_GCMPH_Pos,
+                                   AES_GCMPH_FINAL));
 
     if (st->aadSz == 0 && st->dataSz == 0)
-        whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
+        whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, AES_CR_EN_Msk);
 
-    whal_Reg_Write(base, AES_DINR_REG, 0);
-    whal_Reg_Write(base, AES_DINR_REG, 0);
-    whal_Reg_Write(base, AES_DINR_REG, 0);
-    whal_Reg_Write(base, AES_DINR_REG, 0);
+    whal_Reg32_Write(base, AES_DINR_REG, 0);
+    whal_Reg32_Write(base, AES_DINR_REG, 0);
+    whal_Reg32_Write(base, AES_DINR_REG, 0);
+    whal_Reg32_Write(base, AES_DINR_REG, 0);
 
     err = WaitForCCF(base, cfg->timeout);
     if (err) {
-        whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
+        whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
         ZeroKeyIv(base);
         return err;
     }
@@ -1779,7 +1779,7 @@ whal_Error whal_Stm32wb_AesCcm_Finalize(whal_AesCcm *dev,
     for (i = 0; i < tagSz; i++)
         ((uint8_t *)tag)[i] = tagBuf[i];
 
-    whal_Reg_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
+    whal_Reg32_Update(base, AES_CR_REG, AES_CR_EN_Msk, 0);
     ZeroKeyIv(base);
     return WHAL_SUCCESS;
 }

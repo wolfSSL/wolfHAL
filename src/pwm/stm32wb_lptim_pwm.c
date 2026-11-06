@@ -56,7 +56,7 @@
 
 whal_Error whal_Stm32wb_Lptim_Pwm_Init(whal_Pwm *dev)
 {
-    size_t base;
+    uintptr_t base;
     whal_Stm32wb_Lptim_Pwm_Cfg *cfg;
     uint32_t cfgr;
 
@@ -72,12 +72,12 @@ whal_Error whal_Stm32wb_Lptim_Pwm_Init(whal_Pwm *dev)
     }
 
     /* CFGR is writable only while disabled: set clock source, prescaler, and PWM waveform here. */
-    whal_Reg_Write(base, LPTIM_CR_REG, 0);
+    whal_Reg32_Write(base, LPTIM_CR_REG, 0);
     cfgr = whal_SetBits(LPTIM_CFGR_PRESC_Msk, LPTIM_CFGR_PRESC_Pos,
                         cfg->prescaler) |
            whal_SetBits(LPTIM_CFGR_CKSEL_Msk, LPTIM_CFGR_CKSEL_Pos,
                         cfg->clkSel);
-    whal_Reg_Write(base, LPTIM_CFGR_REG, cfgr);
+    whal_Reg32_Write(base, LPTIM_CFGR_REG, cfgr);
 
     return WHAL_SUCCESS;
 }
@@ -89,8 +89,8 @@ whal_Error whal_Stm32wb_Lptim_Pwm_Deinit(whal_Pwm *dev)
     }
 
     /* Disable the timer and clear its configuration; the board owns clock gating. */
-    whal_Reg_Write(dev->base, LPTIM_CR_REG, 0);
-    whal_Reg_Write(dev->base, LPTIM_CFGR_REG, 0);
+    whal_Reg32_Write(dev->base, LPTIM_CR_REG, 0);
+    whal_Reg32_Write(dev->base, LPTIM_CFGR_REG, 0);
 
     return WHAL_SUCCESS;
 }
@@ -98,7 +98,7 @@ whal_Error whal_Stm32wb_Lptim_Pwm_Deinit(whal_Pwm *dev)
 whal_Error whal_Stm32wb_Lptim_Pwm_Start(whal_Pwm *dev, uint8_t channel,
                                         const whal_Pwm_ChannelCfg *channelCfg)
 {
-    size_t base;
+    uintptr_t base;
     whal_Stm32wb_Lptim_Pwm_Cfg *cfg;
     uint32_t arr, cmp;
     whal_Error err;
@@ -135,36 +135,36 @@ whal_Error whal_Stm32wb_Lptim_Pwm_Start(whal_Pwm *dev, uint8_t channel,
     cmp = arr - channelCfg->pulseCycles;
 
     /* Disable so CFGR/ARR/CMP are writable, then set this call's polarity via WAVPOL. */
-    whal_Reg_Write(base, LPTIM_CR_REG, 0);
-    whal_Reg_Update(base, LPTIM_CFGR_REG, LPTIM_CFGR_WAVPOL_Msk,
-                    channelCfg->polarity != WHAL_PWM_POLARITY_NORMAL ?
+    whal_Reg32_Write(base, LPTIM_CR_REG, 0);
+    whal_Reg32_Update(base, LPTIM_CFGR_REG, LPTIM_CFGR_WAVPOL_Msk,
+                      channelCfg->polarity != WHAL_PWM_POLARITY_NORMAL ?
                         LPTIM_CFGR_WAVPOL_Msk : 0);
 
     /* ARR/CMP are writable only once enabled; clear stale ARROK/CMPOK before writing. */
-    whal_Reg_Update(base, LPTIM_CR_REG, LPTIM_CR_ENABLE_Msk,
-                    LPTIM_CR_ENABLE_Msk);
-    whal_Reg_Write(base, LPTIM_ICR_REG,
-                   LPTIM_ICR_ARROKCF_Msk | LPTIM_ICR_CMPOKCF_Msk);
+    whal_Reg32_Update(base, LPTIM_CR_REG, LPTIM_CR_ENABLE_Msk,
+                      LPTIM_CR_ENABLE_Msk);
+    whal_Reg32_Write(base, LPTIM_ICR_REG,
+                     LPTIM_ICR_ARROKCF_Msk | LPTIM_ICR_CMPOKCF_Msk);
 
-    whal_Reg_Write(base, LPTIM_ARR_REG, arr);
-    err = whal_Reg_ReadPoll(base, LPTIM_ISR_REG, LPTIM_ISR_ARROK_Msk,
-                            LPTIM_ISR_ARROK_Msk, cfg->timeout);
+    whal_Reg32_Write(base, LPTIM_ARR_REG, arr);
+    err = whal_Reg32_ReadPoll(base, LPTIM_ISR_REG, LPTIM_ISR_ARROK_Msk,
+                              LPTIM_ISR_ARROK_Msk, cfg->timeout);
     if (err != WHAL_SUCCESS) {
-        whal_Reg_Write(base, LPTIM_CR_REG, 0);
+        whal_Reg32_Write(base, LPTIM_CR_REG, 0);
         return err;
     }
 
-    whal_Reg_Write(base, LPTIM_CMP_REG, cmp);
-    err = whal_Reg_ReadPoll(base, LPTIM_ISR_REG, LPTIM_ISR_CMPOK_Msk,
-                            LPTIM_ISR_CMPOK_Msk, cfg->timeout);
+    whal_Reg32_Write(base, LPTIM_CMP_REG, cmp);
+    err = whal_Reg32_ReadPoll(base, LPTIM_ISR_REG, LPTIM_ISR_CMPOK_Msk,
+                              LPTIM_ISR_CMPOK_Msk, cfg->timeout);
     if (err != WHAL_SUCCESS) {
-        whal_Reg_Write(base, LPTIM_CR_REG, 0);
+        whal_Reg32_Write(base, LPTIM_CR_REG, 0);
         return err;
     }
 
     /* Waveform programmed; begin continuous counting. */
-    whal_Reg_Update(base, LPTIM_CR_REG, LPTIM_CR_CNTSTRT_Msk,
-                    LPTIM_CR_CNTSTRT_Msk);
+    whal_Reg32_Update(base, LPTIM_CR_REG, LPTIM_CR_CNTSTRT_Msk,
+                      LPTIM_CR_CNTSTRT_Msk);
 
     return WHAL_SUCCESS;
 }
@@ -179,7 +179,7 @@ whal_Error whal_Stm32wb_Lptim_Pwm_Stop(whal_Pwm *dev, uint8_t channel)
     }
 
     /* Clearing ENABLE stops the counter and parks the output; Start resumes. */
-    whal_Reg_Update(dev->base, LPTIM_CR_REG, LPTIM_CR_ENABLE_Msk, 0);
+    whal_Reg32_Update(dev->base, LPTIM_CR_REG, LPTIM_CR_ENABLE_Msk, 0);
 
     return WHAL_SUCCESS;
 }

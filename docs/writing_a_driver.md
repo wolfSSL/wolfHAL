@@ -44,7 +44,8 @@ wolfHAL has three categories of drivers:
 
 **Platform drivers** operate directly on SoC hardware registers at fixed memory
 addresses. They are tied to a specific microcontroller family and use the
-`whal_Reg_*` helpers to read and write peripheral registers. Examples:
+`whal_Reg32_*` / `whal_Reg64_*` helpers to read and write peripheral
+registers. Examples:
 `stm32wb_uart`, `stm32wb_gpio`, `stm32wb_dma`.
 
 **Peripheral drivers** communicate with external chips over a bus (SPI, I2C,
@@ -155,7 +156,7 @@ whal_Error whal_Myplatform_Uart_Init(whal_Uart *uartDev)
 {
     const whal_Myplatform_Uart_Cfg *cfg =
         (const whal_Myplatform_Uart_Cfg *)whal_Myplatform_Uart_Dev.cfg;
-    size_t base = whal_Myplatform_Uart_Dev.base;
+    uintptr_t base = whal_Myplatform_Uart_Dev.base;
     (void)uartDev;
     /* ... */
 }
@@ -176,7 +177,7 @@ whal_Error whal_Myplatform_Uart_Init(whal_Uart *uartDev)
 {
     const whal_Myplatform_Uart_Cfg *cfg =
         (const whal_Myplatform_Uart_Cfg *)uartDev->cfg;
-    size_t base = uartDev->base;
+    uintptr_t base = uartDev->base;
     /* ... */
 }
 ```
@@ -203,7 +204,7 @@ const whal_Uart whal_Myplatform_Uart_Dev = WHAL_CFG_MYPLATFORM_UART_DEV;
 whal_Error whal_Myplatform_Uart_Init(whal_Uart *uartDev)
 {
     const whal_Myplatform_Uart_Cfg *cfg;
-    size_t base;
+    uintptr_t base;
 #ifdef WHAL_CFG_MYPLATFORM_UART_SINGLE_INSTANCE
     cfg = (const whal_Myplatform_Uart_Cfg *)whal_Myplatform_Uart_Dev.cfg;
     base = whal_Myplatform_Uart_Dev.base;
@@ -232,16 +233,33 @@ There are two exceptions:
 
 ### Register Access
 
-wolfHAL provides register access helpers in `wolfHAL/reg.h`:
+wolfHAL provides register access helpers in `wolfHAL/reg.h`. Pick the set
+that matches the register's width in the reference manual:
 
-- `whal_Reg_Write()` — write a full register value
-- `whal_Reg_Read()` — read a full register value
-- `whal_Reg_Update()` — read-modify-write a specific field within a register
-- `whal_Reg_Get()` — read and extract a masked field from a register
+- `whal_Reg32_*` — 32-bit registers, `uint32_t` values. Always available.
+- `whal_Reg64_*` — 64-bit registers, `uint64_t` values. Only where a 64-bit
+  access is a single access (`WHAL_HAVE_REG64`, set when `uintptr_t` is
+  wider than 32 bits).
+
+Each set has:
+
+- `Write()` — write a full register value
+- `Read()` — read a full register value
+- `Update()` — read-modify-write a specific field within a register
+- `Get()` — read a masked field from a register, shifted down to bit 0
+- `ReadPoll()` — poll a register until a field matches (see below)
 
 Use `Write` and `Read` for whole-register access. Use `Update` and `Get` when
 you need to modify or read individual fields within a register without
 disturbing other bits.
+
+```c
+whal_Reg32_Update(base, UART_CR_REG, UART_CR_EN_Msk, UART_CR_EN_Msk);
+whal_Reg32_Get(base, UART_FR_REG, UART_FR_CNT_Msk, UART_FR_CNT_Pos,
+               &rxCount);
+```
+
+The base is a `uintptr_t` and the offset a `uint32_t`.
 
 ### Timeouts
 
@@ -270,28 +288,29 @@ do not need to know the tick rate.
 The tick fields are 32-bit by default; define `WHAL_CFG_64BIT_TICK` to widen
 them to 64-bit (see "64-bit Ticks" below).
 
-#### whal_Reg_ReadPoll
+#### whal_Reg32_ReadPoll
 
-For the common case of polling a register bit, use `whal_Reg_ReadPoll` from
-`wolfHAL/reg.h`:
+For the common case of polling a register bit, use `whal_Reg32_ReadPoll`
+(or `whal_Reg64_ReadPoll`) from `wolfHAL/reg.h`:
 
 ```c
-whal_Error whal_Reg_ReadPoll(size_t base, size_t offset,
-                              size_t mask, size_t value,
-                              whal_Timeout *timeout);
+whal_Error whal_Reg32_ReadPoll(uintptr_t base, uint32_t offset,
+                               uint32_t mask, uint32_t value,
+                               whal_Timeout *timeout);
 ```
 
 This polls until `(reg & mask) == value` or the timeout expires. Pass the mask
-as the value to wait for bits to be set, or `0` to wait for bits to be clear:
+as the value to wait for bits to be set, or `0` to wait for bits to be clear.
+A value with bits outside the mask never matches:
 
 ```c
 /* Wait for TXE flag to be set */
-err = whal_Reg_ReadPoll(base, SPI_SR_REG, SPI_SR_TXE_Msk,
-                        SPI_SR_TXE_Msk, cfg->timeout);
+err = whal_Reg32_ReadPoll(base, SPI_SR_REG, SPI_SR_TXE_Msk,
+                          SPI_SR_TXE_Msk, cfg->timeout);
 
 /* Wait for BSY flag to be clear */
-err = whal_Reg_ReadPoll(base, SPI_SR_REG, SPI_SR_BSY_Msk,
-                        0, cfg->timeout);
+err = whal_Reg32_ReadPoll(base, SPI_SR_REG, SPI_SR_BSY_Msk,
+                          0, cfg->timeout);
 ```
 
 A NULL timeout pointer means unbounded wait (poll forever).
@@ -305,16 +324,16 @@ before returning. Use a `goto cleanup` pattern:
 ```c
 whal_Error err = WHAL_SUCCESS;
 
-whal_Reg_Update(base, CR_REG, PG_Msk, 1);   /* enable programming mode */
+whal_Reg32_Update(base, CR_REG, PG_Msk, PG_Msk);   /* enable programming */
 
 for (...) {
-    err = whal_Reg_ReadPoll(base, SR_REG, BSY_Msk, 0, cfg->timeout);
+    err = whal_Reg32_ReadPoll(base, SR_REG, BSY_Msk, 0, cfg->timeout);
     if (err)
         goto cleanup;
 }
 
 cleanup:
-    whal_Reg_Update(base, CR_REG, PG_Msk, 0);   /* always disable */
+    whal_Reg32_Update(base, CR_REG, PG_Msk, 0);   /* always disable */
     return err;
 ```
 
@@ -733,6 +752,58 @@ After the loop, wait for the bus to go idle before returning.
 
 ---
 
+## SPI Memory
+
+Header: `wolfHAL/spimem/spimem.h`
+
+The SPI memory driver is for flash controllers that send one complete
+command at a time: opcode, address, dummy cycles and data, with chip select
+driven by the controller (for example the Cadence OSPI STIG engine). These
+controllers cannot act as a byte-stream SPI bus, so they do not use the SPI
+API above. Memory drivers such as `spimem_nor_flash` build on this API and
+implement `whal_Flash` for the application.
+
+Each operation carries its bus mode, as Linux spi-mem does: the lines for
+the opcode, the address and the data, and DTR. A memory driver can then
+mix modes, for example a 1-bit read and an octal DTR reset.
+
+### Init
+
+Configure and enable the controller from its configuration struct (clock,
+chip select, read capture), so it does not depend on what an earlier boot
+stage left. Do not set a bus mode here; Exec sets it for each operation.
+
+### Deinit
+
+Disable the controller.
+
+### Exec
+
+Run one `whal_SpiMemOp`:
+
+- `opcode` — the command byte
+- `opLines` / `addrLines` / `dataLines` — 1, 2, 4 or 8 lines for each phase
+  (`WHAL_SPIMEM_OP_INIT_1BIT` sets all three to 1)
+- `dtr` — 1 for DTR (data on both clock edges)
+- `addrBytes` / `addr` — 0, 3 or 4 address bytes
+- `dummyCycles` — clock cycles between the address and the data
+- `dir` / `data` / `dataSz` — no data, data in (read) or data out (write)
+
+Wait until the controller is done before returning. A read with an address
+may be split into several commands at increasing addresses, so a memory
+driver can read any length in one call. Every other operation must run as
+one command: return `WHAL_EINVAL` if it does not fit. Return `WHAL_EINVAL` for
+a line count that is not 1, 2, 4 or 8, and `WHAL_ENOTSUP` for a bus mode
+the controller cannot run.
+
+### MaxDataSz
+
+Report the largest `dataSz` the controller can run in one command for an
+operation like the given one. Memory drivers use it to split writes, for
+example a page program into several smaller programs.
+
+---
+
 ## I2C
 
 Header: `wolfHAL/i2c/i2c.h`
@@ -1121,7 +1192,7 @@ in the dispatch path.
 
 ```c
 struct whal_Crypto {
-    const size_t base;
+    const uintptr_t base;
     const whal_CryptoDriver *driver;
     const void *cfg;
 };
@@ -1436,7 +1507,7 @@ whal_Error whal_Myplatform_AesGcm_Oneshot(whal_AesGcm *dev,
                                           const void *in, void *out, size_t sz,
                                           void *tag, size_t tagSz)
 {
-    size_t base = dev->crypto->base;
+    uintptr_t base = dev->crypto->base;
     whal_Myplatform_Aes_Cfg *cfg =
         (whal_Myplatform_Aes_Cfg *)dev->crypto->cfg;
     /* Load key, IV, process AAD, encrypt/decrypt, compute tag */

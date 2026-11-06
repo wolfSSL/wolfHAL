@@ -110,20 +110,20 @@
 const whal_I2c whal_Stm32l1_I2c_Dev = WHAL_CFG_STM32L1_I2C_DEV;
 #endif
 
-static whal_Error Stm32l1_I2c_WaitSR1(size_t base, uint32_t flag,
+static whal_Error Stm32l1_I2c_WaitSR1(uintptr_t base, uint32_t flag,
                                        whal_Timeout *timeout)
 {
     WHAL_TIMEOUT_START(timeout);
 
     while (1) {
-        uint32_t sr1 = whal_Reg_Read(base, I2C_SR1);
+        uint32_t sr1 = whal_Reg32_Read(base, I2C_SR1);
 
         if (sr1 & flag)
             return WHAL_SUCCESS;
 
         if (sr1 & SR1_ERR_Msk) {
-            whal_Reg_Update(base, I2C_SR1, SR1_ERR_Msk, 0);
-            whal_Reg_Update(base, I2C_CR1, CR1_STOP_Msk, CR1_STOP_Msk);
+            whal_Reg32_Update(base, I2C_SR1, SR1_ERR_Msk, 0);
+            whal_Reg32_Update(base, I2C_CR1, CR1_STOP_Msk, CR1_STOP_Msk);
             return WHAL_EHARDWARE;
         }
 
@@ -132,28 +132,28 @@ static whal_Error Stm32l1_I2c_WaitSR1(size_t base, uint32_t flag,
     }
 }
 
-static void Stm32l1_I2c_ClearAddr(size_t base)
+static void Stm32l1_I2c_ClearAddr(uintptr_t base)
 {
-    (void)whal_Reg_Read(base, I2C_SR1);
-    (void)whal_Reg_Read(base, I2C_SR2);
+    (void)whal_Reg32_Read(base, I2C_SR1);
+    (void)whal_Reg32_Read(base, I2C_SR2);
 }
 
-static whal_Error Stm32l1_I2c_SendStart(size_t base, uint16_t addr,
+static whal_Error Stm32l1_I2c_SendStart(uintptr_t base, uint16_t addr,
                                          uint8_t addrSz, uint8_t isRead,
                                          whal_Timeout *timeout)
 {
     whal_Error err;
     uint8_t header;
 
-    whal_Reg_Update(base, I2C_CR1, CR1_START_Msk, CR1_START_Msk);
+    whal_Reg32_Update(base, I2C_CR1, CR1_START_Msk, CR1_START_Msk);
 
     err = Stm32l1_I2c_WaitSR1(base, SR1_SB_Msk, timeout);
     if (err)
         return err;
 
     if (addrSz == 7) {
-        whal_Reg_Write(base, I2C_DR,
-                       (uint8_t)((addr << 1) | (isRead ? 1 : 0)));
+        whal_Reg32_Write(base, I2C_DR,
+                         (uint8_t)((addr << 1) | (isRead ? 1 : 0)));
 
         return Stm32l1_I2c_WaitSR1(base, SR1_ADDR_Msk, timeout);
     }
@@ -166,13 +166,13 @@ static whal_Error Stm32l1_I2c_SendStart(size_t base, uint16_t addr,
      */
     header = (uint8_t)(0xF0 | (((addr >> 8) & 0x03) << 1));
 
-    whal_Reg_Write(base, I2C_DR, header);
+    whal_Reg32_Write(base, I2C_DR, header);
 
     err = Stm32l1_I2c_WaitSR1(base, SR1_ADD10_Msk, timeout);
     if (err)
         return err;
 
-    whal_Reg_Write(base, I2C_DR, (uint8_t)(addr & 0xFF));
+    whal_Reg32_Write(base, I2C_DR, (uint8_t)(addr & 0xFF));
 
     err = Stm32l1_I2c_WaitSR1(base, SR1_ADDR_Msk, timeout);
     if (err)
@@ -183,18 +183,18 @@ static whal_Error Stm32l1_I2c_SendStart(size_t base, uint16_t addr,
 
     Stm32l1_I2c_ClearAddr(base);
 
-    whal_Reg_Update(base, I2C_CR1, CR1_START_Msk, CR1_START_Msk);
+    whal_Reg32_Update(base, I2C_CR1, CR1_START_Msk, CR1_START_Msk);
 
     err = Stm32l1_I2c_WaitSR1(base, SR1_SB_Msk, timeout);
     if (err)
         return err;
 
-    whal_Reg_Write(base, I2C_DR, (uint8_t)(header | 0x01));
+    whal_Reg32_Write(base, I2C_DR, (uint8_t)(header | 0x01));
 
     return Stm32l1_I2c_WaitSR1(base, SR1_ADDR_Msk, timeout);
 }
 
-static whal_Error Stm32l1_I2c_MasterWrite(size_t base, uint8_t *buf, size_t len,
+static whal_Error Stm32l1_I2c_MasterWrite(uintptr_t base, uint8_t *buf, size_t len,
                                            uint8_t stop, whal_Timeout *timeout)
 {
     whal_Error err;
@@ -204,7 +204,7 @@ static whal_Error Stm32l1_I2c_MasterWrite(size_t base, uint8_t *buf, size_t len,
         if (err)
             return err;
 
-        whal_Reg_Write(base, I2C_DR, buf[i]);
+        whal_Reg32_Write(base, I2C_DR, buf[i]);
     }
 
     err = Stm32l1_I2c_WaitSR1(base, SR1_BTF_Msk, timeout);
@@ -212,7 +212,7 @@ static whal_Error Stm32l1_I2c_MasterWrite(size_t base, uint8_t *buf, size_t len,
         return err;
 
     if (stop)
-        whal_Reg_Update(base, I2C_CR1, CR1_STOP_Msk, CR1_STOP_Msk);
+        whal_Reg32_Update(base, I2C_CR1, CR1_STOP_Msk, CR1_STOP_Msk);
 
     return WHAL_SUCCESS;
 }
@@ -224,26 +224,26 @@ static whal_Error Stm32l1_I2c_MasterWrite(size_t base, uint8_t *buf, size_t len,
  * RM0038 Section 26.3.3, including the ACK/POS manipulation that must
  * happen before the ADDR flag is cleared.
  */
-static whal_Error Stm32l1_I2c_MasterRead(size_t base, uint8_t *buf, size_t len,
+static whal_Error Stm32l1_I2c_MasterRead(uintptr_t base, uint8_t *buf, size_t len,
                                           uint8_t stop, whal_Timeout *timeout)
 {
     whal_Error err;
 
     if (len == 1) {
-        whal_Reg_Update(base, I2C_CR1, CR1_ACK_Msk, 0);
+        whal_Reg32_Update(base, I2C_CR1, CR1_ACK_Msk, 0);
         Stm32l1_I2c_ClearAddr(base);
 
         if (stop)
-            whal_Reg_Update(base, I2C_CR1, CR1_STOP_Msk, CR1_STOP_Msk);
+            whal_Reg32_Update(base, I2C_CR1, CR1_STOP_Msk, CR1_STOP_Msk);
 
         err = Stm32l1_I2c_WaitSR1(base, SR1_RXNE_Msk, timeout);
         if (err)
             return err;
 
-        buf[0] = (uint8_t)whal_Reg_Read(base, I2C_DR);
+        buf[0] = (uint8_t)whal_Reg32_Read(base, I2C_DR);
     }
     else if (len == 2) {
-        whal_Reg_Update(base, I2C_CR1, CR1_ACK_Msk | CR1_POS_Msk, CR1_POS_Msk);
+        whal_Reg32_Update(base, I2C_CR1, CR1_ACK_Msk | CR1_POS_Msk, CR1_POS_Msk);
         Stm32l1_I2c_ClearAddr(base);
 
         err = Stm32l1_I2c_WaitSR1(base, SR1_BTF_Msk, timeout);
@@ -251,13 +251,13 @@ static whal_Error Stm32l1_I2c_MasterRead(size_t base, uint8_t *buf, size_t len,
             return err;
 
         if (stop)
-            whal_Reg_Update(base, I2C_CR1, CR1_STOP_Msk, CR1_STOP_Msk);
+            whal_Reg32_Update(base, I2C_CR1, CR1_STOP_Msk, CR1_STOP_Msk);
 
-        buf[0] = (uint8_t)whal_Reg_Read(base, I2C_DR);
-        buf[1] = (uint8_t)whal_Reg_Read(base, I2C_DR);
+        buf[0] = (uint8_t)whal_Reg32_Read(base, I2C_DR);
+        buf[1] = (uint8_t)whal_Reg32_Read(base, I2C_DR);
     }
     else {
-        whal_Reg_Update(base, I2C_CR1, CR1_ACK_Msk, CR1_ACK_Msk);
+        whal_Reg32_Update(base, I2C_CR1, CR1_ACK_Msk, CR1_ACK_Msk);
         Stm32l1_I2c_ClearAddr(base);
 
         for (size_t i = 0; i < len - 3; i++) {
@@ -265,28 +265,28 @@ static whal_Error Stm32l1_I2c_MasterRead(size_t base, uint8_t *buf, size_t len,
             if (err)
                 return err;
 
-            buf[i] = (uint8_t)whal_Reg_Read(base, I2C_DR);
+            buf[i] = (uint8_t)whal_Reg32_Read(base, I2C_DR);
         }
 
         err = Stm32l1_I2c_WaitSR1(base, SR1_BTF_Msk, timeout);
         if (err)
             return err;
 
-        whal_Reg_Update(base, I2C_CR1, CR1_ACK_Msk, 0);
-        buf[len - 3] = (uint8_t)whal_Reg_Read(base, I2C_DR);
+        whal_Reg32_Update(base, I2C_CR1, CR1_ACK_Msk, 0);
+        buf[len - 3] = (uint8_t)whal_Reg32_Read(base, I2C_DR);
 
         err = Stm32l1_I2c_WaitSR1(base, SR1_BTF_Msk, timeout);
         if (err)
             return err;
 
         if (stop)
-            whal_Reg_Update(base, I2C_CR1, CR1_STOP_Msk, CR1_STOP_Msk);
+            whal_Reg32_Update(base, I2C_CR1, CR1_STOP_Msk, CR1_STOP_Msk);
 
-        buf[len - 2] = (uint8_t)whal_Reg_Read(base, I2C_DR);
-        buf[len - 1] = (uint8_t)whal_Reg_Read(base, I2C_DR);
+        buf[len - 2] = (uint8_t)whal_Reg32_Read(base, I2C_DR);
+        buf[len - 1] = (uint8_t)whal_Reg32_Read(base, I2C_DR);
     }
 
-    whal_Reg_Update(base, I2C_CR1, CR1_POS_Msk, 0);
+    whal_Reg32_Update(base, I2C_CR1, CR1_POS_Msk, 0);
 
     return WHAL_SUCCESS;
 }
@@ -321,10 +321,10 @@ static uint32_t Stm32l1_I2c_CalcTrise(uint32_t pclk, uint32_t freq)
 whal_Error whal_Stm32l1_I2c_Init(whal_I2c *i2cDev)
 {
 #ifdef WHAL_CFG_STM32L1_I2C_SINGLE_INSTANCE
-    size_t base = whal_Stm32l1_I2c_Dev.base;
+    uintptr_t base = whal_Stm32l1_I2c_Dev.base;
     (void)i2cDev;
 #else
-    size_t base;
+    uintptr_t base;
 
     if (!i2cDev || !i2cDev->cfg)
         return WHAL_EINVAL;
@@ -332,10 +332,10 @@ whal_Error whal_Stm32l1_I2c_Init(whal_I2c *i2cDev)
     base = i2cDev->base;
 #endif
 
-    whal_Reg_Update(base, I2C_CR1, CR1_PE_Msk, 0);
-    whal_Reg_Update(base, I2C_CR1, CR1_SWRST_Msk, CR1_SWRST_Msk);
-    whal_Reg_Update(base, I2C_CR1, CR1_SWRST_Msk, 0);
-    whal_Reg_Update(base, I2C_CR1, CR1_PE_Msk, CR1_PE_Msk);
+    whal_Reg32_Update(base, I2C_CR1, CR1_PE_Msk, 0);
+    whal_Reg32_Update(base, I2C_CR1, CR1_SWRST_Msk, CR1_SWRST_Msk);
+    whal_Reg32_Update(base, I2C_CR1, CR1_SWRST_Msk, 0);
+    whal_Reg32_Update(base, I2C_CR1, CR1_PE_Msk, CR1_PE_Msk);
 
     return WHAL_SUCCESS;
 }
@@ -343,10 +343,10 @@ whal_Error whal_Stm32l1_I2c_Init(whal_I2c *i2cDev)
 whal_Error whal_Stm32l1_I2c_Deinit(whal_I2c *i2cDev)
 {
 #ifdef WHAL_CFG_STM32L1_I2C_SINGLE_INSTANCE
-    size_t base = whal_Stm32l1_I2c_Dev.base;
+    uintptr_t base = whal_Stm32l1_I2c_Dev.base;
     (void)i2cDev;
 #else
-    size_t base;
+    uintptr_t base;
 
     if (!i2cDev || !i2cDev->cfg)
         return WHAL_EINVAL;
@@ -354,7 +354,7 @@ whal_Error whal_Stm32l1_I2c_Deinit(whal_I2c *i2cDev)
     base = i2cDev->base;
 #endif
 
-    whal_Reg_Update(base, I2C_CR1, CR1_PE_Msk, 0);
+    whal_Reg32_Update(base, I2C_CR1, CR1_PE_Msk, 0);
 
     return WHAL_SUCCESS;
 }
@@ -365,14 +365,14 @@ whal_Error whal_Stm32l1_I2c_StartCom(whal_I2c *i2cDev, whal_I2c_ComCfg *comCfg)
 #ifdef WHAL_CFG_STM32L1_I2C_SINGLE_INSTANCE
     whal_Stm32l1_I2c_Cfg *cfg =
         (whal_Stm32l1_I2c_Cfg *)whal_Stm32l1_I2c_Dev.cfg;
-    size_t base = whal_Stm32l1_I2c_Dev.base;
+    uintptr_t base = whal_Stm32l1_I2c_Dev.base;
     (void)i2cDev;
 
     if (!comCfg)
         return WHAL_EINVAL;
 #else
     whal_Stm32l1_I2c_Cfg *cfg;
-    size_t base;
+    uintptr_t base;
 
     if (!i2cDev || !i2cDev->cfg || !comCfg)
         return WHAL_EINVAL;
@@ -392,23 +392,23 @@ whal_Error whal_Stm32l1_I2c_StartCom(whal_I2c *i2cDev, whal_I2c_ComCfg *comCfg)
 
     /* Let a pending STOP finish; a bus still busy after the timeout was left
      * by an abandoned transfer and only a software reset clears it */
-    if (whal_Reg_ReadPoll(base, I2C_SR2, SR2_BUSY_Msk, 0,
-                          cfg->timeout) != WHAL_SUCCESS) {
-        whal_Reg_Update(base, I2C_CR1, CR1_SWRST_Msk, CR1_SWRST_Msk);
-        whal_Reg_Update(base, I2C_CR1, CR1_SWRST_Msk, 0);
+    if (whal_Reg32_ReadPoll(base, I2C_SR2, SR2_BUSY_Msk, 0,
+                            cfg->timeout) != WHAL_SUCCESS) {
+        whal_Reg32_Update(base, I2C_CR1, CR1_SWRST_Msk, CR1_SWRST_Msk);
+        whal_Reg32_Update(base, I2C_CR1, CR1_SWRST_Msk, 0);
     }
 
-    whal_Reg_Update(base, I2C_CR1, CR1_PE_Msk, 0);
+    whal_Reg32_Update(base, I2C_CR1, CR1_PE_Msk, 0);
 
     freqMhz = cfg->pclk / 1000000;
-    whal_Reg_Update(base, I2C_CR2, CR2_FREQ_Msk,
-                    whal_SetBits(CR2_FREQ_Msk, CR2_FREQ_Pos, freqMhz));
+    whal_Reg32_Update(base, I2C_CR2, CR2_FREQ_Msk,
+                      whal_SetBits(CR2_FREQ_Msk, CR2_FREQ_Pos, freqMhz));
 
-    whal_Reg_Write(base, I2C_CCR, Stm32l1_I2c_CalcCcr(cfg->pclk, comCfg->freq));
-    whal_Reg_Write(base, I2C_TRISE,
-                   Stm32l1_I2c_CalcTrise(cfg->pclk, comCfg->freq));
+    whal_Reg32_Write(base, I2C_CCR, Stm32l1_I2c_CalcCcr(cfg->pclk, comCfg->freq));
+    whal_Reg32_Write(base, I2C_TRISE,
+                     Stm32l1_I2c_CalcTrise(cfg->pclk, comCfg->freq));
 
-    whal_Reg_Update(base, I2C_CR1, CR1_PE_Msk, CR1_PE_Msk);
+    whal_Reg32_Update(base, I2C_CR1, CR1_PE_Msk, CR1_PE_Msk);
 
     cfg->_addr = comCfg->addr;
     cfg->_addrSz = comCfg->addrSz;
@@ -443,14 +443,14 @@ whal_Error whal_Stm32l1_I2c_Transfer(whal_I2c *i2cDev, whal_I2c_Msg *msgs,
 #ifdef WHAL_CFG_STM32L1_I2C_SINGLE_INSTANCE
     whal_Stm32l1_I2c_Cfg *cfg =
         (whal_Stm32l1_I2c_Cfg *)whal_Stm32l1_I2c_Dev.cfg;
-    size_t base = whal_Stm32l1_I2c_Dev.base;
+    uintptr_t base = whal_Stm32l1_I2c_Dev.base;
     (void)i2cDev;
 
     if (!msgs || numMsgs == 0)
         return WHAL_EINVAL;
 #else
     whal_Stm32l1_I2c_Cfg *cfg;
-    size_t base;
+    uintptr_t base;
 
     if (!i2cDev || !i2cDev->cfg || !msgs || numMsgs == 0)
         return WHAL_EINVAL;
@@ -495,9 +495,9 @@ whal_Error whal_Stm32l1_I2c_Transfer(whal_I2c *i2cDev, whal_I2c_Msg *msgs,
     return WHAL_SUCCESS;
 
 error:
-    whal_Reg_Update(base, I2C_CR1, CR1_ACK_Msk | CR1_POS_Msk, 0);
+    whal_Reg32_Update(base, I2C_CR1, CR1_ACK_Msk | CR1_POS_Msk, 0);
     if (err == WHAL_ETIMEOUT)
-        whal_Reg_Update(base, I2C_CR1, CR1_STOP_Msk, CR1_STOP_Msk);
+        whal_Reg32_Update(base, I2C_CR1, CR1_STOP_Msk, CR1_STOP_Msk);
     return err;
 }
 

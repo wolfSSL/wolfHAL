@@ -52,7 +52,7 @@ whal_Error whal_Stm32f0_Wwdg_Init(whal_Watchdog *wdgDev)
 {
     const whal_Stm32f0_Wwdg_Cfg *cfg =
         (const whal_Stm32f0_Wwdg_Cfg *)whal_Stm32f0_Wwdg_Dev.cfg;
-    size_t base = whal_Stm32f0_Wwdg_Dev.base;
+    uintptr_t base = whal_Stm32f0_Wwdg_Dev.base;
     (void)wdgDev;
 
     /* Counter and window must keep T6 set or the MCU resets immediately */
@@ -60,11 +60,11 @@ whal_Error whal_Stm32f0_Wwdg_Init(whal_Watchdog *wdgDev)
         cfg->counter < 0x40 || cfg->counter > 0x7F)
         return WHAL_EINVAL;
 
-    whal_Reg_Update(base, CFR_REG, CFR_W_Msk | CFR_WDGTB_Msk,
-                    whal_SetBits(CFR_W_Msk, CFR_W_Pos, cfg->window) |
-                    whal_SetBits(CFR_WDGTB_Msk, CFR_WDGTB_Pos, cfg->prescaler));
+    whal_Reg32_Update(base, CFR_REG, CFR_W_Msk | CFR_WDGTB_Msk,
+                      whal_SetBits(CFR_W_Msk, CFR_W_Pos, cfg->window) |
+                      whal_SetBits(CFR_WDGTB_Msk, CFR_WDGTB_Pos, cfg->prescaler));
 
-    whal_Reg_Write(base, CR_REG, CR_WDGA_Msk | cfg->counter);
+    whal_Reg32_Write(base, CR_REG, CR_WDGA_Msk | cfg->counter);
 
     return WHAL_SUCCESS;
 }
@@ -79,10 +79,10 @@ whal_Error whal_Stm32f0_Wwdg_Refresh(whal_Watchdog *wdgDev)
 {
     const whal_Stm32f0_Wwdg_Cfg *cfg =
         (const whal_Stm32f0_Wwdg_Cfg *)whal_Stm32f0_Wwdg_Dev.cfg;
-    size_t base = whal_Stm32f0_Wwdg_Dev.base;
+    uintptr_t base = whal_Stm32f0_Wwdg_Dev.base;
     (void)wdgDev;
 
-    whal_Reg_Write(base, CR_REG, CR_WDGA_Msk | cfg->counter);
+    whal_Reg32_Write(base, CR_REG, CR_WDGA_Msk | cfg->counter);
 
     return WHAL_SUCCESS;
 }

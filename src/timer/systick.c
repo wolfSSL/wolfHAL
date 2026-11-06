@@ -59,58 +59,58 @@ whal_Error whal_SysTick_Init(whal_Timer *timerDev)
 {
     const whal_SysTick_Cfg *cfg =
         (const whal_SysTick_Cfg *)whal_SysTick_Dev.cfg;
-    size_t base = whal_SysTick_Dev.base;
+    uintptr_t base = whal_SysTick_Dev.base;
     (void)timerDev;
 
     /* RELOAD is 24 bits and holds the period minus one */
     if (cfg->cyclesPerTick < 2 || cfg->cyclesPerTick > 0x1000000)
         return WHAL_EINVAL;
 
-    whal_Reg_Update(base, SYSTICK_CSR_REG,
+    whal_Reg32_Update(base, SYSTICK_CSR_REG,
                           SYSTICK_CSR_CLKSOURCE_Msk | SYSTICK_CSR_TICKINT_Msk,
                           whal_SetBits(SYSTICK_CSR_CLKSOURCE_Msk, SYSTICK_CSR_CLKSOURCE_Pos, cfg->clkSrc) |
                           whal_SetBits(SYSTICK_CSR_TICKINT_Msk, SYSTICK_CSR_TICKINT_Pos, cfg->tickInt));
 
-    whal_Reg_Update(base, SYSTICK_RVR_REG,
-                    SYSTICK_RVR_RELOAD_Msk,
-                    whal_SetBits(SYSTICK_RVR_RELOAD_Msk, SYSTICK_RVR_RELOAD_Pos, cfg->cyclesPerTick - 1));
+    whal_Reg32_Update(base, SYSTICK_RVR_REG,
+                      SYSTICK_RVR_RELOAD_Msk,
+                      whal_SetBits(SYSTICK_RVR_RELOAD_Msk, SYSTICK_RVR_RELOAD_Pos, cfg->cyclesPerTick - 1));
 
     /* Any write clears the counter so the first period starts from RELOAD */
-    whal_Reg_Write(base, SYSTICK_CVR_REG, 0);
+    whal_Reg32_Write(base, SYSTICK_CVR_REG, 0);
 
     return WHAL_SUCCESS;
 }
 
 whal_Error whal_SysTick_Deinit(whal_Timer *timerDev)
 {
-    size_t base = whal_SysTick_Dev.base;
+    uintptr_t base = whal_SysTick_Dev.base;
     (void)timerDev;
 
-    whal_Reg_Update(base, SYSTICK_CSR_REG,
-                    SYSTICK_CSR_ENABLE_Msk | SYSTICK_CSR_TICKINT_Msk, 0);
-    whal_Reg_Write(base, SYSTICK_CVR_REG, 0);
+    whal_Reg32_Update(base, SYSTICK_CSR_REG,
+                      SYSTICK_CSR_ENABLE_Msk | SYSTICK_CSR_TICKINT_Msk, 0);
+    whal_Reg32_Write(base, SYSTICK_CVR_REG, 0);
 
     return WHAL_SUCCESS;
 }
 
 whal_Error whal_SysTick_Start(whal_Timer *timerDev)
 {
-    size_t base = whal_SysTick_Dev.base;
+    uintptr_t base = whal_SysTick_Dev.base;
     (void)timerDev;
 
-    whal_Reg_Update(base, SYSTICK_CSR_REG, SYSTICK_CSR_ENABLE_Msk,
-                    whal_SetBits(SYSTICK_CSR_ENABLE_Msk, SYSTICK_CSR_ENABLE_Pos, 1));
+    whal_Reg32_Update(base, SYSTICK_CSR_REG, SYSTICK_CSR_ENABLE_Msk,
+                      whal_SetBits(SYSTICK_CSR_ENABLE_Msk, SYSTICK_CSR_ENABLE_Pos, 1));
 
     return WHAL_SUCCESS;
 }
 
 whal_Error whal_SysTick_Stop(whal_Timer *timerDev)
 {
-    size_t base = whal_SysTick_Dev.base;
+    uintptr_t base = whal_SysTick_Dev.base;
     (void)timerDev;
 
-    whal_Reg_Update(base, SYSTICK_CSR_REG, SYSTICK_CSR_ENABLE_Msk,
-                    whal_SetBits(SYSTICK_CSR_ENABLE_Msk, SYSTICK_CSR_ENABLE_Pos, 0));
+    whal_Reg32_Update(base, SYSTICK_CSR_REG, SYSTICK_CSR_ENABLE_Msk,
+                      whal_SetBits(SYSTICK_CSR_ENABLE_Msk, SYSTICK_CSR_ENABLE_Pos, 0));
 
     return WHAL_SUCCESS;
 }
@@ -118,7 +118,7 @@ whal_Error whal_SysTick_Stop(whal_Timer *timerDev)
 whal_Error whal_SysTick_Reset(whal_Timer *timerDev)
 {
     (void)timerDev;
-    whal_Reg_Write(whal_SysTick_Dev.base, SYSTICK_CVR_REG, 0);
+    whal_Reg32_Write(whal_SysTick_Dev.base, SYSTICK_CVR_REG, 0);
     return WHAL_SUCCESS;
 }
 

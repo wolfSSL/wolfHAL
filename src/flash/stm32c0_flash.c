@@ -137,21 +137,21 @@ whal_Error whal_Stm32c0_Flash_Deinit(whal_Flash *flashDev)
 
 whal_Error whal_Stm32c0_Flash_Lock(whal_Flash *flashDev, size_t addr, size_t len)
 {
-    size_t base = whal_Stm32c0_Flash_Dev.base;
+    uintptr_t base = whal_Stm32c0_Flash_Dev.base;
     (void)flashDev;
     (void)addr;
     (void)len;
 
     /* Setting LOCK bit prevents further flash modifications until next unlock */
-    whal_Reg_Update(base, FLASH_CR_REG, FLASH_CR_LOCK_Msk,
-                    whal_SetBits(FLASH_CR_LOCK_Msk, FLASH_CR_LOCK_Pos, 1));
+    whal_Reg32_Update(base, FLASH_CR_REG, FLASH_CR_LOCK_Msk,
+                      whal_SetBits(FLASH_CR_LOCK_Msk, FLASH_CR_LOCK_Pos, 1));
 
     return WHAL_SUCCESS;
 }
 
 whal_Error whal_Stm32c0_Flash_Unlock(whal_Flash *flashDev, size_t addr, size_t len)
 {
-    size_t base = whal_Stm32c0_Flash_Dev.base;
+    uintptr_t base = whal_Stm32c0_Flash_Dev.base;
     (void)flashDev;
     (void)addr;
     (void)len;
@@ -160,12 +160,12 @@ whal_Error whal_Stm32c0_Flash_Unlock(whal_Flash *flashDev, size_t addr, size_t l
      * Unlock sequence: write KEY1 then KEY2 to KEYR register.
      * Incorrect sequence or order will trigger a bus error.
      */
-    if (whal_Reg_Read(base, FLASH_CR_REG) & FLASH_CR_LOCK_Msk) {
-        whal_Reg_Update(base, FLASH_KEYR_REG, FLASH_KEYR_KEY_Msk, 0x45670123);
-        whal_Reg_Update(base, FLASH_KEYR_REG, FLASH_KEYR_KEY_Msk, 0xCDEF89AB);
+    if (whal_Reg32_Read(base, FLASH_CR_REG) & FLASH_CR_LOCK_Msk) {
+        whal_Reg32_Update(base, FLASH_KEYR_REG, FLASH_KEYR_KEY_Msk, 0x45670123);
+        whal_Reg32_Update(base, FLASH_KEYR_REG, FLASH_KEYR_KEY_Msk, 0xCDEF89AB);
     }
 
-    if (whal_Reg_Read(base, FLASH_CR_REG) & FLASH_CR_LOCK_Msk)
+    if (whal_Reg32_Read(base, FLASH_CR_REG) & FLASH_CR_LOCK_Msk)
         return WHAL_EHARDWARE;
 
     return WHAL_SUCCESS;
@@ -208,8 +208,8 @@ static whal_Error whal_Stm32c0_Flash_WriteOrErase(whal_Flash *flashDev, size_t a
 {
     const whal_Stm32c0_Flash_Cfg *cfg =
         (const whal_Stm32c0_Flash_Cfg *)whal_Stm32c0_Flash_Dev.cfg;
-    size_t base = whal_Stm32c0_Flash_Dev.base;
-    size_t bsy;
+    uintptr_t base = whal_Stm32c0_Flash_Dev.base;
+    uint32_t bsy;
     (void)flashDev;
 
     if (addr < cfg->startAddr || dataSz > cfg->size ||
@@ -224,23 +224,23 @@ static whal_Error whal_Stm32c0_Flash_WriteOrErase(whal_Flash *flashDev, size_t a
         return WHAL_SUCCESS;
 
     /* Check if flash is busy */
-    whal_Reg_Get(base, FLASH_SR_REG, FLASH_SR_BSY_Msk, FLASH_SR_BSY_Pos, &bsy);
+    whal_Reg32_Get(base, FLASH_SR_REG, FLASH_SR_BSY_Msk, FLASH_SR_BSY_Pos, &bsy);
 
-    if (bsy || (whal_Reg_Read(base, FLASH_SR_REG) & FLASH_SR_CFGBSY_Msk)) {
+    if (bsy || (whal_Reg32_Read(base, FLASH_SR_REG) & FLASH_SR_CFGBSY_Msk)) {
         return WHAL_ENOTREADY;
     }
 
     /* Drop PG/PER left set by an earlier operation that timed out */
-    whal_Reg_Update(base, FLASH_CR_REG, FLASH_CR_PG_Msk | FLASH_CR_PER_Msk, 0);
+    whal_Reg32_Update(base, FLASH_CR_REG, FLASH_CR_PG_Msk | FLASH_CR_PER_Msk, 0);
 
     /* Clear all error flags by writing 1 to each */
-    whal_Reg_Update(base, FLASH_SR_REG, FLASH_SR_ALL_ERR, 0xffffffff);
+    whal_Reg32_Update(base, FLASH_SR_REG, FLASH_SR_ALL_ERR, 0xffffffff);
 
     whal_Error err = WHAL_SUCCESS;
 
     if (write) {
         /* Enable flash programming mode */
-        whal_Reg_Update(base, FLASH_CR_REG, FLASH_CR_PG_Msk, 1);
+        whal_Reg32_Update(base, FLASH_CR_REG, FLASH_CR_PG_Msk, 1);
 
         /* Program data in 64-bit (8 byte) double-word chunks */
         for (size_t i = 0; i < dataSz; i += 8) {
@@ -251,14 +251,14 @@ static whal_Error whal_Stm32c0_Flash_WriteOrErase(whal_Flash *flashDev, size_t a
             flashAddr[1] = whal_LoadLe32(data + i + 4);
 
             /* Wait for programming to complete */
-            err = whal_Reg_ReadPoll(base, FLASH_SR_REG,
-                                    FLASH_SR_CFGBSY_Msk, 0, cfg->timeout);
+            err = whal_Reg32_ReadPoll(base, FLASH_SR_REG,
+                                      FLASH_SR_CFGBSY_Msk, 0, cfg->timeout);
             if (err)
                 goto cleanup;
 
             /* Check for errors */
-            if (whal_Reg_Read(base, FLASH_SR_REG) & FLASH_SR_ALL_ERR) {
-                whal_Reg_Update(base, FLASH_SR_REG, FLASH_SR_ALL_ERR, FLASH_SR_ALL_ERR);
+            if (whal_Reg32_Read(base, FLASH_SR_REG) & FLASH_SR_ALL_ERR) {
+                whal_Reg32_Update(base, FLASH_SR_REG, FLASH_SR_ALL_ERR, FLASH_SR_ALL_ERR);
                 err = WHAL_EHARDWARE;
                 goto cleanup;
             }
@@ -271,43 +271,43 @@ static whal_Error whal_Stm32c0_Flash_WriteOrErase(whal_Flash *flashDev, size_t a
         endPage = ((addr - cfg->startAddr) + dataSz - 1) >> 11;
 
         /* Enable page erase mode */
-        whal_Reg_Update(base, FLASH_CR_REG, FLASH_CR_PER_Msk,
-                        whal_SetBits(FLASH_CR_PER_Msk, FLASH_CR_PER_Pos, 1));
+        whal_Reg32_Update(base, FLASH_CR_REG, FLASH_CR_PER_Msk,
+                          whal_SetBits(FLASH_CR_PER_Msk, FLASH_CR_PER_Pos, 1));
 
         /* Erase each page in the range */
         for (size_t page = startPage; page <= endPage; ++page) {
             /* Select page number */
-            whal_Reg_Update(base, FLASH_CR_REG, FLASH_CR_PNB_Msk,
-                            whal_SetBits(FLASH_CR_PNB_Msk, FLASH_CR_PNB_Pos, page));
+            whal_Reg32_Update(base, FLASH_CR_REG, FLASH_CR_PNB_Msk,
+                              whal_SetBits(FLASH_CR_PNB_Msk, FLASH_CR_PNB_Pos, page));
 
             /* Start erase operation */
-            whal_Reg_Update(base, FLASH_CR_REG, FLASH_CR_STRT_Msk,
-                            whal_SetBits(FLASH_CR_STRT_Msk, FLASH_CR_STRT_Pos, 1));
+            whal_Reg32_Update(base, FLASH_CR_REG, FLASH_CR_STRT_Msk,
+                              whal_SetBits(FLASH_CR_STRT_Msk, FLASH_CR_STRT_Pos, 1));
 
             /* Wait for erase to complete */
-            err = whal_Reg_ReadPoll(base, FLASH_SR_REG,
-                                    FLASH_SR_CFGBSY_Msk, 0, cfg->timeout);
+            err = whal_Reg32_ReadPoll(base, FLASH_SR_REG,
+                                      FLASH_SR_CFGBSY_Msk, 0, cfg->timeout);
             if (err)
                 goto cleanup;
 
             /* Check for errors */
-            if (whal_Reg_Read(base, FLASH_SR_REG) & FLASH_SR_ALL_ERR) {
-                whal_Reg_Update(base, FLASH_SR_REG, FLASH_SR_ALL_ERR, FLASH_SR_ALL_ERR);
+            if (whal_Reg32_Read(base, FLASH_SR_REG) & FLASH_SR_ALL_ERR) {
+                whal_Reg32_Update(base, FLASH_SR_REG, FLASH_SR_ALL_ERR, FLASH_SR_ALL_ERR);
                 err = WHAL_EHARDWARE;
                 goto cleanup;
             }
         }
 
         /* Disable page erase mode */
-        whal_Reg_Update(base, FLASH_CR_REG, FLASH_CR_PER_Msk,
-                        whal_SetBits(FLASH_CR_PER_Msk, FLASH_CR_PER_Pos, 0));
+        whal_Reg32_Update(base, FLASH_CR_REG, FLASH_CR_PER_Msk,
+                          whal_SetBits(FLASH_CR_PER_Msk, FLASH_CR_PER_Pos, 0));
     }
 
 cleanup:
     /* FLASH_CR must not be written while CFGBSY is set */
-    if (!(whal_Reg_Read(base, FLASH_SR_REG) & FLASH_SR_CFGBSY_Msk))
-        whal_Reg_Update(base, FLASH_CR_REG,
-                        FLASH_CR_PG_Msk | FLASH_CR_PER_Msk, 0);
+    if (!(whal_Reg32_Read(base, FLASH_SR_REG) & FLASH_SR_CFGBSY_Msk))
+        whal_Reg32_Update(base, FLASH_CR_REG,
+                          FLASH_CR_PG_Msk | FLASH_CR_PER_Msk, 0);
 
     return err;
 }
@@ -326,10 +326,10 @@ whal_Error whal_Stm32c0_Flash_Erase(whal_Flash *flashDev, size_t addr,
 
 whal_Error whal_Stm32c0_Flash_Ext_SetLatency(whal_Flash *flashDev, enum whal_Stm32c0_Flash_Latency latency)
 {
-    size_t base = whal_Stm32c0_Flash_Dev.base;
+    uintptr_t base = whal_Stm32c0_Flash_Dev.base;
     (void)flashDev;
 
-    whal_Reg_Update(base, FLASH_ACR_REG, FLASH_ACR_LATENCY_Msk, latency);
+    whal_Reg32_Update(base, FLASH_ACR_REG, FLASH_ACR_LATENCY_Msk, latency);
     return WHAL_SUCCESS;
 }
 

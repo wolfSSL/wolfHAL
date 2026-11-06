@@ -55,7 +55,7 @@ typedef struct {
  * @brief UART device instance with a base address, driver vtable, and platform-specific cfg.
  */
 struct whal_Uart {
-    const size_t base;
+    const uintptr_t base;
     const whal_UartDriver *driver;
     void *cfg;
 };

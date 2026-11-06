@@ -60,7 +60,7 @@ whal_Error whal_Nvic_Deinit(whal_Irq *irqDev)
 whal_Error whal_Nvic_Enable(whal_Irq *irqDev, size_t irq,
                                     const void *irqCfg)
 {
-    size_t base = whal_Nvic_Dev.base;
+    uintptr_t base = whal_Nvic_Dev.base;
     (void)irqDev;
 
     /* Set priority if config provided */
@@ -68,22 +68,22 @@ whal_Error whal_Nvic_Enable(whal_Irq *irqDev, size_t irq,
         const whal_Nvic_Cfg *cfg = (const whal_Nvic_Cfg *)irqCfg;
         size_t shift = NVIC_IPR_SHIFT(irq);
         size_t mask = (0xFFUL << shift);
-        whal_Reg_Update(base, NVIC_IPR_REG(irq), mask,
-                        (size_t)(cfg->priority << 4) << shift);
+        whal_Reg32_Update(base, NVIC_IPR_REG(irq), mask,
+                          (size_t)(cfg->priority << 4) << shift);
     }
 
     /* Enable the interrupt */
-    whal_Reg_Write(base, NVIC_ISER_REG(irq), (1UL << (irq & 0x1F)));
+    whal_Reg32_Write(base, NVIC_ISER_REG(irq), (1UL << (irq & 0x1F)));
 
     return WHAL_SUCCESS;
 }
 
 whal_Error whal_Nvic_Disable(whal_Irq *irqDev, size_t irq)
 {
-    size_t base = whal_Nvic_Dev.base;
+    uintptr_t base = whal_Nvic_Dev.base;
     (void)irqDev;
 
-    whal_Reg_Write(base, NVIC_ICER_REG(irq), (1UL << (irq & 0x1F)));
+    whal_Reg32_Write(base, NVIC_ICER_REG(irq), (1UL << (irq & 0x1F)));
 
     return WHAL_SUCCESS;
 }
