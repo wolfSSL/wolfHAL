@@ -49,7 +49,7 @@ typedef struct {
  * @brief RNG device instance with a base address, driver vtable, and platform-specific cfg.
  */
 struct whal_Rng {
-    const size_t base;
+    const uintptr_t base;
     const whal_RngDriver *driver;
     void *cfg;
 };

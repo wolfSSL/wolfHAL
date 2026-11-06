@@ -74,12 +74,12 @@ static void RecordCb(void *ctx, whal_Error err)
     rec->err = err;
 }
 
-static size_t DmaBase(void)
+static uintptr_t DmaBase(void)
 {
     return g_whalDma1.base;
 }
 
-static size_t MuxBase(void)
+static uintptr_t MuxBase(void)
 {
     return ((whal_Stm32wb_Dma_Cfg *)g_whalDma1.cfg)->dmamuxBase;
 }
@@ -108,14 +108,14 @@ static void Test_Dma_PeriphToMem(void)
     WHAL_ASSERT_EQ(whal_Dma_Configure(&g_whalDma1, TEST_CH, &cfg),
                    WHAL_SUCCESS);
 
-    WHAL_ASSERT_EQ(whal_Reg_Read(DmaBase(), DMA_CCR),
+    WHAL_ASSERT_EQ(whal_Reg32_Read(DmaBase(), DMA_CCR),
                    CCR_TCIE | CCR_TEIE | CCR_MINC |
                    CCR_PSIZE(1) | CCR_MSIZE(1));
-    WHAL_ASSERT_EQ(whal_Reg_Read(DmaBase(), DMA_CNDTR), 7);
-    WHAL_ASSERT_EQ(whal_Reg_Read(DmaBase(), DMA_CPAR), FAKE_PERIPH);
-    WHAL_ASSERT_EQ(whal_Reg_Read(DmaBase(), DMA_CMAR),
+    WHAL_ASSERT_EQ(whal_Reg32_Read(DmaBase(), DMA_CNDTR), 7);
+    WHAL_ASSERT_EQ(whal_Reg32_Read(DmaBase(), DMA_CPAR), FAKE_PERIPH);
+    WHAL_ASSERT_EQ(whal_Reg32_Read(DmaBase(), DMA_CMAR),
                    (uint32_t)(size_t)g_dst);
-    WHAL_ASSERT_EQ(whal_Reg_Read(MuxBase(), DMAMUX_CCR) & 0x3F, 14);
+    WHAL_ASSERT_EQ(whal_Reg32_Read(MuxBase(), DMAMUX_CCR) & 0x3F, 14);
 
     WHAL_ASSERT_EQ(whal_Dma_Stop(&g_whalDma1, TEST_CH), WHAL_SUCCESS);
 }
@@ -137,14 +137,14 @@ static void Test_Dma_MemToPeriph(void)
     WHAL_ASSERT_EQ(whal_Dma_Configure(&g_whalDma1, TEST_CH, &cfg),
                    WHAL_SUCCESS);
 
-    WHAL_ASSERT_EQ(whal_Reg_Read(DmaBase(), DMA_CCR),
+    WHAL_ASSERT_EQ(whal_Reg32_Read(DmaBase(), DMA_CCR),
                    CCR_TCIE | CCR_TEIE | CCR_DIR | CCR_CIRC | CCR_MINC |
                    CCR_PSIZE(2) | CCR_MSIZE(2));
-    WHAL_ASSERT_EQ(whal_Reg_Read(DmaBase(), DMA_CNDTR), 5);
-    WHAL_ASSERT_EQ(whal_Reg_Read(DmaBase(), DMA_CPAR), FAKE_PERIPH);
-    WHAL_ASSERT_EQ(whal_Reg_Read(DmaBase(), DMA_CMAR),
+    WHAL_ASSERT_EQ(whal_Reg32_Read(DmaBase(), DMA_CNDTR), 5);
+    WHAL_ASSERT_EQ(whal_Reg32_Read(DmaBase(), DMA_CPAR), FAKE_PERIPH);
+    WHAL_ASSERT_EQ(whal_Reg32_Read(DmaBase(), DMA_CMAR),
                    (uint32_t)(size_t)g_src);
-    WHAL_ASSERT_EQ(whal_Reg_Read(MuxBase(), DMAMUX_CCR) & 0x3F, 15);
+    WHAL_ASSERT_EQ(whal_Reg32_Read(MuxBase(), DMAMUX_CCR) & 0x3F, 15);
 
     WHAL_ASSERT_EQ(whal_Dma_Stop(&g_whalDma1, TEST_CH), WHAL_SUCCESS);
 }
@@ -164,12 +164,12 @@ static void Test_Dma_MemToMemRegs(void)
     WHAL_ASSERT_EQ(whal_Dma_Configure(&g_whalDma1, TEST_CH, &cfg),
                    WHAL_SUCCESS);
 
-    WHAL_ASSERT_EQ(whal_Reg_Read(DmaBase(), DMA_CCR),
+    WHAL_ASSERT_EQ(whal_Reg32_Read(DmaBase(), DMA_CCR),
                    CCR_TCIE | CCR_TEIE | CCR_PINC | CCR_MINC | CCR_MEM2MEM);
-    WHAL_ASSERT_EQ(whal_Reg_Read(DmaBase(), DMA_CNDTR), XFER_SZ);
-    WHAL_ASSERT_EQ(whal_Reg_Read(DmaBase(), DMA_CPAR),
+    WHAL_ASSERT_EQ(whal_Reg32_Read(DmaBase(), DMA_CNDTR), XFER_SZ);
+    WHAL_ASSERT_EQ(whal_Reg32_Read(DmaBase(), DMA_CPAR),
                    (uint32_t)(size_t)g_src);
-    WHAL_ASSERT_EQ(whal_Reg_Read(DmaBase(), DMA_CMAR),
+    WHAL_ASSERT_EQ(whal_Reg32_Read(DmaBase(), DMA_CMAR),
                    (uint32_t)(size_t)g_dst);
 
     WHAL_ASSERT_EQ(whal_Dma_Stop(&g_whalDma1, TEST_CH), WHAL_SUCCESS);
@@ -211,14 +211,14 @@ static void RunMemToMem(whal_Stm32wb_Dma_Width width, uint16_t items)
     WHAL_ASSERT_EQ(whal_Dma_Configure(&g_whalDma1, TEST_CH, &cfg),
                    WHAL_SUCCESS);
     WHAL_ASSERT_EQ(whal_Dma_Start(&g_whalDma1, TEST_CH), WHAL_SUCCESS);
-    WHAL_ASSERT_EQ(whal_Reg_ReadPoll(DmaBase(), DMA_ISR, ISR_TCIF, ISR_TCIF,
-                                     &g_whalTimeout), WHAL_SUCCESS);
-    WHAL_ASSERT_EQ(whal_Reg_Read(DmaBase(), DMA_ISR) & ISR_TEIF, 0);
+    WHAL_ASSERT_EQ(whal_Reg32_ReadPoll(DmaBase(), DMA_ISR, ISR_TCIF, ISR_TCIF,
+                                       &g_whalTimeout), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(whal_Reg32_Read(DmaBase(), DMA_ISR) & ISR_TEIF, 0);
 
     whal_Stm32wb_Dma_IRQHandler(&g_whalDma1, TEST_CH, RecordCb, &rec);
     WHAL_ASSERT_EQ(rec.calls, 1);
     WHAL_ASSERT_EQ(rec.err, WHAL_SUCCESS);
-    WHAL_ASSERT_EQ(whal_Reg_Read(DmaBase(), DMA_ISR) & ISR_TCIF, 0);
+    WHAL_ASSERT_EQ(whal_Reg32_Read(DmaBase(), DMA_ISR) & ISR_TCIF, 0);
 
     WHAL_ASSERT_MEM_EQ(g_dst, g_src, XFER_SZ);
 
@@ -251,13 +251,13 @@ static void Test_Dma_TransferError(void)
     WHAL_ASSERT_EQ(whal_Dma_Configure(&g_whalDma1, TEST_CH, &cfg),
                    WHAL_SUCCESS);
     WHAL_ASSERT_EQ(whal_Dma_Start(&g_whalDma1, TEST_CH), WHAL_SUCCESS);
-    WHAL_ASSERT_EQ(whal_Reg_ReadPoll(DmaBase(), DMA_ISR, ISR_TEIF, ISR_TEIF,
-                                     &g_whalTimeout), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(whal_Reg32_ReadPoll(DmaBase(), DMA_ISR, ISR_TEIF, ISR_TEIF,
+                                       &g_whalTimeout), WHAL_SUCCESS);
 
     whal_Stm32wb_Dma_IRQHandler(&g_whalDma1, TEST_CH, RecordCb, &rec);
     WHAL_ASSERT_EQ(rec.calls, 1);
     WHAL_ASSERT_EQ(rec.err, WHAL_EHARDWARE);
-    WHAL_ASSERT_EQ(whal_Reg_Read(DmaBase(), DMA_ISR) &
+    WHAL_ASSERT_EQ(whal_Reg32_Read(DmaBase(), DMA_ISR) &
                    (ISR_TEIF | ISR_TCIF), 0);
 
     WHAL_ASSERT_EQ(whal_Dma_Stop(&g_whalDma1, TEST_CH), WHAL_SUCCESS);

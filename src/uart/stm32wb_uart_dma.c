@@ -86,14 +86,14 @@ whal_Error whal_Stm32wb_UartDma_SendAsync(whal_Uart *uartDev, const void *data,
 #ifdef WHAL_CFG_STM32WB_UART_DMA_SINGLE_INSTANCE
     whal_Stm32wb_UartDma_Cfg *cfg =
         (whal_Stm32wb_UartDma_Cfg *)whal_Stm32wb_UartDma_Dev.cfg;
-    size_t base = whal_Stm32wb_UartDma_Dev.base;
+    uintptr_t base = whal_Stm32wb_UartDma_Dev.base;
     (void)uartDev;
 
     if (!data || dataSz > UINT16_MAX)
         return WHAL_EINVAL;
 #else
     whal_Stm32wb_UartDma_Cfg *cfg;
-    size_t base;
+    uintptr_t base;
 
     if (!uartDev || !uartDev->cfg || !data || dataSz > UINT16_MAX)
         return WHAL_EINVAL;
@@ -120,12 +120,12 @@ whal_Error whal_Stm32wb_UartDma_SendAsync(whal_Uart *uartDev, const void *data,
         return err;
     }
 
-    whal_Reg_Update(base, UART_CR3_REG, UART_CR3_DMAT_Msk,
-                    UART_CR3_DMAT_Msk);
+    whal_Reg32_Update(base, UART_CR3_REG, UART_CR3_DMAT_Msk,
+                      UART_CR3_DMAT_Msk);
 
     err = whal_Dma_Start(cfg->dma, cfg->txCh);
     if (err) {
-        whal_Reg_Update(base, UART_CR3_REG, UART_CR3_DMAT_Msk, 0);
+        whal_Reg32_Update(base, UART_CR3_REG, UART_CR3_DMAT_Msk, 0);
         cfg->txResult = err;
         return err;
     }
@@ -140,14 +140,14 @@ whal_Error whal_Stm32wb_UartDma_RecvAsync(whal_Uart *uartDev, void *data,
 #ifdef WHAL_CFG_STM32WB_UART_DMA_SINGLE_INSTANCE
     whal_Stm32wb_UartDma_Cfg *cfg =
         (whal_Stm32wb_UartDma_Cfg *)whal_Stm32wb_UartDma_Dev.cfg;
-    size_t base = whal_Stm32wb_UartDma_Dev.base;
+    uintptr_t base = whal_Stm32wb_UartDma_Dev.base;
     (void)uartDev;
 
     if (!data || dataSz > UINT16_MAX)
         return WHAL_EINVAL;
 #else
     whal_Stm32wb_UartDma_Cfg *cfg;
-    size_t base;
+    uintptr_t base;
 
     if (!uartDev || !uartDev->cfg || !data || dataSz > UINT16_MAX)
         return WHAL_EINVAL;
@@ -175,13 +175,13 @@ whal_Error whal_Stm32wb_UartDma_RecvAsync(whal_Uart *uartDev, void *data,
     }
 
     /* Drop line errors latched before this transfer */
-    whal_Reg_Write(base, UART_ICR_REG, UART_ISR_ERR_Msk);
-    whal_Reg_Update(base, UART_CR3_REG, UART_CR3_DMAR_Msk,
-                    UART_CR3_DMAR_Msk);
+    whal_Reg32_Write(base, UART_ICR_REG, UART_ISR_ERR_Msk);
+    whal_Reg32_Update(base, UART_CR3_REG, UART_CR3_DMAR_Msk,
+                      UART_CR3_DMAR_Msk);
 
     err = whal_Dma_Start(cfg->dma, cfg->rxCh);
     if (err) {
-        whal_Reg_Update(base, UART_CR3_REG, UART_CR3_DMAR_Msk, 0);
+        whal_Reg32_Update(base, UART_CR3_REG, UART_CR3_DMAR_Msk, 0);
         cfg->rxResult = err;
         return err;
     }
@@ -193,7 +193,7 @@ whal_Error whal_Stm32wb_UartDma_Send(whal_Uart *uartDev, const void *data,
                                     size_t dataSz)
 {
     whal_Stm32wb_UartDma_Cfg *cfg;
-    size_t base;
+    uintptr_t base;
     whal_Error err;
 
     err = whal_Stm32wb_UartDma_SendAsync(uartDev, data, dataSz);
@@ -221,12 +221,12 @@ whal_Error whal_Stm32wb_UartDma_Send(whal_Uart *uartDev, const void *data,
         goto cleanup;
     }
 
-    err = whal_Reg_ReadPoll(base, UART_ISR_REG,
-                            UART_ISR_TC_Msk, UART_ISR_TC_Msk, cfg->base.timeout);
+    err = whal_Reg32_ReadPoll(base, UART_ISR_REG,
+                              UART_ISR_TC_Msk, UART_ISR_TC_Msk, cfg->base.timeout);
 
 cleanup:
     whal_Dma_Stop(cfg->dma, cfg->txCh);
-    whal_Reg_Update(base, UART_CR3_REG, UART_CR3_DMAT_Msk, 0);
+    whal_Reg32_Update(base, UART_CR3_REG, UART_CR3_DMAT_Msk, 0);
     cfg->txResult = err;
 
     return err;
@@ -236,7 +236,7 @@ whal_Error whal_Stm32wb_UartDma_Recv(whal_Uart *uartDev, void *data,
                                      size_t dataSz)
 {
     whal_Stm32wb_UartDma_Cfg *cfg;
-    size_t base;
+    uintptr_t base;
     whal_Error err;
     size_t isr;
 
@@ -262,16 +262,16 @@ whal_Error whal_Stm32wb_UartDma_Recv(whal_Uart *uartDev, void *data,
 
     err = cfg->rxResult;
     if (err == WHAL_SUCCESS) {
-        isr = whal_Reg_Read(base, UART_ISR_REG) & UART_ISR_ERR_Msk;
+        isr = whal_Reg32_Read(base, UART_ISR_REG) & UART_ISR_ERR_Msk;
         if (isr) {
-            whal_Reg_Write(base, UART_ICR_REG, isr);
+            whal_Reg32_Write(base, UART_ICR_REG, isr);
             err = WHAL_EHARDWARE;
         }
     }
 
 cleanup:
     whal_Dma_Stop(cfg->dma, cfg->rxCh);
-    whal_Reg_Update(base, UART_CR3_REG, UART_CR3_DMAR_Msk, 0);
+    whal_Reg32_Update(base, UART_CR3_REG, UART_CR3_DMAR_Msk, 0);
     cfg->rxResult = err;
 
     return err;
@@ -280,7 +280,7 @@ cleanup:
 whal_Error whal_Stm32wb_UartDma_Deinit(whal_Uart *uartDev)
 {
     whal_Stm32wb_UartDma_Cfg *cfg;
-    size_t base;
+    uintptr_t base;
 
 #ifdef WHAL_CFG_STM32WB_UART_DMA_SINGLE_INSTANCE
     cfg = (whal_Stm32wb_UartDma_Cfg *)whal_Stm32wb_UartDma_Dev.cfg;
@@ -294,8 +294,8 @@ whal_Error whal_Stm32wb_UartDma_Deinit(whal_Uart *uartDev)
 #endif
 
     /* Abandon any in-flight transfer so a later Init starts clean */
-    whal_Reg_Update(base, UART_CR3_REG,
-                    UART_CR3_DMAT_Msk | UART_CR3_DMAR_Msk, 0);
+    whal_Reg32_Update(base, UART_CR3_REG,
+                      UART_CR3_DMAT_Msk | UART_CR3_DMAR_Msk, 0);
     whal_Dma_Stop(cfg->dma, cfg->txCh);
     whal_Dma_Stop(cfg->dma, cfg->rxCh);
     cfg->txResult = WHAL_SUCCESS;

@@ -86,7 +86,7 @@ typedef struct {
  * @brief I2C device instance with a base address, driver vtable, and platform-specific cfg.
  */
 struct whal_I2c {
-    const size_t base;
+    const uintptr_t base;
     const whal_I2cDriver *driver;
     void *cfg;
 };

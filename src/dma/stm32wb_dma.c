@@ -129,11 +129,11 @@ whal_Error whal_Stm32wb_Dma_Init(whal_Dma *dmaDev)
 #ifdef WHAL_CFG_STM32WB_DMA_SINGLE_INSTANCE
     whal_Stm32wb_Dma_Cfg *cfg =
         (whal_Stm32wb_Dma_Cfg *)whal_Stm32wb_Dma_Dev.cfg;
-    size_t base = whal_Stm32wb_Dma_Dev.base;
+    uintptr_t base = whal_Stm32wb_Dma_Dev.base;
     (void)dmaDev;
 #else
     whal_Stm32wb_Dma_Cfg *cfg;
-    size_t base;
+    uintptr_t base;
 
     if (!dmaDev || !dmaDev->cfg) {
         return WHAL_EINVAL;
@@ -149,7 +149,7 @@ whal_Error whal_Stm32wb_Dma_Init(whal_Dma *dmaDev)
         for (size_t i = 1; i <= cfg->numChannels; ++i) {
             clearAll |= DMA_IFCR_CALL(i);
         }
-        whal_Reg_Write(base, DMA_IFCR_REG, clearAll);
+        whal_Reg32_Write(base, DMA_IFCR_REG, clearAll);
     }
 
     return WHAL_SUCCESS;
@@ -160,11 +160,11 @@ whal_Error whal_Stm32wb_Dma_Deinit(whal_Dma *dmaDev)
 #ifdef WHAL_CFG_STM32WB_DMA_SINGLE_INSTANCE
     whal_Stm32wb_Dma_Cfg *cfg =
         (whal_Stm32wb_Dma_Cfg *)whal_Stm32wb_Dma_Dev.cfg;
-    size_t base = whal_Stm32wb_Dma_Dev.base;
+    uintptr_t base = whal_Stm32wb_Dma_Dev.base;
     (void)dmaDev;
 #else
     whal_Stm32wb_Dma_Cfg *cfg;
-    size_t base;
+    uintptr_t base;
 
     if (!dmaDev || !dmaDev->cfg) {
         return WHAL_EINVAL;
@@ -176,9 +176,9 @@ whal_Error whal_Stm32wb_Dma_Deinit(whal_Dma *dmaDev)
 
     /* Disable all channels and clear all interrupt flags */
     for (size_t i = 1; i <= cfg->numChannels; ++i) {
-        whal_Reg_Update(base, DMA_CCR_REG(i),
-                        DMA_CCR_EN_Msk,
-                        whal_SetBits(DMA_CCR_EN_Msk, DMA_CCR_EN_Pos, 0));
+        whal_Reg32_Update(base, DMA_CCR_REG(i),
+                          DMA_CCR_EN_Msk,
+                          whal_SetBits(DMA_CCR_EN_Msk, DMA_CCR_EN_Pos, 0));
     }
 
     {
@@ -186,7 +186,7 @@ whal_Error whal_Stm32wb_Dma_Deinit(whal_Dma *dmaDev)
         for (size_t i = 1; i <= cfg->numChannels; ++i) {
             clearAll |= DMA_IFCR_CALL(i);
         }
-        whal_Reg_Write(base, DMA_IFCR_REG, clearAll);
+        whal_Reg32_Write(base, DMA_IFCR_REG, clearAll);
     }
 
     return WHAL_SUCCESS;
@@ -207,7 +207,7 @@ whal_Error whal_Stm32wb_Dma_Configure(whal_Dma *dmaDev, size_t ch,
 #ifdef WHAL_CFG_STM32WB_DMA_SINGLE_INSTANCE
     whal_Stm32wb_Dma_Cfg *cfg =
         (whal_Stm32wb_Dma_Cfg *)whal_Stm32wb_Dma_Dev.cfg;
-    size_t base = whal_Stm32wb_Dma_Dev.base;
+    uintptr_t base = whal_Stm32wb_Dma_Dev.base;
     (void)dmaDev;
 
     if (!chCfg) {
@@ -215,7 +215,7 @@ whal_Error whal_Stm32wb_Dma_Configure(whal_Dma *dmaDev, size_t ch,
     }
 #else
     whal_Stm32wb_Dma_Cfg *cfg;
-    size_t base;
+    uintptr_t base;
 
     if (!dmaDev || !dmaDev->cfg || !chCfg) {
         return WHAL_EINVAL;
@@ -306,19 +306,19 @@ whal_Error whal_Stm32wb_Dma_Configure(whal_Dma *dmaDev, size_t ch,
     ccr |= whal_SetBits(DMA_CCR_TEIE_Msk, DMA_CCR_TEIE_Pos, 1);
 
     /* Write channel registers. EN must be 0 before writing CCR fields. */
-    whal_Reg_Write(base, DMA_CCR_REG(hw_ch), 0);
-    whal_Reg_Write(base, DMA_CNDTR_REG(hw_ch), dmaChCfg->length);
-    whal_Reg_Write(base, DMA_CPAR_REG(hw_ch), periphAddr);
-    whal_Reg_Write(base, DMA_CMAR_REG(hw_ch), memAddr);
-    whal_Reg_Write(base, DMA_CCR_REG(hw_ch), ccr);
+    whal_Reg32_Write(base, DMA_CCR_REG(hw_ch), 0);
+    whal_Reg32_Write(base, DMA_CNDTR_REG(hw_ch), dmaChCfg->length);
+    whal_Reg32_Write(base, DMA_CPAR_REG(hw_ch), periphAddr);
+    whal_Reg32_Write(base, DMA_CMAR_REG(hw_ch), memAddr);
+    whal_Reg32_Write(base, DMA_CCR_REG(hw_ch), ccr);
 
     /* Configure DMAMUX request mapping */
     size_t muxCh = cfg->dmamuxChOffset + ch;
-    whal_Reg_Update(cfg->dmamuxBase, DMAMUX_CxCR_REG(muxCh),
-                    DMAMUX_CxCR_DMAREQ_ID_Msk,
-                    whal_SetBits(DMAMUX_CxCR_DMAREQ_ID_Msk,
-                                 DMAMUX_CxCR_DMAREQ_ID_Pos,
-                                 dmaChCfg->dmamuxReqId));
+    whal_Reg32_Update(cfg->dmamuxBase, DMAMUX_CxCR_REG(muxCh),
+                      DMAMUX_CxCR_DMAREQ_ID_Msk,
+                      whal_SetBits(DMAMUX_CxCR_DMAREQ_ID_Msk,
+                                   DMAMUX_CxCR_DMAREQ_ID_Pos,
+                                   dmaChCfg->dmamuxReqId));
 
     return WHAL_SUCCESS;
 }
@@ -329,11 +329,11 @@ whal_Error whal_Stm32wb_Dma_Start(whal_Dma *dmaDev, size_t ch)
 #ifdef WHAL_CFG_STM32WB_DMA_SINGLE_INSTANCE
     whal_Stm32wb_Dma_Cfg *cfg =
         (whal_Stm32wb_Dma_Cfg *)whal_Stm32wb_Dma_Dev.cfg;
-    size_t base = whal_Stm32wb_Dma_Dev.base;
+    uintptr_t base = whal_Stm32wb_Dma_Dev.base;
     (void)dmaDev;
 #else
     whal_Stm32wb_Dma_Cfg *cfg;
-    size_t base;
+    uintptr_t base;
 
     if (!dmaDev || !dmaDev->cfg) {
         return WHAL_EINVAL;
@@ -350,12 +350,12 @@ whal_Error whal_Stm32wb_Dma_Start(whal_Dma *dmaDev, size_t ch)
     hw_ch = ch + 1;
 
     /* Clear stale interrupt flags before enabling (TRM requires this) */
-    whal_Reg_Write(base, DMA_IFCR_REG, DMA_IFCR_CALL(hw_ch));
+    whal_Reg32_Write(base, DMA_IFCR_REG, DMA_IFCR_CALL(hw_ch));
 
     /* Enable the channel */
-    whal_Reg_Update(base, DMA_CCR_REG(hw_ch),
-                    DMA_CCR_EN_Msk,
-                    whal_SetBits(DMA_CCR_EN_Msk, DMA_CCR_EN_Pos, 1));
+    whal_Reg32_Update(base, DMA_CCR_REG(hw_ch),
+                      DMA_CCR_EN_Msk,
+                      whal_SetBits(DMA_CCR_EN_Msk, DMA_CCR_EN_Pos, 1));
 
     return WHAL_SUCCESS;
 }
@@ -366,11 +366,11 @@ whal_Error whal_Stm32wb_Dma_Stop(whal_Dma *dmaDev, size_t ch)
 #ifdef WHAL_CFG_STM32WB_DMA_SINGLE_INSTANCE
     whal_Stm32wb_Dma_Cfg *cfg =
         (whal_Stm32wb_Dma_Cfg *)whal_Stm32wb_Dma_Dev.cfg;
-    size_t base = whal_Stm32wb_Dma_Dev.base;
+    uintptr_t base = whal_Stm32wb_Dma_Dev.base;
     (void)dmaDev;
 #else
     whal_Stm32wb_Dma_Cfg *cfg;
-    size_t base;
+    uintptr_t base;
 
     if (!dmaDev || !dmaDev->cfg) {
         return WHAL_EINVAL;
@@ -387,12 +387,12 @@ whal_Error whal_Stm32wb_Dma_Stop(whal_Dma *dmaDev, size_t ch)
     hw_ch = ch + 1;
 
     /* Disable the channel */
-    whal_Reg_Update(base, DMA_CCR_REG(hw_ch),
-                    DMA_CCR_EN_Msk,
-                    whal_SetBits(DMA_CCR_EN_Msk, DMA_CCR_EN_Pos, 0));
+    whal_Reg32_Update(base, DMA_CCR_REG(hw_ch),
+                      DMA_CCR_EN_Msk,
+                      whal_SetBits(DMA_CCR_EN_Msk, DMA_CCR_EN_Pos, 0));
 
     /* Clear channel interrupt flags */
-    whal_Reg_Write(base, DMA_IFCR_REG, DMA_IFCR_CALL(hw_ch));
+    whal_Reg32_Write(base, DMA_IFCR_REG, DMA_IFCR_CALL(hw_ch));
 
     return WHAL_SUCCESS;
 }
@@ -403,10 +403,10 @@ void whal_Stm32wb_Dma_IRQHandler(whal_Dma *dmaDev, size_t ch,
     size_t hw_ch;
     size_t isr;
 #ifdef WHAL_CFG_STM32WB_DMA_SINGLE_INSTANCE
-    size_t base = whal_Stm32wb_Dma_Dev.base;
+    uintptr_t base = whal_Stm32wb_Dma_Dev.base;
     (void)dmaDev;
 #else
-    size_t base;
+    uintptr_t base;
 
     if (!dmaDev)
         return;
@@ -416,18 +416,18 @@ void whal_Stm32wb_Dma_IRQHandler(whal_Dma *dmaDev, size_t ch,
 
     hw_ch = ch + 1;
 
-    isr = whal_Reg_Read(base, DMA_ISR_REG);
+    isr = whal_Reg32_Read(base, DMA_ISR_REG);
 
     if (isr & (1UL << DMA_ISR_TEIF_Pos(hw_ch))) {
-        whal_Reg_Write(base, DMA_IFCR_REG,
-                       DMA_IFCR_CTEIF(hw_ch) | DMA_IFCR_CTCIF(hw_ch));
+        whal_Reg32_Write(base, DMA_IFCR_REG,
+                         DMA_IFCR_CTEIF(hw_ch) | DMA_IFCR_CTCIF(hw_ch));
         if (cb)
             cb(ctx, WHAL_EHARDWARE);
         return;
     }
 
     if (isr & (1UL << DMA_ISR_TCIF_Pos(hw_ch))) {
-        whal_Reg_Write(base, DMA_IFCR_REG, DMA_IFCR_CTCIF(hw_ch));
+        whal_Reg32_Write(base, DMA_IFCR_REG, DMA_IFCR_CTCIF(hw_ch));
         if (cb)
             cb(ctx, WHAL_SUCCESS);
     }

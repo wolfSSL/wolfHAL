@@ -123,42 +123,42 @@ const whal_AesCcm  whal_Stm32n6_CrypCcm_Dev   = WHAL_CFG_STM32N6_CRYP_CCM_DEV;
 static whal_Stm32n6_AesGcm_State g_aesGcmState;
 static whal_Stm32n6_AesCcm_State g_aesCcmState;
 
-static whal_Error WaitKeyValid(size_t base, whal_Timeout *timeout)
+static whal_Error WaitKeyValid(uintptr_t base, whal_Timeout *timeout)
 {
-    return whal_Reg_ReadPoll(base, CRYP_SR_REG, CRYP_SR_KEYVALID_Msk,
-                             CRYP_SR_KEYVALID_Msk, timeout);
+    return whal_Reg32_ReadPoll(base, CRYP_SR_REG, CRYP_SR_KEYVALID_Msk,
+                               CRYP_SR_KEYVALID_Msk, timeout);
 }
 
-static whal_Error WaitBusyClear(size_t base, whal_Timeout *timeout)
+static whal_Error WaitBusyClear(uintptr_t base, whal_Timeout *timeout)
 {
-    return whal_Reg_ReadPoll(base, CRYP_SR_REG, CRYP_SR_BUSY_Msk, 0, timeout);
+    return whal_Reg32_ReadPoll(base, CRYP_SR_REG, CRYP_SR_BUSY_Msk, 0, timeout);
 }
 
-static whal_Error WaitCrypEnClear(size_t base, whal_Timeout *timeout)
+static whal_Error WaitCrypEnClear(uintptr_t base, whal_Timeout *timeout)
 {
-    return whal_Reg_ReadPoll(base, CRYP_CR_REG, CRYP_CR_CRYPEN_Msk, 0, timeout);
+    return whal_Reg32_ReadPoll(base, CRYP_CR_REG, CRYP_CR_CRYPEN_Msk, 0, timeout);
 }
 
-static whal_Error WaitOutputReady(size_t base, whal_Timeout *timeout)
+static whal_Error WaitOutputReady(uintptr_t base, whal_Timeout *timeout)
 {
-    return whal_Reg_ReadPoll(base, CRYP_SR_REG, CRYP_SR_OFNE_Msk,
-                             CRYP_SR_OFNE_Msk, timeout);
+    return whal_Reg32_ReadPoll(base, CRYP_SR_REG, CRYP_SR_OFNE_Msk,
+                               CRYP_SR_OFNE_Msk, timeout);
 }
 
-static void DisableAndFlush(size_t base)
+static void DisableAndFlush(uintptr_t base)
 {
-    whal_Reg_Update(base, CRYP_CR_REG, CRYP_CR_CRYPEN_Msk, 0);
-    whal_Reg_Update(base, CRYP_CR_REG, CRYP_CR_FFLUSH_Msk, CRYP_CR_FFLUSH_Msk);
+    whal_Reg32_Update(base, CRYP_CR_REG, CRYP_CR_CRYPEN_Msk, 0);
+    whal_Reg32_Update(base, CRYP_CR_REG, CRYP_CR_FFLUSH_Msk, CRYP_CR_FFLUSH_Msk);
 }
 
-static void Enable(size_t base)
+static void Enable(uintptr_t base)
 {
-    whal_Reg_Update(base, CRYP_CR_REG, CRYP_CR_CRYPEN_Msk, CRYP_CR_CRYPEN_Msk);
+    whal_Reg32_Update(base, CRYP_CR_REG, CRYP_CR_CRYPEN_Msk, CRYP_CR_CRYPEN_Msk);
 }
 
-static void Disable(size_t base)
+static void Disable(uintptr_t base)
 {
-    whal_Reg_Update(base, CRYP_CR_REG, CRYP_CR_CRYPEN_Msk, 0);
+    whal_Reg32_Update(base, CRYP_CR_REG, CRYP_CR_CRYPEN_Msk, 0);
 }
 
 /*
@@ -166,56 +166,56 @@ static void Disable(size_t base)
  * hardware key scheduler: high-order 32-bit words first, descending into the
  * low 32 bits (K3RR last). The key is read big-endian from the input buffer.
  */
-static void WriteKey(size_t base, const uint8_t *key, size_t keySz)
+static void WriteKey(uintptr_t base, const uint8_t *key, size_t keySz)
 {
     const uint8_t *k = key;
 
     if (keySz == 32) {
-        whal_Reg_Write(base, CRYP_K0LR_REG, whal_LoadBe32(k));
-        whal_Reg_Write(base, CRYP_K0RR_REG, whal_LoadBe32(k + 4));
-        whal_Reg_Write(base, CRYP_K1LR_REG, whal_LoadBe32(k + 8));
-        whal_Reg_Write(base, CRYP_K1RR_REG, whal_LoadBe32(k + 12));
+        whal_Reg32_Write(base, CRYP_K0LR_REG, whal_LoadBe32(k));
+        whal_Reg32_Write(base, CRYP_K0RR_REG, whal_LoadBe32(k + 4));
+        whal_Reg32_Write(base, CRYP_K1LR_REG, whal_LoadBe32(k + 8));
+        whal_Reg32_Write(base, CRYP_K1RR_REG, whal_LoadBe32(k + 12));
         k += 16;
     } else if (keySz == 24) {
-        whal_Reg_Write(base, CRYP_K1LR_REG, whal_LoadBe32(k));
-        whal_Reg_Write(base, CRYP_K1RR_REG, whal_LoadBe32(k + 4));
+        whal_Reg32_Write(base, CRYP_K1LR_REG, whal_LoadBe32(k));
+        whal_Reg32_Write(base, CRYP_K1RR_REG, whal_LoadBe32(k + 4));
         k += 8;
     }
-    whal_Reg_Write(base, CRYP_K2LR_REG, whal_LoadBe32(k));
-    whal_Reg_Write(base, CRYP_K2RR_REG, whal_LoadBe32(k + 4));
-    whal_Reg_Write(base, CRYP_K3LR_REG, whal_LoadBe32(k + 8));
-    whal_Reg_Write(base, CRYP_K3RR_REG, whal_LoadBe32(k + 12));
+    whal_Reg32_Write(base, CRYP_K2LR_REG, whal_LoadBe32(k));
+    whal_Reg32_Write(base, CRYP_K2RR_REG, whal_LoadBe32(k + 4));
+    whal_Reg32_Write(base, CRYP_K3LR_REG, whal_LoadBe32(k + 8));
+    whal_Reg32_Write(base, CRYP_K3RR_REG, whal_LoadBe32(k + 12));
 }
 
-static void WriteIv16(size_t base, const uint8_t *iv)
+static void WriteIv16(uintptr_t base, const uint8_t *iv)
 {
-    whal_Reg_Write(base, CRYP_IV0LR_REG, whal_LoadBe32(iv));
-    whal_Reg_Write(base, CRYP_IV0RR_REG, whal_LoadBe32(iv + 4));
-    whal_Reg_Write(base, CRYP_IV1LR_REG, whal_LoadBe32(iv + 8));
-    whal_Reg_Write(base, CRYP_IV1RR_REG, whal_LoadBe32(iv + 12));
+    whal_Reg32_Write(base, CRYP_IV0LR_REG, whal_LoadBe32(iv));
+    whal_Reg32_Write(base, CRYP_IV0RR_REG, whal_LoadBe32(iv + 4));
+    whal_Reg32_Write(base, CRYP_IV1LR_REG, whal_LoadBe32(iv + 8));
+    whal_Reg32_Write(base, CRYP_IV1RR_REG, whal_LoadBe32(iv + 12));
 }
 
 /* Reset CRYP to clear its FIFOs, key, IV and configuration. */
-static void ResetCryp(size_t base)
+static void ResetCryp(uintptr_t base)
 {
-    whal_Reg_Update(base, CRYP_CR_REG, CRYP_CR_IPRST_Msk, CRYP_CR_IPRST_Msk);
-    whal_Reg_Update(base, CRYP_CR_REG, CRYP_CR_IPRST_Msk, 0);
+    whal_Reg32_Update(base, CRYP_CR_REG, CRYP_CR_IPRST_Msk, CRYP_CR_IPRST_Msk);
+    whal_Reg32_Update(base, CRYP_CR_REG, CRYP_CR_IPRST_Msk, 0);
 }
 
-static void WriteBlock(size_t base, const uint8_t *in)
+static void WriteBlock(uintptr_t base, const uint8_t *in)
 {
-    whal_Reg_Write(base, CRYP_DINR_REG, whal_LoadBe32(in));
-    whal_Reg_Write(base, CRYP_DINR_REG, whal_LoadBe32(in + 4));
-    whal_Reg_Write(base, CRYP_DINR_REG, whal_LoadBe32(in + 8));
-    whal_Reg_Write(base, CRYP_DINR_REG, whal_LoadBe32(in + 12));
+    whal_Reg32_Write(base, CRYP_DINR_REG, whal_LoadBe32(in));
+    whal_Reg32_Write(base, CRYP_DINR_REG, whal_LoadBe32(in + 4));
+    whal_Reg32_Write(base, CRYP_DINR_REG, whal_LoadBe32(in + 8));
+    whal_Reg32_Write(base, CRYP_DINR_REG, whal_LoadBe32(in + 12));
 }
 
-static void ReadBlock(size_t base, uint8_t *out)
+static void ReadBlock(uintptr_t base, uint8_t *out)
 {
-    whal_StoreBe32(out,      whal_Reg_Read(base, CRYP_DOUTR_REG));
-    whal_StoreBe32(out + 4,  whal_Reg_Read(base, CRYP_DOUTR_REG));
-    whal_StoreBe32(out + 8,  whal_Reg_Read(base, CRYP_DOUTR_REG));
-    whal_StoreBe32(out + 12, whal_Reg_Read(base, CRYP_DOUTR_REG));
+    whal_StoreBe32(out,      whal_Reg32_Read(base, CRYP_DOUTR_REG));
+    whal_StoreBe32(out + 4,  whal_Reg32_Read(base, CRYP_DOUTR_REG));
+    whal_StoreBe32(out + 8,  whal_Reg32_Read(base, CRYP_DOUTR_REG));
+    whal_StoreBe32(out + 12, whal_Reg32_Read(base, CRYP_DOUTR_REG));
 }
 
 /*
@@ -223,7 +223,7 @@ static void ReadBlock(size_t base, uint8_t *out)
  * the requested ALGOMODE/ALGODIR/KEYSIZE/KMOD/PHASE/NPBLB. CRYPEN/FFLUSH/IPRST
  * are left untouched.
  */
-static void ConfigureMode(size_t base, uint32_t algoMode, uint32_t algoDir,
+static void ConfigureMode(uintptr_t base, uint32_t algoMode, uint32_t algoDir,
                           uint32_t keySize, uint32_t phase, uint32_t npblb,
                           uint32_t kmod)
 {
@@ -241,7 +241,7 @@ static void ConfigureMode(size_t base, uint32_t algoMode, uint32_t algoDir,
                      whal_SetBits(CRYP_CR_NPBLB_Msk, CRYP_CR_NPBLB_Pos, npblb) |
                      whal_SetBits(CRYP_CR_KMOD_Msk, CRYP_CR_KMOD_Pos, kmod);
 
-    whal_Reg_Update(base, CRYP_CR_REG, mask, value);
+    whal_Reg32_Update(base, CRYP_CR_REG, mask, value);
 }
 
 static whal_Error KeySizeBits(size_t keySz, uint32_t *out)
@@ -263,7 +263,7 @@ static whal_Error KeySizeBits(size_t keySz, uint32_t *out)
  * an ECB or CBC decryption: the hardware computes the last round key, then
  * auto-clears CRYPEN. Caller must hold the timeout and have keys staged.
  */
-static whal_Error PrepareDecryptionKey(size_t base, const uint8_t *key,
+static whal_Error PrepareDecryptionKey(uintptr_t base, const uint8_t *key,
                                        size_t keySz, uint32_t keySizeBits,
                                        whal_Timeout *timeout)
 {
@@ -284,7 +284,7 @@ static whal_Error Process_BlockCipher(const uint8_t *in, uint8_t *out, size_t sz
 {
     const whal_Stm32n6_Cryp_Cfg *cfg =
         (const whal_Stm32n6_Cryp_Cfg *)whal_Stm32n6_Cryp_Dev.cfg;
-    size_t base = whal_Stm32n6_Cryp_Dev.base;
+    uintptr_t base = whal_Stm32n6_Cryp_Dev.base;
     whal_Error err;
     size_t i;
 
@@ -311,7 +311,7 @@ static whal_Error Process_BlockCipher(const uint8_t *in, uint8_t *out, size_t sz
 
 static whal_Error Stop_BlockCipher(void)
 {
-    size_t base = whal_Stm32n6_Cryp_Dev.base;
+    uintptr_t base = whal_Stm32n6_Cryp_Dev.base;
 
     ResetCryp(base);
     return WHAL_SUCCESS;
@@ -390,7 +390,7 @@ whal_Error whal_Stm32n6_CrypAesEcb_Oneshot(whal_AesEcb *dev,
 {
     const whal_Stm32n6_Cryp_Cfg *cfg =
         (const whal_Stm32n6_Cryp_Cfg *)whal_Stm32n6_Cryp_Dev.cfg;
-    size_t base = whal_Stm32n6_Cryp_Dev.base;
+    uintptr_t base = whal_Stm32n6_Cryp_Dev.base;
     uint32_t keySizeBits;
     whal_Error err;
     (void)dev;
@@ -433,7 +433,7 @@ whal_Error whal_Stm32n6_CrypAesEcb_Start(whal_AesEcb *dev,
 {
     const whal_Stm32n6_Cryp_Cfg *cfg =
         (const whal_Stm32n6_Cryp_Cfg *)whal_Stm32n6_Cryp_Dev.cfg;
-    size_t base = whal_Stm32n6_Cryp_Dev.base;
+    uintptr_t base = whal_Stm32n6_Cryp_Dev.base;
     uint32_t keySizeBits;
     whal_Error err;
     (void)dev;
@@ -504,7 +504,7 @@ whal_Error whal_Stm32n6_CrypAesCbc_Oneshot(whal_AesCbc *dev,
 {
     const whal_Stm32n6_Cryp_Cfg *cfg =
         (const whal_Stm32n6_Cryp_Cfg *)whal_Stm32n6_Cryp_Dev.cfg;
-    size_t base = whal_Stm32n6_Cryp_Dev.base;
+    uintptr_t base = whal_Stm32n6_Cryp_Dev.base;
     uint32_t keySizeBits;
     whal_Error err;
     (void)dev;
@@ -550,7 +550,7 @@ whal_Error whal_Stm32n6_CrypAesCbc_Start(whal_AesCbc *dev,
 {
     const whal_Stm32n6_Cryp_Cfg *cfg =
         (const whal_Stm32n6_Cryp_Cfg *)whal_Stm32n6_Cryp_Dev.cfg;
-    size_t base = whal_Stm32n6_Cryp_Dev.base;
+    uintptr_t base = whal_Stm32n6_Cryp_Dev.base;
     uint32_t keySizeBits;
     whal_Error err;
     (void)dev;
@@ -623,7 +623,7 @@ whal_Error whal_Stm32n6_CrypAesCtr_Oneshot(whal_AesCtr *dev,
 {
     const whal_Stm32n6_Cryp_Cfg *cfg =
         (const whal_Stm32n6_Cryp_Cfg *)whal_Stm32n6_Cryp_Dev.cfg;
-    size_t base = whal_Stm32n6_Cryp_Dev.base;
+    uintptr_t base = whal_Stm32n6_Cryp_Dev.base;
     uint32_t keySizeBits;
     uint32_t algoDir;
     whal_Error err;
@@ -661,7 +661,7 @@ whal_Error whal_Stm32n6_CrypAesCtr_Start(whal_AesCtr *dev,
 {
     const whal_Stm32n6_Cryp_Cfg *cfg =
         (const whal_Stm32n6_Cryp_Cfg *)whal_Stm32n6_Cryp_Dev.cfg;
-    size_t base = whal_Stm32n6_Cryp_Dev.base;
+    uintptr_t base = whal_Stm32n6_Cryp_Dev.base;
     uint32_t keySizeBits;
     uint32_t algoDir;
     whal_Error err;
@@ -728,16 +728,16 @@ static whal_Error GcmInit(const uint8_t *key, size_t keySz,
 {
     const whal_Stm32n6_Cryp_Cfg *cfg =
         (const whal_Stm32n6_Cryp_Cfg *)whal_Stm32n6_Cryp_Dev.cfg;
-    size_t base = whal_Stm32n6_Cryp_Dev.base;
+    uintptr_t base = whal_Stm32n6_Cryp_Dev.base;
     whal_Error err;
 
     DisableAndFlush(base);
     ConfigureMode(base, CRYP_ALGOMODE_AES_GCM, algoDir, keySizeBits,
                   CRYP_GCM_CCMPH_INIT, 0, 0);
-    whal_Reg_Write(base, CRYP_IV0LR_REG, whal_LoadBe32(iv12));
-    whal_Reg_Write(base, CRYP_IV0RR_REG, whal_LoadBe32(iv12 + 4));
-    whal_Reg_Write(base, CRYP_IV1LR_REG, whal_LoadBe32(iv12 + 8));
-    whal_Reg_Write(base, CRYP_IV1RR_REG, 0x00000002UL);
+    whal_Reg32_Write(base, CRYP_IV0LR_REG, whal_LoadBe32(iv12));
+    whal_Reg32_Write(base, CRYP_IV0RR_REG, whal_LoadBe32(iv12 + 4));
+    whal_Reg32_Write(base, CRYP_IV1LR_REG, whal_LoadBe32(iv12 + 8));
+    whal_Reg32_Write(base, CRYP_IV1RR_REG, 0x00000002UL);
     WriteKey(base, key, keySz);
     err = WaitKeyValid(base, cfg->timeout);
     if (err)
@@ -754,23 +754,23 @@ static whal_Error GcmHeaderPhase(const uint8_t *aad, size_t aadSz)
 {
     const whal_Stm32n6_Cryp_Cfg *cfg =
         (const whal_Stm32n6_Cryp_Cfg *)whal_Stm32n6_Cryp_Dev.cfg;
-    size_t base = whal_Stm32n6_Cryp_Dev.base;
+    uintptr_t base = whal_Stm32n6_Cryp_Dev.base;
     whal_Error err;
     size_t i;
 
     if (aadSz == 0)
         return WHAL_SUCCESS;
 
-    whal_Reg_Update(base, CRYP_CR_REG, CRYP_CR_GCM_CCMPH_Msk,
-                    whal_SetBits(CRYP_CR_GCM_CCMPH_Msk,
-                                 CRYP_CR_GCM_CCMPH_Pos,
-                                 CRYP_GCM_CCMPH_HEADER));
+    whal_Reg32_Update(base, CRYP_CR_REG, CRYP_CR_GCM_CCMPH_Msk,
+                      whal_SetBits(CRYP_CR_GCM_CCMPH_Msk,
+                                   CRYP_CR_GCM_CCMPH_Pos,
+                                   CRYP_GCM_CCMPH_HEADER));
     Enable(base);
 
     for (i = 0; i < aadSz; i += 16) {
         size_t remain = aadSz - i;
-        err = whal_Reg_ReadPoll(base, CRYP_SR_REG, CRYP_SR_IFNF_Msk,
-                                CRYP_SR_IFNF_Msk, cfg->timeout);
+        err = whal_Reg32_ReadPoll(base, CRYP_SR_REG, CRYP_SR_IFNF_Msk,
+                                  CRYP_SR_IFNF_Msk, cfg->timeout);
         if (err)
             return err;
         if (remain >= 16) {
@@ -804,7 +804,7 @@ whal_Error whal_Stm32n6_CrypAesGcm_Oneshot(whal_AesGcm *dev,
 {
     const whal_Stm32n6_Cryp_Cfg *cfg =
         (const whal_Stm32n6_Cryp_Cfg *)whal_Stm32n6_Cryp_Dev.cfg;
-    size_t base = whal_Stm32n6_Cryp_Dev.base;
+    uintptr_t base = whal_Stm32n6_Cryp_Dev.base;
     uint32_t keySizeBits;
     uint32_t algoDir;
     uint8_t tagBuf[16];
@@ -846,10 +846,10 @@ whal_Error whal_Stm32n6_CrypAesGcm_Oneshot(whal_AesGcm *dev,
     /* Payload phase */
     if (sz > 0) {
         Disable(base);
-        whal_Reg_Update(base, CRYP_CR_REG, CRYP_CR_GCM_CCMPH_Msk,
-                        whal_SetBits(CRYP_CR_GCM_CCMPH_Msk,
-                                     CRYP_CR_GCM_CCMPH_Pos,
-                                     CRYP_GCM_CCMPH_PAYLOAD));
+        whal_Reg32_Update(base, CRYP_CR_REG, CRYP_CR_GCM_CCMPH_Msk,
+                          whal_SetBits(CRYP_CR_GCM_CCMPH_Msk,
+                                       CRYP_CR_GCM_CCMPH_Pos,
+                                       CRYP_GCM_CCMPH_PAYLOAD));
         Enable(base);
 
         for (i = 0; i < sz; i += 16) {
@@ -864,10 +864,10 @@ whal_Error whal_Stm32n6_CrypAesGcm_Oneshot(whal_AesGcm *dev,
                 WriteBlock(base, inPtr);
             } else {
                 if (dir == WHAL_CRYPTO_ENCRYPT) {
-                    whal_Reg_Update(base, CRYP_CR_REG, CRYP_CR_NPBLB_Msk,
-                                    whal_SetBits(CRYP_CR_NPBLB_Msk,
-                                                 CRYP_CR_NPBLB_Pos,
-                                                 16 - remain));
+                    whal_Reg32_Update(base, CRYP_CR_REG, CRYP_CR_NPBLB_Msk,
+                                      whal_SetBits(CRYP_CR_NPBLB_Msk,
+                                                   CRYP_CR_NPBLB_Pos,
+                                                   16 - remain));
                 }
                 for (j = 0; j < remain; j++)
                     blockIn[j] = inPtr[j];
@@ -890,19 +890,19 @@ whal_Error whal_Stm32n6_CrypAesGcm_Oneshot(whal_AesGcm *dev,
 
     /* Final phase */
     Disable(base);
-    whal_Reg_Update(base, CRYP_CR_REG,
-                    CRYP_CR_GCM_CCMPH_Msk | CRYP_CR_ALGODIR_Msk,
-                    whal_SetBits(CRYP_CR_GCM_CCMPH_Msk,
-                                 CRYP_CR_GCM_CCMPH_Pos,
-                                 CRYP_GCM_CCMPH_FINAL));
+    whal_Reg32_Update(base, CRYP_CR_REG,
+                      CRYP_CR_GCM_CCMPH_Msk | CRYP_CR_ALGODIR_Msk,
+                      whal_SetBits(CRYP_CR_GCM_CCMPH_Msk,
+                                   CRYP_CR_GCM_CCMPH_Pos,
+                                   CRYP_GCM_CCMPH_FINAL));
     Enable(base);
 
     aadBits = (uint64_t)aadSz * 8;
     payloadBits = (uint64_t)sz * 8;
-    whal_Reg_Write(base, CRYP_DINR_REG, (uint32_t)(aadBits >> 32));
-    whal_Reg_Write(base, CRYP_DINR_REG, (uint32_t)aadBits);
-    whal_Reg_Write(base, CRYP_DINR_REG, (uint32_t)(payloadBits >> 32));
-    whal_Reg_Write(base, CRYP_DINR_REG, (uint32_t)payloadBits);
+    whal_Reg32_Write(base, CRYP_DINR_REG, (uint32_t)(aadBits >> 32));
+    whal_Reg32_Write(base, CRYP_DINR_REG, (uint32_t)aadBits);
+    whal_Reg32_Write(base, CRYP_DINR_REG, (uint32_t)(payloadBits >> 32));
+    whal_Reg32_Write(base, CRYP_DINR_REG, (uint32_t)payloadBits);
 
     err = WaitOutputReady(base, cfg->timeout);
     if (err)
@@ -923,7 +923,7 @@ whal_Error whal_Stm32n6_CrypAesGcm_Start(whal_AesGcm *dev,
                                          const void *iv, size_t ivSz,
                                          const void *aad, size_t aadSz)
 {
-    size_t base = whal_Stm32n6_Cryp_Dev.base;
+    uintptr_t base = whal_Stm32n6_Cryp_Dev.base;
     uint32_t keySizeBits;
     uint32_t algoDir;
     whal_Error err;
@@ -956,10 +956,10 @@ whal_Error whal_Stm32n6_CrypAesGcm_Start(whal_AesGcm *dev,
 
     /* Transition to payload phase */
     Disable(base);
-    whal_Reg_Update(base, CRYP_CR_REG, CRYP_CR_GCM_CCMPH_Msk,
-                    whal_SetBits(CRYP_CR_GCM_CCMPH_Msk,
-                                 CRYP_CR_GCM_CCMPH_Pos,
-                                 CRYP_GCM_CCMPH_PAYLOAD));
+    whal_Reg32_Update(base, CRYP_CR_REG, CRYP_CR_GCM_CCMPH_Msk,
+                      whal_SetBits(CRYP_CR_GCM_CCMPH_Msk,
+                                   CRYP_CR_GCM_CCMPH_Pos,
+                                   CRYP_GCM_CCMPH_PAYLOAD));
     Enable(base);
 
     g_aesGcmState.aadSz = aadSz;
@@ -979,7 +979,7 @@ whal_Error whal_Stm32n6_CrypAesGcm_Process(whal_AesGcm *dev,
 {
     const whal_Stm32n6_Cryp_Cfg *cfg =
         (const whal_Stm32n6_Cryp_Cfg *)whal_Stm32n6_Cryp_Dev.cfg;
-    size_t base = whal_Stm32n6_Cryp_Dev.base;
+    uintptr_t base = whal_Stm32n6_Cryp_Dev.base;
     uint32_t algoDir;
     size_t i;
     whal_Error err;
@@ -1000,7 +1000,7 @@ whal_Error whal_Stm32n6_CrypAesGcm_Process(whal_AesGcm *dev,
     }
 
     algoDir = whal_GetBits(CRYP_CR_ALGODIR_Msk, CRYP_CR_ALGODIR_Pos,
-                           whal_Reg_Read(base, CRYP_CR_REG));
+                           whal_Reg32_Read(base, CRYP_CR_REG));
 
     for (i = 0; i < sz; i += 16) {
         const uint8_t *inPtr = (const uint8_t *)in + i;
@@ -1013,10 +1013,10 @@ whal_Error whal_Stm32n6_CrypAesGcm_Process(whal_AesGcm *dev,
             WriteBlock(base, inPtr);
         } else {
             if (algoDir == CRYP_ALGODIR_ENCRYPT) {
-                whal_Reg_Update(base, CRYP_CR_REG, CRYP_CR_NPBLB_Msk,
-                                whal_SetBits(CRYP_CR_NPBLB_Msk,
-                                             CRYP_CR_NPBLB_Pos,
-                                             16 - remain));
+                whal_Reg32_Update(base, CRYP_CR_REG, CRYP_CR_NPBLB_Msk,
+                                  whal_SetBits(CRYP_CR_NPBLB_Msk,
+                                               CRYP_CR_NPBLB_Pos,
+                                               16 - remain));
             }
             for (j = 0; j < remain; j++)
                 block[j] = inPtr[j];
@@ -1050,7 +1050,7 @@ whal_Error whal_Stm32n6_CrypAesGcm_Finalize(whal_AesGcm *dev,
 {
     const whal_Stm32n6_Cryp_Cfg *cfg =
         (const whal_Stm32n6_Cryp_Cfg *)whal_Stm32n6_Cryp_Dev.cfg;
-    size_t base = whal_Stm32n6_Cryp_Dev.base;
+    uintptr_t base = whal_Stm32n6_Cryp_Dev.base;
     uint8_t tagBuf[16];
     uint64_t aadBits;
     uint64_t payloadBits;
@@ -1065,19 +1065,19 @@ whal_Error whal_Stm32n6_CrypAesGcm_Finalize(whal_AesGcm *dev,
 
     /* Final phase */
     Disable(base);
-    whal_Reg_Update(base, CRYP_CR_REG,
-                    CRYP_CR_GCM_CCMPH_Msk | CRYP_CR_ALGODIR_Msk,
-                    whal_SetBits(CRYP_CR_GCM_CCMPH_Msk,
-                                 CRYP_CR_GCM_CCMPH_Pos,
-                                 CRYP_GCM_CCMPH_FINAL));
+    whal_Reg32_Update(base, CRYP_CR_REG,
+                      CRYP_CR_GCM_CCMPH_Msk | CRYP_CR_ALGODIR_Msk,
+                      whal_SetBits(CRYP_CR_GCM_CCMPH_Msk,
+                                   CRYP_CR_GCM_CCMPH_Pos,
+                                   CRYP_GCM_CCMPH_FINAL));
     Enable(base);
 
     aadBits = (uint64_t)g_aesGcmState.aadSz * 8;
     payloadBits = g_aesGcmState.dataSz * 8;
-    whal_Reg_Write(base, CRYP_DINR_REG, (uint32_t)(aadBits >> 32));
-    whal_Reg_Write(base, CRYP_DINR_REG, (uint32_t)aadBits);
-    whal_Reg_Write(base, CRYP_DINR_REG, (uint32_t)(payloadBits >> 32));
-    whal_Reg_Write(base, CRYP_DINR_REG, (uint32_t)payloadBits);
+    whal_Reg32_Write(base, CRYP_DINR_REG, (uint32_t)(aadBits >> 32));
+    whal_Reg32_Write(base, CRYP_DINR_REG, (uint32_t)aadBits);
+    whal_Reg32_Write(base, CRYP_DINR_REG, (uint32_t)(payloadBits >> 32));
+    whal_Reg32_Write(base, CRYP_DINR_REG, (uint32_t)payloadBits);
 
     err = WaitOutputReady(base, cfg->timeout);
     if (err) {
@@ -1111,7 +1111,7 @@ whal_Error whal_Stm32n6_CrypAesGmac_Oneshot(whal_AesGmac *dev,
 {
     const whal_Stm32n6_Cryp_Cfg *cfg =
         (const whal_Stm32n6_Cryp_Cfg *)whal_Stm32n6_Cryp_Dev.cfg;
-    size_t base = whal_Stm32n6_Cryp_Dev.base;
+    uintptr_t base = whal_Stm32n6_Cryp_Dev.base;
     uint32_t keySizeBits;
     uint8_t tagBuf[16];
     uint64_t aadBits;
@@ -1146,18 +1146,18 @@ whal_Error whal_Stm32n6_CrypAesGmac_Oneshot(whal_AesGmac *dev,
 
     /* Final phase */
     Disable(base);
-    whal_Reg_Update(base, CRYP_CR_REG,
-                    CRYP_CR_GCM_CCMPH_Msk | CRYP_CR_ALGODIR_Msk,
-                    whal_SetBits(CRYP_CR_GCM_CCMPH_Msk,
-                                 CRYP_CR_GCM_CCMPH_Pos,
-                                 CRYP_GCM_CCMPH_FINAL));
+    whal_Reg32_Update(base, CRYP_CR_REG,
+                      CRYP_CR_GCM_CCMPH_Msk | CRYP_CR_ALGODIR_Msk,
+                      whal_SetBits(CRYP_CR_GCM_CCMPH_Msk,
+                                   CRYP_CR_GCM_CCMPH_Pos,
+                                   CRYP_GCM_CCMPH_FINAL));
     Enable(base);
 
     aadBits = (uint64_t)aadSz * 8;
-    whal_Reg_Write(base, CRYP_DINR_REG, (uint32_t)(aadBits >> 32));
-    whal_Reg_Write(base, CRYP_DINR_REG, (uint32_t)aadBits);
-    whal_Reg_Write(base, CRYP_DINR_REG, 0);
-    whal_Reg_Write(base, CRYP_DINR_REG, 0);
+    whal_Reg32_Write(base, CRYP_DINR_REG, (uint32_t)(aadBits >> 32));
+    whal_Reg32_Write(base, CRYP_DINR_REG, (uint32_t)aadBits);
+    whal_Reg32_Write(base, CRYP_DINR_REG, 0);
+    whal_Reg32_Write(base, CRYP_DINR_REG, 0);
 
     err = WaitOutputReady(base, cfg->timeout);
     if (err)
@@ -1212,7 +1212,7 @@ whal_Error whal_Stm32n6_CrypAesCcm_Oneshot(whal_AesCcm *dev,
 {
     const whal_Stm32n6_Cryp_Cfg *cfg =
         (const whal_Stm32n6_Cryp_Cfg *)whal_Stm32n6_Cryp_Dev.cfg;
-    size_t base = whal_Stm32n6_Cryp_Dev.base;
+    uintptr_t base = whal_Stm32n6_Cryp_Dev.base;
     uint32_t keySizeBits;
     uint32_t algoDir;
     uint8_t b0[16];
@@ -1289,10 +1289,10 @@ whal_Error whal_Stm32n6_CrypAesCcm_Oneshot(whal_AesCcm *dev,
         size_t hdrOff;
         size_t aadOff = 0;
 
-        whal_Reg_Update(base, CRYP_CR_REG, CRYP_CR_GCM_CCMPH_Msk,
-                        whal_SetBits(CRYP_CR_GCM_CCMPH_Msk,
-                                     CRYP_CR_GCM_CCMPH_Pos,
-                                     CRYP_GCM_CCMPH_HEADER));
+        whal_Reg32_Update(base, CRYP_CR_REG, CRYP_CR_GCM_CCMPH_Msk,
+                          whal_SetBits(CRYP_CR_GCM_CCMPH_Msk,
+                                       CRYP_CR_GCM_CCMPH_Pos,
+                                       CRYP_GCM_CCMPH_HEADER));
         Enable(base);
 
         /* SP 800-38C A.2.2: 2-byte length below 0xFF00, else 0xFFFE + 4 bytes */
@@ -1318,8 +1318,8 @@ whal_Error whal_Stm32n6_CrypAesCcm_Oneshot(whal_AesCcm *dev,
             size_t j;
             for (j = 0; j < 16 && aadOff < aadSz; j++)
                 blk[j] = aadPtr[aadOff++];
-            err = whal_Reg_ReadPoll(base, CRYP_SR_REG, CRYP_SR_IFNF_Msk,
-                                    CRYP_SR_IFNF_Msk, cfg->timeout);
+            err = whal_Reg32_ReadPoll(base, CRYP_SR_REG, CRYP_SR_IFNF_Msk,
+                                      CRYP_SR_IFNF_Msk, cfg->timeout);
             if (err)
                 goto cleanup;
             WriteBlock(base, blk);
@@ -1333,10 +1333,10 @@ whal_Error whal_Stm32n6_CrypAesCcm_Oneshot(whal_AesCcm *dev,
     /* Payload phase */
     if (sz > 0) {
         Disable(base);
-        whal_Reg_Update(base, CRYP_CR_REG, CRYP_CR_GCM_CCMPH_Msk,
-                        whal_SetBits(CRYP_CR_GCM_CCMPH_Msk,
-                                     CRYP_CR_GCM_CCMPH_Pos,
-                                     CRYP_GCM_CCMPH_PAYLOAD));
+        whal_Reg32_Update(base, CRYP_CR_REG, CRYP_CR_GCM_CCMPH_Msk,
+                          whal_SetBits(CRYP_CR_GCM_CCMPH_Msk,
+                                       CRYP_CR_GCM_CCMPH_Pos,
+                                       CRYP_GCM_CCMPH_PAYLOAD));
         Enable(base);
 
         for (i = 0; i < sz; i += 16) {
@@ -1351,10 +1351,10 @@ whal_Error whal_Stm32n6_CrypAesCcm_Oneshot(whal_AesCcm *dev,
                 WriteBlock(base, inPtr);
             } else {
                 if (dir == WHAL_CRYPTO_DECRYPT) {
-                    whal_Reg_Update(base, CRYP_CR_REG, CRYP_CR_NPBLB_Msk,
-                                    whal_SetBits(CRYP_CR_NPBLB_Msk,
-                                                 CRYP_CR_NPBLB_Pos,
-                                                 16 - remain));
+                    whal_Reg32_Update(base, CRYP_CR_REG, CRYP_CR_NPBLB_Msk,
+                                      whal_SetBits(CRYP_CR_NPBLB_Msk,
+                                                   CRYP_CR_NPBLB_Pos,
+                                                   16 - remain));
                 }
                 for (j = 0; j < remain; j++)
                     blockIn[j] = inPtr[j];
@@ -1377,11 +1377,11 @@ whal_Error whal_Stm32n6_CrypAesCcm_Oneshot(whal_AesCcm *dev,
 
     /* Final phase */
     Disable(base);
-    whal_Reg_Update(base, CRYP_CR_REG,
-                    CRYP_CR_GCM_CCMPH_Msk | CRYP_CR_ALGODIR_Msk,
-                    whal_SetBits(CRYP_CR_GCM_CCMPH_Msk,
-                                 CRYP_CR_GCM_CCMPH_Pos,
-                                 CRYP_GCM_CCMPH_FINAL));
+    whal_Reg32_Update(base, CRYP_CR_REG,
+                      CRYP_CR_GCM_CCMPH_Msk | CRYP_CR_ALGODIR_Msk,
+                      whal_SetBits(CRYP_CR_GCM_CCMPH_Msk,
+                                   CRYP_CR_GCM_CCMPH_Pos,
+                                   CRYP_GCM_CCMPH_FINAL));
     Enable(base);
 
     WriteBlock(base, ctr0);
@@ -1408,7 +1408,7 @@ whal_Error whal_Stm32n6_CrypAesCcm_Start(whal_AesCcm *dev,
 {
     const whal_Stm32n6_Cryp_Cfg *cfg =
         (const whal_Stm32n6_Cryp_Cfg *)whal_Stm32n6_Cryp_Dev.cfg;
-    size_t base = whal_Stm32n6_Cryp_Dev.base;
+    uintptr_t base = whal_Stm32n6_Cryp_Dev.base;
     uint32_t keySizeBits;
     uint32_t algoDir;
     uint8_t b0[16];
@@ -1474,10 +1474,10 @@ whal_Error whal_Stm32n6_CrypAesCcm_Start(whal_AesCcm *dev,
         size_t hdrOff;
         size_t aadOff = 0;
 
-        whal_Reg_Update(base, CRYP_CR_REG, CRYP_CR_GCM_CCMPH_Msk,
-                        whal_SetBits(CRYP_CR_GCM_CCMPH_Msk,
-                                     CRYP_CR_GCM_CCMPH_Pos,
-                                     CRYP_GCM_CCMPH_HEADER));
+        whal_Reg32_Update(base, CRYP_CR_REG, CRYP_CR_GCM_CCMPH_Msk,
+                          whal_SetBits(CRYP_CR_GCM_CCMPH_Msk,
+                                       CRYP_CR_GCM_CCMPH_Pos,
+                                       CRYP_GCM_CCMPH_HEADER));
         Enable(base);
 
         /* SP 800-38C A.2.2: 2-byte length below 0xFF00, else 0xFFFE + 4 bytes */
@@ -1503,8 +1503,8 @@ whal_Error whal_Stm32n6_CrypAesCcm_Start(whal_AesCcm *dev,
             size_t j;
             for (j = 0; j < 16 && aadOff < aadSz; j++)
                 blk[j] = aadPtr[aadOff++];
-            err = whal_Reg_ReadPoll(base, CRYP_SR_REG, CRYP_SR_IFNF_Msk,
-                                    CRYP_SR_IFNF_Msk, cfg->timeout);
+            err = whal_Reg32_ReadPoll(base, CRYP_SR_REG, CRYP_SR_IFNF_Msk,
+                                      CRYP_SR_IFNF_Msk, cfg->timeout);
             if (err)
                 goto cleanup;
             WriteBlock(base, blk);
@@ -1517,10 +1517,10 @@ whal_Error whal_Stm32n6_CrypAesCcm_Start(whal_AesCcm *dev,
 
     /* Transition to payload phase */
     Disable(base);
-    whal_Reg_Update(base, CRYP_CR_REG, CRYP_CR_GCM_CCMPH_Msk,
-                    whal_SetBits(CRYP_CR_GCM_CCMPH_Msk,
-                                 CRYP_CR_GCM_CCMPH_Pos,
-                                 CRYP_GCM_CCMPH_PAYLOAD));
+    whal_Reg32_Update(base, CRYP_CR_REG, CRYP_CR_GCM_CCMPH_Msk,
+                      whal_SetBits(CRYP_CR_GCM_CCMPH_Msk,
+                                   CRYP_CR_GCM_CCMPH_Pos,
+                                   CRYP_GCM_CCMPH_PAYLOAD));
     Enable(base);
 
     g_aesCcmState.aadSz = aadSz;
@@ -1542,7 +1542,7 @@ whal_Error whal_Stm32n6_CrypAesCcm_Process(whal_AesCcm *dev,
 {
     const whal_Stm32n6_Cryp_Cfg *cfg =
         (const whal_Stm32n6_Cryp_Cfg *)whal_Stm32n6_Cryp_Dev.cfg;
-    size_t base = whal_Stm32n6_Cryp_Dev.base;
+    uintptr_t base = whal_Stm32n6_Cryp_Dev.base;
     uint32_t algoDir;
     size_t i;
     whal_Error err;
@@ -1565,7 +1565,7 @@ whal_Error whal_Stm32n6_CrypAesCcm_Process(whal_AesCcm *dev,
     }
 
     algoDir = whal_GetBits(CRYP_CR_ALGODIR_Msk, CRYP_CR_ALGODIR_Pos,
-                           whal_Reg_Read(base, CRYP_CR_REG));
+                           whal_Reg32_Read(base, CRYP_CR_REG));
 
     for (i = 0; i < sz; i += 16) {
         const uint8_t *inPtr = (const uint8_t *)in + i;
@@ -1579,10 +1579,10 @@ whal_Error whal_Stm32n6_CrypAesCcm_Process(whal_AesCcm *dev,
             WriteBlock(base, inPtr);
         } else {
             if (algoDir == CRYP_ALGODIR_DECRYPT) {
-                whal_Reg_Update(base, CRYP_CR_REG, CRYP_CR_NPBLB_Msk,
-                                whal_SetBits(CRYP_CR_NPBLB_Msk,
-                                             CRYP_CR_NPBLB_Pos,
-                                             16 - remain));
+                whal_Reg32_Update(base, CRYP_CR_REG, CRYP_CR_NPBLB_Msk,
+                                  whal_SetBits(CRYP_CR_NPBLB_Msk,
+                                               CRYP_CR_NPBLB_Pos,
+                                               16 - remain));
             }
             for (j = 0; j < remain; j++)
                 block[j] = inPtr[j];
@@ -1616,7 +1616,7 @@ whal_Error whal_Stm32n6_CrypAesCcm_Finalize(whal_AesCcm *dev,
 {
     const whal_Stm32n6_Cryp_Cfg *cfg =
         (const whal_Stm32n6_Cryp_Cfg *)whal_Stm32n6_Cryp_Dev.cfg;
-    size_t base = whal_Stm32n6_Cryp_Dev.base;
+    uintptr_t base = whal_Stm32n6_Cryp_Dev.base;
     uint8_t tagBuf[16];
     size_t i;
     whal_Error err;
@@ -1632,11 +1632,11 @@ whal_Error whal_Stm32n6_CrypAesCcm_Finalize(whal_AesCcm *dev,
 
     /* Final phase */
     Disable(base);
-    whal_Reg_Update(base, CRYP_CR_REG,
-                    CRYP_CR_GCM_CCMPH_Msk | CRYP_CR_ALGODIR_Msk,
-                    whal_SetBits(CRYP_CR_GCM_CCMPH_Msk,
-                                 CRYP_CR_GCM_CCMPH_Pos,
-                                 CRYP_GCM_CCMPH_FINAL));
+    whal_Reg32_Update(base, CRYP_CR_REG,
+                      CRYP_CR_GCM_CCMPH_Msk | CRYP_CR_ALGODIR_Msk,
+                      whal_SetBits(CRYP_CR_GCM_CCMPH_Msk,
+                                   CRYP_CR_GCM_CCMPH_Pos,
+                                   CRYP_GCM_CCMPH_FINAL));
     Enable(base);
 
     WriteBlock(base, g_aesCcmState.ccmCtr0);

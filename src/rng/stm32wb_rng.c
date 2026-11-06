@@ -89,7 +89,7 @@ whal_Error whal_Stm32wb_Rng_Generate(whal_Rng *rngDev, void *rngData, size_t rng
     whal_Error err = WHAL_SUCCESS;
     const whal_Stm32wb_Rng_Cfg *cfg =
         (const whal_Stm32wb_Rng_Cfg *)whal_Stm32wb_Rng_Dev.cfg;
-    size_t base = whal_Stm32wb_Rng_Dev.base;
+    uintptr_t base = whal_Stm32wb_Rng_Dev.base;
     size_t sr;
     size_t offset = 0;
     (void)rngDev;
@@ -102,8 +102,8 @@ whal_Error whal_Stm32wb_Rng_Generate(whal_Rng *rngDev, void *rngData, size_t rng
 #endif
 
     /* Enable the RNG peripheral */
-    whal_Reg_Update(base, RNG_CR_REG, RNG_CR_RNGEN_Msk,
-                    whal_SetBits(RNG_CR_RNGEN_Msk, RNG_CR_RNGEN_Pos, 1));
+    whal_Reg32_Update(base, RNG_CR_REG, RNG_CR_RNGEN_Msk,
+                      whal_SetBits(RNG_CR_RNGEN_Msk, RNG_CR_RNGEN_Pos, 1));
 
     while (offset < rngDataSz) {
         /* Wait for a random value to be ready */
@@ -114,7 +114,7 @@ whal_Error whal_Stm32wb_Rng_Generate(whal_Rng *rngDev, void *rngData, size_t rng
                 goto exit;
             }
 
-            sr = whal_Reg_Read(base, RNG_SR_REG);
+            sr = whal_Reg32_Read(base, RNG_SR_REG);
 
             /* Check for seed or clock error */
             if (sr & (RNG_SR_SECS_Msk | RNG_SR_SEIS_Msk)) {
@@ -142,14 +142,14 @@ whal_Error whal_Stm32wb_Rng_Generate(whal_Rng *rngDev, void *rngData, size_t rng
 
 seed_error:
     /* Seed error recovery (RM0434 21.3.7): clear SEIS, then discard 12 words */
-    whal_Reg_Update(base, RNG_SR_REG, RNG_SR_SEIS_Msk, 0);
+    whal_Reg32_Update(base, RNG_SR_REG, RNG_SR_SEIS_Msk, 0);
     for (size_t i = 0; i < 12; i++)
-        (void)whal_Reg_Read(base, RNG_DR_REG);
+        (void)whal_Reg32_Read(base, RNG_DR_REG);
 
 exit:
     /* Disable the RNG peripheral */
-    whal_Reg_Update(base, RNG_CR_REG, RNG_CR_RNGEN_Msk,
-                    whal_SetBits(RNG_CR_RNGEN_Msk, RNG_CR_RNGEN_Pos, 0));
+    whal_Reg32_Update(base, RNG_CR_REG, RNG_CR_RNGEN_Msk,
+                      whal_SetBits(RNG_CR_RNGEN_Msk, RNG_CR_RNGEN_Pos, 0));
 
     return err;
 }

@@ -65,7 +65,7 @@ static void Test_Eth_Loopback(void)
     };
     uint8_t rxFrame[1536];
     size_t rxLen = sizeof(rxFrame);
-    size_t base = whal_Stm32n6_Eth_Dev.base;
+    uintptr_t base = whal_Stm32n6_Eth_Dev.base;
     whal_Stm32n6_Eth_Cfg *ethCfg = (whal_Stm32n6_Eth_Cfg *)whal_Stm32n6_Eth_Dev.cfg;
     whal_Error err;
     uint16_t bcr = 0;
@@ -88,18 +88,18 @@ static void Test_Eth_Loopback(void)
               *(volatile uint32_t *)(0x44024000U + 0xC28U));
 
     /* DMA channel state we expect to be running after Eth_Start. */
-    DumpHex32("DMAC0TXCR (pre)", (uint32_t)whal_Reg_Read(base, 0x1104));
-    DumpHex32("DMAC0RXCR (pre)", (uint32_t)whal_Reg_Read(base, 0x1108));
-    DumpHex32("DMAC0TXDLAR",     (uint32_t)whal_Reg_Read(base, 0x1114));
-    DumpHex32("DMAC0RXDLAR",     (uint32_t)whal_Reg_Read(base, 0x111C));
+    DumpHex32("DMAC0TXCR (pre)", (uint32_t)whal_Reg32_Read(base, 0x1104));
+    DumpHex32("DMAC0RXCR (pre)", (uint32_t)whal_Reg32_Read(base, 0x1108));
+    DumpHex32("DMAC0TXDLAR",     (uint32_t)whal_Reg32_Read(base, 0x1114));
+    DumpHex32("DMAC0RXDLAR",     (uint32_t)whal_Reg32_Read(base, 0x111C));
 
     WHAL_ASSERT_EQ(whal_Stm32n6_Eth_Ext_EnableLoopback(BOARD_ETH_DEV, 1),
                    WHAL_SUCCESS);
     WHAL_ASSERT_EQ(whal_Eth_Start(BOARD_ETH_DEV, WHAL_ETH_SPEED_100,
                                   WHAL_ETH_DUPLEX_FULL), WHAL_SUCCESS);
 
-    DumpHex32("MACCR after Start", (uint32_t)whal_Reg_Read(base,
-                                                           DBG_MACCR_REG));
+    DumpHex32("MACCR after Start", (uint32_t)whal_Reg32_Read(base,
+                                                             DBG_MACCR_REG));
 
     WHAL_ASSERT_EQ(whal_Eth_Send(BOARD_ETH_DEV, txFrame, sizeof(txFrame)),
                    WHAL_SUCCESS);
@@ -108,9 +108,9 @@ static void Test_Eth_Loopback(void)
     Board_WaitMs(20);
     DumpHex32("TDES3 after Send+20ms",   ethCfg->txDescs[0].des[3]);
     DumpHex32("RDES3 after Send+20ms",   ethCfg->rxDescs[0].des[3]);
-    DumpHex32("DMADSR",                   (uint32_t)whal_Reg_Read(base,
+    DumpHex32("DMADSR",                   (uint32_t)whal_Reg32_Read(base,
                                                               DBG_DMADSR_REG));
-    DumpHex32("DMAC0SR",                  (uint32_t)whal_Reg_Read(base,
+    DumpHex32("DMAC0SR",                  (uint32_t)whal_Reg32_Read(base,
                                                               DBG_DMAC0SR_REG));
 
     /* Poll for the looped-back frame */
@@ -120,11 +120,11 @@ static void Test_Eth_Loopback(void)
     } while (err == WHAL_ENOTREADY && (g_tick - start) < 100);
 
     if (err != WHAL_SUCCESS) {
-        DumpHex32("MACCR final",  (uint32_t)whal_Reg_Read(base, DBG_MACCR_REG));
-        DumpHex32("DMADSR final", (uint32_t)whal_Reg_Read(base,
-                                                          DBG_DMADSR_REG));
-        DumpHex32("DMAC0SR final",(uint32_t)whal_Reg_Read(base,
-                                                          DBG_DMAC0SR_REG));
+        DumpHex32("MACCR final",  (uint32_t)whal_Reg32_Read(base, DBG_MACCR_REG));
+        DumpHex32("DMADSR final", (uint32_t)whal_Reg32_Read(base,
+                                                            DBG_DMADSR_REG));
+        DumpHex32("DMAC0SR final",(uint32_t)whal_Reg32_Read(base,
+                                                            DBG_DMAC0SR_REG));
         DumpHex32("TDES3 final",  ethCfg->txDescs[0].des[3]);
         DumpHex32("RDES3 final",  ethCfg->rxDescs[0].des[3]);
     }

@@ -24,6 +24,7 @@
 
 #include <wolfHAL/error.h>
 #include <stddef.h>
+#include <stdint.h>
 
 /*
  * @file timer.h
@@ -52,7 +53,7 @@ typedef struct {
  * @brief Timer device instance pairing configuration with a driver.
  */
 struct whal_Timer{
-    const size_t base;
+    const uintptr_t base;
     const whal_TimerDriver *driver;
     void *cfg;
 };

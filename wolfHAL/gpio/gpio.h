@@ -24,6 +24,7 @@
 
 #include <wolfHAL/error.h>
 #include <stddef.h>
+#include <stdint.h>
 
 /*
  * @file gpio.h
@@ -50,7 +51,7 @@ typedef struct {
  * @brief GPIO device instance containing driver and configuration data.
  */
 struct whal_Gpio {
-    const size_t base;
+    const uintptr_t base;
     const whal_GpioDriver *driver;
     const void *cfg;
 };

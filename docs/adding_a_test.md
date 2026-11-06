@@ -61,7 +61,7 @@ name). Individual test functions are static and named `Test_<Device>_<Name>`.
 
 Platform-specific tests verify that the driver correctly manipulates hardware
 registers. They include platform-specific headers and read registers directly
-using `whal_Reg_Get()` to confirm that Init configured the right fields, that
+using `whal_Reg32_Get()` to confirm that Init configured the right fields, that
 Set wrote to the correct output register, etc.
 
 These tests are automatically detected and compiled when building for the
@@ -80,12 +80,12 @@ Create `tests/<device>/test_<platform>_<device>.c`:
 
 static void Test_Foo_SomeRegister(void)
 {
-    size_t val = 0;
+    uint32_t val = 0;
     /* Read the register block base from the platform's singleton (extern-declared
      * in the driver header; defined in the driver .c from the WHAL_CFG_<PLAT>_<X>_DEV
      * initializer in wolfHAL_board.h). For vtable-dispatched drivers, use
      * BOARD_FOO_DEV->base instead. */
-    whal_Reg_Get(whal_<Platform>_Foo_Dev.base, REG_OFFSET, MASK, POS, &val);
+    whal_Reg32_Get(whal_<Platform>_Foo_Dev.base, REG_OFFSET, MASK, POS, &val);
     WHAL_ASSERT_EQ(val, EXPECTED);
 }
 

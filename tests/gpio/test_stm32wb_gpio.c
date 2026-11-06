@@ -39,7 +39,7 @@
 #define GPIOx_AFRH_REG    0x24
 #define GPIOx_STRIDE      0x400
 
-static inline size_t Board_LedPortBase(void)
+static inline uintptr_t Board_LedPortBase(void)
 {
     const whal_Stm32wb_Gpio_Cfg *cfg = (const whal_Stm32wb_Gpio_Cfg *)whal_Stm32wb_Gpio_Dev.cfg;
     whal_Stm32wb_Gpio_PinCfg led = cfg->pinCfg[BOARD_LED_PIN];
@@ -90,9 +90,9 @@ static void Test_Gpio_ModeRegister(void)
     size_t pinNum = Board_LedPinNum();
     size_t bitPos = pinNum << 1;
     size_t mask = (WHAL_BITMASK(2) << bitPos);
-    size_t val = 0;
+    uint32_t val = 0;
 
-    whal_Reg_Get(Board_LedPortBase(), GPIOx_MODE_REG, mask, bitPos, &val);
+    whal_Reg32_Get(Board_LedPortBase(), GPIOx_MODE_REG, mask, bitPos, &val);
     WHAL_ASSERT_EQ(val, WHAL_STM32WB_GPIO_MODE_OUT);
 }
 
@@ -104,32 +104,32 @@ static void Test_Gpio_PinTableRegisters(void)
 
     for (size_t i = 0; i < cfg->pinCount; i++) {
         whal_Stm32wb_Gpio_PinCfg p = cfg->pinCfg[i];
-        size_t base = whal_Stm32wb_Gpio_Dev.base +
+        uintptr_t base = whal_Stm32wb_Gpio_Dev.base +
                       WHAL_STM32WB_GPIO_GET_PORT(p) * GPIOx_STRIDE;
         size_t pin = WHAL_STM32WB_GPIO_GET_PIN(p);
         size_t pos2 = pin << 1;
-        size_t val = 0;
+        uint32_t val = 0;
 
-        whal_Reg_Get(base, GPIOx_MODE_REG, WHAL_BITMASK(2) << pos2, pos2,
-                     &val);
+        whal_Reg32_Get(base, GPIOx_MODE_REG, WHAL_BITMASK(2) << pos2, pos2,
+                       &val);
         WHAL_ASSERT_EQ(val, WHAL_STM32WB_GPIO_GET_MODE(p));
 
-        whal_Reg_Get(base, GPIOx_OTYPER_REG, 1UL << pin, pin, &val);
+        whal_Reg32_Get(base, GPIOx_OTYPER_REG, 1UL << pin, pin, &val);
         WHAL_ASSERT_EQ(val, WHAL_STM32WB_GPIO_GET_OUTTYPE(p));
 
-        whal_Reg_Get(base, GPIOx_OSPEEDR_REG, WHAL_BITMASK(2) << pos2, pos2,
-                     &val);
+        whal_Reg32_Get(base, GPIOx_OSPEEDR_REG, WHAL_BITMASK(2) << pos2, pos2,
+                       &val);
         WHAL_ASSERT_EQ(val, WHAL_STM32WB_GPIO_GET_SPEED(p));
 
-        whal_Reg_Get(base, GPIOx_PUPDR_REG, WHAL_BITMASK(2) << pos2, pos2,
-                     &val);
+        whal_Reg32_Get(base, GPIOx_PUPDR_REG, WHAL_BITMASK(2) << pos2, pos2,
+                       &val);
         WHAL_ASSERT_EQ(val, WHAL_STM32WB_GPIO_GET_PULL(p));
 
         if (WHAL_STM32WB_GPIO_GET_MODE(p) == WHAL_STM32WB_GPIO_MODE_ALTFN) {
             size_t afPos = (pin & 7) << 2;
 
-            whal_Reg_Get(base, (pin < 8) ? GPIOx_AFRL_REG : GPIOx_AFRH_REG,
-                         WHAL_BITMASK(4) << afPos, afPos, &val);
+            whal_Reg32_Get(base, (pin < 8) ? GPIOx_AFRL_REG : GPIOx_AFRH_REG,
+                           WHAL_BITMASK(4) << afPos, afPos, &val);
             WHAL_ASSERT_EQ(val, WHAL_STM32WB_GPIO_GET_ALTFN(p));
         }
     }
@@ -140,9 +140,9 @@ static void Test_Gpio_SetHighReg(void)
     WHAL_ASSERT_EQ(whal_Gpio_Set(BOARD_GPIO_DEV, BOARD_LED_PIN, 1), WHAL_SUCCESS);
 
     size_t pinNum = Board_LedPinNum();
-    size_t val = 0;
-    whal_Reg_Get(Board_LedPortBase(), GPIOx_ODR_REG, (1UL << pinNum),
-                 pinNum, &val);
+    uint32_t val = 0;
+    whal_Reg32_Get(Board_LedPortBase(), GPIOx_ODR_REG, (1UL << pinNum),
+                   pinNum, &val);
     WHAL_ASSERT_EQ(val, 1);
 }
 
@@ -151,20 +151,20 @@ static void Test_Gpio_SetLowReg(void)
     WHAL_ASSERT_EQ(whal_Gpio_Set(BOARD_GPIO_DEV, BOARD_LED_PIN, 0), WHAL_SUCCESS);
 
     size_t pinNum = Board_LedPinNum();
-    size_t val = 0;
-    whal_Reg_Get(Board_LedPortBase(), GPIOx_ODR_REG, (1UL << pinNum),
-                 pinNum, &val);
+    uint32_t val = 0;
+    whal_Reg32_Get(Board_LedPortBase(), GPIOx_ODR_REG, (1UL << pinNum),
+                   pinNum, &val);
     WHAL_ASSERT_EQ(val, 0);
 }
 
 static void Test_Gpio_SetNonzeroReg(void)
 {
     size_t pinNum = Board_LedPinNum();
-    size_t val = 0;
+    uint32_t val = 0;
 
     WHAL_ASSERT_EQ(whal_Gpio_Set(BOARD_GPIO_DEV, BOARD_LED_PIN, 2), WHAL_SUCCESS);
-    whal_Reg_Get(Board_LedPortBase(), GPIOx_ODR_REG, (1UL << pinNum),
-                 pinNum, &val);
+    whal_Reg32_Get(Board_LedPortBase(), GPIOx_ODR_REG, (1UL << pinNum),
+                   pinNum, &val);
     WHAL_ASSERT_EQ(val, 1);
 
     WHAL_ASSERT_EQ(whal_Gpio_Set(BOARD_GPIO_DEV, BOARD_LED_PIN, 0), WHAL_SUCCESS);
