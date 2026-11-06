@@ -141,21 +141,21 @@ const whal_Dma whal_Stm32wba_Gpdma_Dev = WHAL_CFG_STM32WBA_GPDMA_DEV;
 #endif
 
 /* Abort an enabled channel: suspend, wait for idle, then reset */
-static whal_Error Gpdma_AbortChannel(size_t base, size_t ch,
+static whal_Error Gpdma_AbortChannel(uintptr_t base, size_t ch,
                                      whal_Timeout *timeout)
 {
     size_t cr;
     whal_Error err;
 
-    cr = whal_Reg_Read(base, GPDMA_CxCR(ch));
+    cr = whal_Reg32_Read(base, GPDMA_CxCR(ch));
     if (cr & GPDMA_CxCR_EN_Msk) {
-        whal_Reg_Write(base, GPDMA_CxCR(ch),
-                       (cr & ~GPDMA_CxCR_EN_Msk) | GPDMA_CxCR_SUSP_Msk);
-        err = whal_Reg_ReadPoll(base, GPDMA_CxSR(ch), GPDMA_CxSR_IDLEF_Msk,
+        whal_Reg32_Write(base, GPDMA_CxCR(ch),
+                         (cr & ~GPDMA_CxCR_EN_Msk) | GPDMA_CxCR_SUSP_Msk);
+        err = whal_Reg32_ReadPoll(base, GPDMA_CxSR(ch), GPDMA_CxSR_IDLEF_Msk,
                                  GPDMA_CxSR_IDLEF_Msk, timeout);
         if (err)
             return err;
-        whal_Reg_Write(base, GPDMA_CxCR(ch), GPDMA_CxCR_RESET_Msk);
+        whal_Reg32_Write(base, GPDMA_CxCR(ch), GPDMA_CxCR_RESET_Msk);
     }
 
     return WHAL_SUCCESS;
@@ -180,11 +180,11 @@ whal_Error whal_Stm32wba_Gpdma_Deinit(whal_Dma *dmaDev)
 #ifdef WHAL_CFG_STM32WBA_GPDMA_SINGLE_INSTANCE
     const whal_Stm32wba_Gpdma_Cfg *cfg =
         (const whal_Stm32wba_Gpdma_Cfg *)whal_Stm32wba_Gpdma_Dev.cfg;
-    size_t base = whal_Stm32wba_Gpdma_Dev.base;
+    uintptr_t base = whal_Stm32wba_Gpdma_Dev.base;
     (void)dmaDev;
 #else
     const whal_Stm32wba_Gpdma_Cfg *cfg;
-    size_t base;
+    uintptr_t base;
 
     if (!dmaDev || !dmaDev->cfg)
         return WHAL_EINVAL;
@@ -201,8 +201,8 @@ whal_Error whal_Stm32wba_Gpdma_Deinit(whal_Dma *dmaDev)
                 err = abortErr;
             continue;
         }
-        whal_Reg_Write(base, GPDMA_CxCR(ch),
-                       GPDMA_CxCR_RESET_Msk);
+        whal_Reg32_Write(base, GPDMA_CxCR(ch),
+                         GPDMA_CxCR_RESET_Msk);
     }
 
     return err;
@@ -217,14 +217,14 @@ whal_Error whal_Stm32wba_Gpdma_Configure(whal_Dma *dmaDev, size_t ch,
 #ifdef WHAL_CFG_STM32WBA_GPDMA_SINGLE_INSTANCE
     const whal_Stm32wba_Gpdma_Cfg *cfg =
         (const whal_Stm32wba_Gpdma_Cfg *)whal_Stm32wba_Gpdma_Dev.cfg;
-    size_t base = whal_Stm32wba_Gpdma_Dev.base;
+    uintptr_t base = whal_Stm32wba_Gpdma_Dev.base;
     (void)dmaDev;
 
     if (!chCfg)
         return WHAL_EINVAL;
 #else
     const whal_Stm32wba_Gpdma_Cfg *cfg;
-    size_t base;
+    uintptr_t base;
 
     if (!dmaDev || !dmaDev->cfg || !chCfg)
         return WHAL_EINVAL;
@@ -246,14 +246,14 @@ whal_Error whal_Stm32wba_Gpdma_Configure(whal_Dma *dmaDev, size_t ch,
         return WHAL_EINVAL;
 
     /* Reset the channel and wait for idle */
-    whal_Reg_Write(base, GPDMA_CxCR(ch), GPDMA_CxCR_RESET_Msk);
-    err = whal_Reg_ReadPoll(base, GPDMA_CxSR(ch), GPDMA_CxSR_IDLEF_Msk,
+    whal_Reg32_Write(base, GPDMA_CxCR(ch), GPDMA_CxCR_RESET_Msk);
+    err = whal_Reg32_ReadPoll(base, GPDMA_CxSR(ch), GPDMA_CxSR_IDLEF_Msk,
                              GPDMA_CxSR_IDLEF_Msk, cfg->timeout);
     if (err)
         return err;
 
     /* Clear any pending flags */
-    whal_Reg_Write(base, GPDMA_CxFCR(ch), GPDMA_CxFCR_ALL);
+    whal_Reg32_Write(base, GPDMA_CxFCR(ch), GPDMA_CxFCR_ALL);
 
     /* Build CxTR1: source and destination widths and increment modes.
      * Route the memory side to port 1 and the peripheral side to port 0
@@ -269,7 +269,7 @@ whal_Error whal_Stm32wba_Gpdma_Configure(whal_Dma *dmaDev, size_t ch,
     else if (ccfg->dir == WHAL_STM32WBA_GPDMA_DIR_PERIPH_TO_MEM)
         tr1 |= GPDMA_CxTR1_DAP_Msk;
 
-    whal_Reg_Write(base, GPDMA_CxTR1(ch), tr1);
+    whal_Reg32_Write(base, GPDMA_CxTR1(ch), tr1);
 
     /* Build CxTR2: request selection and direction */
     tr2 = 0;
@@ -281,22 +281,22 @@ whal_Error whal_Stm32wba_Gpdma_Configure(whal_Dma *dmaDev, size_t ch,
         if (ccfg->dir == WHAL_STM32WBA_GPDMA_DIR_MEM_TO_PERIPH)
             tr2 |= GPDMA_CxTR2_DREQ_Msk;
     }
-    whal_Reg_Write(base, GPDMA_CxTR2(ch), tr2);
+    whal_Reg32_Write(base, GPDMA_CxTR2(ch), tr2);
 
     /* Byte count and addresses */
-    whal_Reg_Write(base, GPDMA_CxBR1(ch), ccfg->nbytes);
-    whal_Reg_Write(base, GPDMA_CxSAR(ch), ccfg->srcAddr);
-    whal_Reg_Write(base, GPDMA_CxDAR(ch), ccfg->dstAddr);
+    whal_Reg32_Write(base, GPDMA_CxBR1(ch), ccfg->nbytes);
+    whal_Reg32_Write(base, GPDMA_CxSAR(ch), ccfg->srcAddr);
+    whal_Reg32_Write(base, GPDMA_CxDAR(ch), ccfg->dstAddr);
 
     /* No linked-list */
-    whal_Reg_Write(base, GPDMA_CxLLR(ch), 0);
+    whal_Reg32_Write(base, GPDMA_CxLLR(ch), 0);
 
     /* Enable transfer complete and error interrupts. Run the channel at
      * high priority so it isn't starved by concurrent CPU/AHB traffic. */
-    whal_Reg_Write(base, GPDMA_CxCR(ch),
-                   GPDMA_CxCR_TCIE_Msk | GPDMA_CxCR_DTEIE_Msk |
-                   GPDMA_CxCR_ULEIE_Msk | GPDMA_CxCR_USEIE_Msk |
-                   whal_SetBits(GPDMA_CxCR_PRIO_Msk, GPDMA_CxCR_PRIO_Pos, 3));
+    whal_Reg32_Write(base, GPDMA_CxCR(ch),
+                     GPDMA_CxCR_TCIE_Msk | GPDMA_CxCR_DTEIE_Msk |
+                     GPDMA_CxCR_ULEIE_Msk | GPDMA_CxCR_USEIE_Msk |
+                     whal_SetBits(GPDMA_CxCR_PRIO_Msk, GPDMA_CxCR_PRIO_Pos, 3));
 
     return WHAL_SUCCESS;
 }
@@ -306,11 +306,11 @@ whal_Error whal_Stm32wba_Gpdma_Start(whal_Dma *dmaDev, size_t ch)
 #ifdef WHAL_CFG_STM32WBA_GPDMA_SINGLE_INSTANCE
     const whal_Stm32wba_Gpdma_Cfg *cfg =
         (const whal_Stm32wba_Gpdma_Cfg *)whal_Stm32wba_Gpdma_Dev.cfg;
-    size_t base = whal_Stm32wba_Gpdma_Dev.base;
+    uintptr_t base = whal_Stm32wba_Gpdma_Dev.base;
     (void)dmaDev;
 #else
     const whal_Stm32wba_Gpdma_Cfg *cfg;
-    size_t base;
+    uintptr_t base;
 
     if (!dmaDev || !dmaDev->cfg)
         return WHAL_EINVAL;
@@ -323,11 +323,11 @@ whal_Error whal_Stm32wba_Gpdma_Start(whal_Dma *dmaDev, size_t ch)
         return WHAL_EINVAL;
 
     /* Clear any stale flags from the previous transfer before enabling */
-    whal_Reg_Write(base, GPDMA_CxFCR(ch), GPDMA_CxFCR_ALL);
+    whal_Reg32_Write(base, GPDMA_CxFCR(ch), GPDMA_CxFCR_ALL);
 
     /* Set EN bit without disturbing the already-configured interrupt enables */
-    whal_Reg_Update(base, GPDMA_CxCR(ch), GPDMA_CxCR_EN_Msk,
-                    GPDMA_CxCR_EN_Msk);
+    whal_Reg32_Update(base, GPDMA_CxCR(ch), GPDMA_CxCR_EN_Msk,
+                      GPDMA_CxCR_EN_Msk);
 
     return WHAL_SUCCESS;
 }
@@ -338,11 +338,11 @@ whal_Error whal_Stm32wba_Gpdma_Stop(whal_Dma *dmaDev, size_t ch)
 #ifdef WHAL_CFG_STM32WBA_GPDMA_SINGLE_INSTANCE
     const whal_Stm32wba_Gpdma_Cfg *cfg =
         (const whal_Stm32wba_Gpdma_Cfg *)whal_Stm32wba_Gpdma_Dev.cfg;
-    size_t base = whal_Stm32wba_Gpdma_Dev.base;
+    uintptr_t base = whal_Stm32wba_Gpdma_Dev.base;
     (void)dmaDev;
 #else
     const whal_Stm32wba_Gpdma_Cfg *cfg;
-    size_t base;
+    uintptr_t base;
 
     if (!dmaDev || !dmaDev->cfg)
         return WHAL_EINVAL;
@@ -359,7 +359,7 @@ whal_Error whal_Stm32wba_Gpdma_Stop(whal_Dma *dmaDev, size_t ch)
     if (err)
         return err;
 
-    whal_Reg_Write(base, GPDMA_CxFCR(ch), GPDMA_CxFCR_ALL);
+    whal_Reg32_Write(base, GPDMA_CxFCR(ch), GPDMA_CxFCR_ALL);
 
     return WHAL_SUCCESS;
 }
@@ -369,33 +369,33 @@ void whal_Stm32wba_Gpdma_IRQHandler(whal_Dma *dmaDev, size_t ch,
 {
     size_t sr;
 #ifdef WHAL_CFG_STM32WBA_GPDMA_SINGLE_INSTANCE
-    size_t base = whal_Stm32wba_Gpdma_Dev.base;
+    uintptr_t base = whal_Stm32wba_Gpdma_Dev.base;
     (void)dmaDev;
 #else
-    size_t base;
+    uintptr_t base;
 
     if (!dmaDev)
         return;
 
     base = dmaDev->base;
 #endif
-    sr = whal_Reg_Read(base, GPDMA_CxSR(ch));
+    sr = whal_Reg32_Read(base, GPDMA_CxSR(ch));
 
     if (sr & GPDMA_CxSR_ALL_ERR) {
-        whal_Reg_Write(base, GPDMA_CxFCR(ch), GPDMA_CxSR_ALL_ERR);
+        whal_Reg32_Write(base, GPDMA_CxFCR(ch), GPDMA_CxSR_ALL_ERR);
         if (cb)
             cb(ctx, WHAL_EHARDWARE);
         return;
     }
 
     if (sr & GPDMA_CxSR_TCF_Msk) {
-        whal_Reg_Write(base, GPDMA_CxFCR(ch), GPDMA_CxSR_TCF_Msk);
+        whal_Reg32_Write(base, GPDMA_CxFCR(ch), GPDMA_CxSR_TCF_Msk);
         if (cb)
             cb(ctx, WHAL_SUCCESS);
     }
 
     if (sr & GPDMA_CxSR_HTF_Msk) {
-        whal_Reg_Write(base, GPDMA_CxFCR(ch), GPDMA_CxSR_HTF_Msk);
+        whal_Reg32_Write(base, GPDMA_CxFCR(ch), GPDMA_CxSR_HTF_Msk);
     }
 }
 

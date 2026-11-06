@@ -49,7 +49,7 @@ typedef struct {
     uint32_t scll;
 } Timing;
 
-static size_t I2cBase(void)
+static uintptr_t I2cBase(void)
 {
     return BOARD_I2C_DEV->base;
 }
@@ -88,7 +88,7 @@ static void StartAndRead(uint32_t freq, Timing *t)
     };
 
     WHAL_ASSERT_EQ(whal_I2c_StartCom(BOARD_I2C_DEV, &com), WHAL_SUCCESS);
-    *t = DecodeTimingr(whal_Reg_Read(I2cBase(), I2C_TIMINGR));
+    *t = DecodeTimingr(whal_Reg32_Read(I2cBase(), I2C_TIMINGR));
     WHAL_ASSERT_EQ(whal_I2c_EndCom(BOARD_I2C_DEV), WHAL_SUCCESS);
 }
 
@@ -149,7 +149,7 @@ static void Test_Stm32wb_I2c_Address(void)
 
     /* 7-bit addresses occupy SADD[7:1] */
     WHAL_ASSERT_EQ(whal_I2c_StartCom(BOARD_I2C_DEV, &com), WHAL_SUCCESS);
-    cr2 = whal_Reg_Read(I2cBase(), I2C_CR2);
+    cr2 = whal_Reg32_Read(I2cBase(), I2C_CR2);
     WHAL_ASSERT_EQ(cr2 & CR2_SADD_Msk, 0x50 << 1);
     WHAL_ASSERT_EQ(cr2 & CR2_ADD10_Msk, 0);
     WHAL_ASSERT_EQ(whal_I2c_EndCom(BOARD_I2C_DEV), WHAL_SUCCESS);
@@ -157,7 +157,7 @@ static void Test_Stm32wb_I2c_Address(void)
     /* Highest 7-bit address */
     com.addr = 0x7F;
     WHAL_ASSERT_EQ(whal_I2c_StartCom(BOARD_I2C_DEV, &com), WHAL_SUCCESS);
-    cr2 = whal_Reg_Read(I2cBase(), I2C_CR2);
+    cr2 = whal_Reg32_Read(I2cBase(), I2C_CR2);
     WHAL_ASSERT_EQ(cr2 & CR2_SADD_Msk, 0x7F << 1);
     WHAL_ASSERT_EQ(whal_I2c_EndCom(BOARD_I2C_DEV), WHAL_SUCCESS);
 
@@ -165,13 +165,13 @@ static void Test_Stm32wb_I2c_Address(void)
     com.addr = 0x2A5;
     com.addrSz = 10;
     WHAL_ASSERT_EQ(whal_I2c_StartCom(BOARD_I2C_DEV, &com), WHAL_SUCCESS);
-    cr2 = whal_Reg_Read(I2cBase(), I2C_CR2);
+    cr2 = whal_Reg32_Read(I2cBase(), I2C_CR2);
     WHAL_ASSERT_EQ(cr2 & CR2_SADD_Msk, 0x2A5);
     WHAL_ASSERT_EQ(cr2 & CR2_ADD10_Msk, CR2_ADD10_Msk);
 
     /* EndCom clears the address and addressing mode */
     WHAL_ASSERT_EQ(whal_I2c_EndCom(BOARD_I2C_DEV), WHAL_SUCCESS);
-    cr2 = whal_Reg_Read(I2cBase(), I2C_CR2);
+    cr2 = whal_Reg32_Read(I2cBase(), I2C_CR2);
     WHAL_ASSERT_EQ(cr2 & (CR2_SADD_Msk | CR2_ADD10_Msk), 0);
 }
 

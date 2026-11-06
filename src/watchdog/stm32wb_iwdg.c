@@ -68,7 +68,7 @@ whal_Error whal_Stm32wb_Iwdg_Init(whal_Watchdog *wdgDev)
 {
     const whal_Stm32wb_Iwdg_Cfg *cfg =
         (const whal_Stm32wb_Iwdg_Cfg *)whal_Stm32wb_Iwdg_Dev.cfg;
-    size_t base = whal_Stm32wb_Iwdg_Dev.base;
+    uintptr_t base = whal_Stm32wb_Iwdg_Dev.base;
     whal_Error err;
     (void)wdgDev;
 
@@ -77,26 +77,26 @@ whal_Error whal_Stm32wb_Iwdg_Init(whal_Watchdog *wdgDev)
     }
 
     /* Start the IWDG */
-    whal_Reg_Write(base, IWDG_KR_REG, IWDG_KEY_START);
+    whal_Reg32_Write(base, IWDG_KR_REG, IWDG_KEY_START);
 
     /* Enable register access */
-    whal_Reg_Write(base, IWDG_KR_REG, IWDG_KEY_ACCESS);
+    whal_Reg32_Write(base, IWDG_KR_REG, IWDG_KEY_ACCESS);
 
     /* Set prescaler */
-    whal_Reg_Write(base, IWDG_PR_REG, cfg->prescaler);
+    whal_Reg32_Write(base, IWDG_PR_REG, cfg->prescaler);
 
     /* Set reload value */
-    whal_Reg_Write(base, IWDG_RLR_REG, cfg->reload);
+    whal_Reg32_Write(base, IWDG_RLR_REG, cfg->reload);
 
     /* Wait for registers to update */
-    err = whal_Reg_ReadPoll(base, IWDG_SR_REG,
-                            IWDG_SR_PVU_Msk | IWDG_SR_RVU_Msk, 0,
-                            cfg->timeout);
+    err = whal_Reg32_ReadPoll(base, IWDG_SR_REG,
+                              IWDG_SR_PVU_Msk | IWDG_SR_RVU_Msk, 0,
+                              cfg->timeout);
     if (err)
         return err;
 
     /* Refresh counter with new reload value */
-    whal_Reg_Write(base, IWDG_KR_REG, IWDG_KEY_RELOAD);
+    whal_Reg32_Write(base, IWDG_KR_REG, IWDG_KEY_RELOAD);
 
     return WHAL_SUCCESS;
 }
@@ -110,7 +110,7 @@ whal_Error whal_Stm32wb_Iwdg_Deinit(whal_Watchdog *wdgDev)
 whal_Error whal_Stm32wb_Iwdg_Refresh(whal_Watchdog *wdgDev)
 {
     (void)wdgDev;
-    whal_Reg_Write(whal_Stm32wb_Iwdg_Dev.base, IWDG_KR_REG, IWDG_KEY_RELOAD);
+    whal_Reg32_Write(whal_Stm32wb_Iwdg_Dev.base, IWDG_KR_REG, IWDG_KEY_RELOAD);
 
     return WHAL_SUCCESS;
 }

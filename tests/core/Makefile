@@ -23,9 +23,6 @@ WHAL_DIR = $(CURDIR)/../..
 
 INCLUDE = -I$(WHAL_DIR)
 CFLAGS += -Wall -Werror $(INCLUDE) -g3
-NOLEGACY_CFLAGS := $(CFLAGS)
-# The core tests also cover the legacy whal_Reg_* API
-CFLAGS += -DWHAL_CFG_REG_LEGACY
 
 TEST_SRC = main.c test_bitops.c test_dispatch.c test_endian.c test_reg.c test_timeout.c
 
@@ -66,20 +63,9 @@ all: $(TARGET)
 $(TARGET): $(OBJECTS)
 	$(CC) $(CFLAGS) -o $@ $(OBJECTS)
 
-.PHONY: run clean legacy-off
+.PHONY: run clean
 
-# Without WHAL_CFG_REG_LEGACY, reg.c and whal_Reg32_* build and whal_Reg_*
-# does not exist.
-legacy-off:
-	$(CC) $(NOLEGACY_CFLAGS) -c -o /dev/null $(WHAL_DIR)/src/reg.c
-	printf '#include <wolfHAL/reg.h>\nvoid f(void);\nvoid f(void) { whal_Reg32_Write(0, 0, 0); }\n' | \
-	    $(CC) $(NOLEGACY_CFLAGS) -x c -c -o /dev/null -
-	@if printf '#include <wolfHAL/reg.h>\nvoid f(void);\nvoid f(void) { whal_Reg_Write(0, 0, 0); }\n' | \
-	    $(CC) $(NOLEGACY_CFLAGS) -x c -c -o /dev/null - 2>/dev/null; then \
-	    echo "legacy-off: FAIL, whal_Reg_Write exists"; exit 1; fi
-	@echo "legacy-off: PASS"
-
-run: legacy-off $(TARGET)
+run: $(TARGET)
 	./$(TARGET)
 
 clean:

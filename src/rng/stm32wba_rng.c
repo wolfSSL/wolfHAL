@@ -93,25 +93,25 @@ whal_Error whal_Stm32wba_Rng_Init(whal_Rng *rngDev)
 {
     const whal_Stm32wba_Rng_Cfg *cfg =
         (const whal_Stm32wba_Rng_Cfg *)whal_Stm32wba_Rng_Dev.cfg;
-    size_t base = whal_Stm32wba_Rng_Dev.base;
+    uintptr_t base = whal_Stm32wba_Rng_Dev.base;
     (void)rngDev;
 
     /* Apply the configuration with CONDRST=1 and RNGEN=1 */
-    whal_Reg_Write(base, RNG_CR_REG,
-                   RNG_CR_CONDRST_Msk | cfg->cr | RNG_CR_RNGEN_Msk);
+    whal_Reg32_Write(base, RNG_CR_REG,
+                     RNG_CR_CONDRST_Msk | cfg->cr | RNG_CR_RNGEN_Msk);
 
     /* HTCR and NSCR only take effect while CONDRST is set */
-    whal_Reg_Write(base, RNG_HTCR_REG, RNG_HTCR_MAGIC);
-    whal_Reg_Write(base, RNG_HTCR_REG, cfg->htcr);
-    whal_Reg_Write(base, RNG_NSCR_REG, cfg->nscr);
+    whal_Reg32_Write(base, RNG_HTCR_REG, RNG_HTCR_MAGIC);
+    whal_Reg32_Write(base, RNG_HTCR_REG, cfg->htcr);
+    whal_Reg32_Write(base, RNG_NSCR_REG, cfg->nscr);
 
     /* Clear CONDRST to start conditioning */
-    whal_Reg_Write(base, RNG_CR_REG,
-                   cfg->cr | RNG_CR_RNGEN_Msk);
+    whal_Reg32_Write(base, RNG_CR_REG,
+                     cfg->cr | RNG_CR_RNGEN_Msk);
 
     /* Wait for CONDRST to self-clear */
-    return whal_Reg_ReadPoll(base, RNG_CR_REG, RNG_CR_CONDRST_Msk, 0,
-                             cfg->timeout);
+    return whal_Reg32_ReadPoll(base, RNG_CR_REG, RNG_CR_CONDRST_Msk, 0,
+                               cfg->timeout);
 }
 
 whal_Error whal_Stm32wba_Rng_Deinit(whal_Rng *rngDev)
@@ -119,7 +119,7 @@ whal_Error whal_Stm32wba_Rng_Deinit(whal_Rng *rngDev)
     (void)rngDev;
 
     /* Disable RNG */
-    whal_Reg_Update(whal_Stm32wba_Rng_Dev.base, RNG_CR_REG, RNG_CR_RNGEN_Msk, 0);
+    whal_Reg32_Update(whal_Stm32wba_Rng_Dev.base, RNG_CR_REG, RNG_CR_RNGEN_Msk, 0);
 
     return WHAL_SUCCESS;
 }
@@ -130,7 +130,7 @@ whal_Error whal_Stm32wba_Rng_Generate(whal_Rng *rngDev, void *rngData, size_t rn
     whal_Error err = WHAL_SUCCESS;
     const whal_Stm32wba_Rng_Cfg *cfg =
         (const whal_Stm32wba_Rng_Cfg *)whal_Stm32wba_Rng_Dev.cfg;
-    size_t base = whal_Stm32wba_Rng_Dev.base;
+    uintptr_t base = whal_Stm32wba_Rng_Dev.base;
     size_t sr;
     size_t offset = 0;
     (void)rngDev;
@@ -149,12 +149,12 @@ whal_Error whal_Stm32wba_Rng_Generate(whal_Rng *rngDev, void *rngData, size_t rn
                 goto exit;
             }
 
-            sr = whal_Reg_Read(base, RNG_SR_REG);
+            sr = whal_Reg32_Read(base, RNG_SR_REG);
 
             /* With auto-reset enabled SECS clears on its own; SEIS latches
              * the error so the value around it is never returned */
             if (sr & (RNG_SR_SECS_Msk | RNG_SR_SEIS_Msk)) {
-                whal_Reg_Update(base, RNG_SR_REG, RNG_SR_SEIS_Msk, 0);
+                whal_Reg32_Update(base, RNG_SR_REG, RNG_SR_SEIS_Msk, 0);
                 err = WHAL_EHARDWARE;
                 goto exit;
             }

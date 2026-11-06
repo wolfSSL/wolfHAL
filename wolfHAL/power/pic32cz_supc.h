@@ -63,9 +63,9 @@ typedef struct whal_Pic32cz_Supc_Supply {
 static inline whal_Error whal_Pic32cz_Supc_EnableSupply(
     const whal_Pic32cz_Supc_Supply *supply)
 {
-    whal_Reg_Update(WHAL_PIC32CZ_SUPC_BASE, WHAL_PIC32CZ_SUPC_VREGCTRL_REG,
-                    supply->enableMask,
-                    whal_SetBits(supply->enableMask, supply->enablePos, 1));
+    whal_Reg32_Update(WHAL_PIC32CZ_SUPC_BASE, WHAL_PIC32CZ_SUPC_VREGCTRL_REG,
+                      supply->enableMask,
+                      whal_SetBits(supply->enableMask, supply->enablePos, 1));
     return WHAL_SUCCESS;
 }
 
@@ -79,9 +79,9 @@ static inline whal_Error whal_Pic32cz_Supc_EnableSupply(
 static inline whal_Error whal_Pic32cz_Supc_DisableSupply(
     const whal_Pic32cz_Supc_Supply *supply)
 {
-    whal_Reg_Update(WHAL_PIC32CZ_SUPC_BASE, WHAL_PIC32CZ_SUPC_VREGCTRL_REG,
-                    supply->enableMask,
-                    whal_SetBits(supply->enableMask, supply->enablePos, 0));
+    whal_Reg32_Update(WHAL_PIC32CZ_SUPC_BASE, WHAL_PIC32CZ_SUPC_VREGCTRL_REG,
+                      supply->enableMask,
+                      whal_SetBits(supply->enableMask, supply->enablePos, 0));
     return WHAL_SUCCESS;
 }
 

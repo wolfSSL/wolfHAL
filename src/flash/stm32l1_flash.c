@@ -101,32 +101,32 @@ const whal_Flash whal_Stm32l1_Flash_Dev = WHAL_CFG_STM32L1_FLASH_DEV;
  * Unlock FLASH_PECR by writing the PEKEY sequence to FLASH_PEKEYR.
  * This clears PELOCK if the keys are correct.
  */
-static void UnlockPecr(size_t base)
+static void UnlockPecr(uintptr_t base)
 {
-    size_t pelock;
-    whal_Reg_Get(base, FLASH_PECR_REG, FLASH_PECR_PELOCK_Msk,
-                 FLASH_PECR_PELOCK_Pos, &pelock);
+    uint32_t pelock;
+    whal_Reg32_Get(base, FLASH_PECR_REG, FLASH_PECR_PELOCK_Msk,
+                   FLASH_PECR_PELOCK_Pos, &pelock);
     if (!pelock)
         return;
 
-    whal_Reg_Write(base, FLASH_PEKEYR_REG, PEKEY1);
-    whal_Reg_Write(base, FLASH_PEKEYR_REG, PEKEY2);
+    whal_Reg32_Write(base, FLASH_PEKEYR_REG, PEKEY1);
+    whal_Reg32_Write(base, FLASH_PEKEYR_REG, PEKEY2);
 }
 
 /*
  * Unlock program memory by writing the PRGKEY sequence to FLASH_PRGKEYR.
  * PECR must be unlocked first.
  */
-static void UnlockProgram(size_t base)
+static void UnlockProgram(uintptr_t base)
 {
-    size_t prglock;
-    whal_Reg_Get(base, FLASH_PECR_REG, FLASH_PECR_PRGLOCK_Msk,
-                 FLASH_PECR_PRGLOCK_Pos, &prglock);
+    uint32_t prglock;
+    whal_Reg32_Get(base, FLASH_PECR_REG, FLASH_PECR_PRGLOCK_Msk,
+                   FLASH_PECR_PRGLOCK_Pos, &prglock);
     if (!prglock)
         return;
 
-    whal_Reg_Write(base, FLASH_PRGKEYR_REG, PRGKEY1);
-    whal_Reg_Write(base, FLASH_PRGKEYR_REG, PRGKEY2);
+    whal_Reg32_Write(base, FLASH_PRGKEYR_REG, PRGKEY1);
+    whal_Reg32_Write(base, FLASH_PRGKEYR_REG, PRGKEY2);
 }
 
 whal_Error whal_Stm32l1_Flash_Init(whal_Flash *flashDev)
@@ -143,34 +143,34 @@ whal_Error whal_Stm32l1_Flash_Deinit(whal_Flash *flashDev)
 
 whal_Error whal_Stm32l1_Flash_Lock(whal_Flash *flashDev, size_t addr, size_t len)
 {
-    size_t base = whal_Stm32l1_Flash_Dev.base;
+    uintptr_t base = whal_Stm32l1_Flash_Dev.base;
     (void)flashDev;
     (void)addr;
     (void)len;
 
     /* Set PELOCK to lock everything */
-    whal_Reg_Update(base, FLASH_PECR_REG,
-                    FLASH_PECR_PELOCK_Msk,
-                    whal_SetBits(FLASH_PECR_PELOCK_Msk,
-                                 FLASH_PECR_PELOCK_Pos, 1));
+    whal_Reg32_Update(base, FLASH_PECR_REG,
+                      FLASH_PECR_PELOCK_Msk,
+                      whal_SetBits(FLASH_PECR_PELOCK_Msk,
+                                   FLASH_PECR_PELOCK_Pos, 1));
 
     return WHAL_SUCCESS;
 }
 
 whal_Error whal_Stm32l1_Flash_Unlock(whal_Flash *flashDev, size_t addr, size_t len)
 {
-    size_t base = whal_Stm32l1_Flash_Dev.base;
+    uintptr_t base = whal_Stm32l1_Flash_Dev.base;
     (void)flashDev;
     (void)addr;
     (void)len;
 
     /* Unlock PECR then program memory */
     UnlockPecr(base);
-    if (whal_Reg_Read(base, FLASH_PECR_REG) & FLASH_PECR_PELOCK_Msk)
+    if (whal_Reg32_Read(base, FLASH_PECR_REG) & FLASH_PECR_PELOCK_Msk)
         return WHAL_EHARDWARE;
 
     UnlockProgram(base);
-    if (whal_Reg_Read(base, FLASH_PECR_REG) & FLASH_PECR_PRGLOCK_Msk)
+    if (whal_Reg32_Read(base, FLASH_PECR_REG) & FLASH_PECR_PRGLOCK_Msk)
         return WHAL_EHARDWARE;
 
     return WHAL_SUCCESS;
@@ -207,7 +207,7 @@ whal_Error whal_Stm32l1_Flash_Write(whal_Flash *flashDev, size_t addr,
 {
     const whal_Stm32l1_Flash_Cfg *cfg =
         (const whal_Stm32l1_Flash_Cfg *)whal_Stm32l1_Flash_Dev.cfg;
-    size_t base = whal_Stm32l1_Flash_Dev.base;
+    uintptr_t base = whal_Stm32l1_Flash_Dev.base;
     const uint8_t *buf = (const uint8_t *)data;
     whal_Error err = WHAL_SUCCESS;
     (void)flashDev;
@@ -227,7 +227,7 @@ whal_Error whal_Stm32l1_Flash_Write(whal_Flash *flashDev, size_t addr,
         return WHAL_EINVAL;
 
     /* Clear error flags */
-    whal_Reg_Write(base, FLASH_SR_REG, FLASH_SR_ALL_ERR);
+    whal_Reg32_Write(base, FLASH_SR_REG, FLASH_SR_ALL_ERR);
 
     /*
      * Fast Word Write: PECR and program memory must already be unlocked.
@@ -243,12 +243,12 @@ whal_Error whal_Stm32l1_Flash_Write(whal_Flash *flashDev, size_t addr,
 
         *flashAddr = word;
 
-        err = whal_Reg_ReadPoll(base, FLASH_SR_REG, FLASH_SR_BSY_Msk, 0,
-                                cfg->timeout);
+        err = whal_Reg32_ReadPoll(base, FLASH_SR_REG, FLASH_SR_BSY_Msk, 0,
+                                  cfg->timeout);
         if (err)
             return err;
 
-        if (whal_Reg_Read(base, FLASH_SR_REG) & FLASH_SR_ALL_ERR)
+        if (whal_Reg32_Read(base, FLASH_SR_REG) & FLASH_SR_ALL_ERR)
             return WHAL_EHARDWARE;
     }
 
@@ -260,7 +260,7 @@ whal_Error whal_Stm32l1_Flash_Erase(whal_Flash *flashDev, size_t addr,
 {
     const whal_Stm32l1_Flash_Cfg *cfg =
         (const whal_Stm32l1_Flash_Cfg *)whal_Stm32l1_Flash_Dev.cfg;
-    size_t base = whal_Stm32l1_Flash_Dev.base;
+    uintptr_t base = whal_Stm32l1_Flash_Dev.base;
     whal_Error err = WHAL_SUCCESS;
     (void)flashDev;
 
@@ -271,42 +271,42 @@ whal_Error whal_Stm32l1_Flash_Erase(whal_Flash *flashDev, size_t addr,
         addr - cfg->startAddr > cfg->size - dataSz)
         return WHAL_EINVAL;
 
-    err = whal_Reg_ReadPoll(base, FLASH_SR_REG, FLASH_SR_BSY_Msk, 0,
-                            cfg->timeout);
+    err = whal_Reg32_ReadPoll(base, FLASH_SR_REG, FLASH_SR_BSY_Msk, 0,
+                              cfg->timeout);
     if (err)
         return err;
 
-    whal_Reg_Write(base, FLASH_SR_REG, FLASH_SR_ALL_ERR);
+    whal_Reg32_Write(base, FLASH_SR_REG, FLASH_SR_ALL_ERR);
 
     size_t startPage = (addr - cfg->startAddr) >> PAGE_SHIFT;
     size_t endPage = ((addr - cfg->startAddr) + dataSz - 1) >> PAGE_SHIFT;
 
-    whal_Reg_Update(base, FLASH_PECR_REG, FLASH_PECR_ERASE_Msk,
-                    whal_SetBits(FLASH_PECR_ERASE_Msk,
-                                 FLASH_PECR_ERASE_Pos, 1));
-    whal_Reg_Update(base, FLASH_PECR_REG, FLASH_PECR_PROG_Msk,
-                    whal_SetBits(FLASH_PECR_PROG_Msk,
-                                 FLASH_PECR_PROG_Pos, 1));
+    whal_Reg32_Update(base, FLASH_PECR_REG, FLASH_PECR_ERASE_Msk,
+                      whal_SetBits(FLASH_PECR_ERASE_Msk,
+                                   FLASH_PECR_ERASE_Pos, 1));
+    whal_Reg32_Update(base, FLASH_PECR_REG, FLASH_PECR_PROG_Msk,
+                      whal_SetBits(FLASH_PECR_PROG_Msk,
+                                   FLASH_PECR_PROG_Pos, 1));
 
     for (size_t page = startPage; page <= endPage; ++page) {
         volatile uint32_t *pageAddr =
             (volatile uint32_t *)(cfg->startAddr + (page << PAGE_SHIFT));
         *pageAddr = 0x00000000;
 
-        err = whal_Reg_ReadPoll(base, FLASH_SR_REG, FLASH_SR_BSY_Msk, 0,
-                                cfg->timeout);
+        err = whal_Reg32_ReadPoll(base, FLASH_SR_REG, FLASH_SR_BSY_Msk, 0,
+                                  cfg->timeout);
         if (err)
             goto cleanup;
 
-        if (whal_Reg_Read(base, FLASH_SR_REG) & FLASH_SR_ALL_ERR) {
+        if (whal_Reg32_Read(base, FLASH_SR_REG) & FLASH_SR_ALL_ERR) {
             err = WHAL_EHARDWARE;
             goto cleanup;
         }
     }
 
 cleanup:
-    whal_Reg_Update(base, FLASH_PECR_REG,
-                    FLASH_PECR_ERASE_Msk | FLASH_PECR_PROG_Msk, 0);
+    whal_Reg32_Update(base, FLASH_PECR_REG,
+                      FLASH_PECR_ERASE_Msk | FLASH_PECR_PROG_Msk, 0);
 
     return err;
 }
@@ -317,27 +317,27 @@ whal_Error whal_Stm32l1_Flash_Ext_SetLatency(whal_Stm32l1_Flash_Latency latency)
         (const whal_Stm32l1_Flash_Cfg *)whal_Stm32l1_Flash_Dev.cfg;
     whal_Error err;
 
-    whal_Reg_Update(FLASH_BASE_ADDR, FLASH_ACR_REG, FLASH_ACR_ACC64_Msk,
-                    whal_SetBits(FLASH_ACR_ACC64_Msk,
-                                 FLASH_ACR_ACC64_Pos, 1));
-    err = whal_Reg_ReadPoll(FLASH_BASE_ADDR, FLASH_ACR_REG,
-                            FLASH_ACR_ACC64_Msk, FLASH_ACR_ACC64_Msk,
-                            cfg->timeout);
+    whal_Reg32_Update(FLASH_BASE_ADDR, FLASH_ACR_REG, FLASH_ACR_ACC64_Msk,
+                      whal_SetBits(FLASH_ACR_ACC64_Msk,
+                                   FLASH_ACR_ACC64_Pos, 1));
+    err = whal_Reg32_ReadPoll(FLASH_BASE_ADDR, FLASH_ACR_REG,
+                              FLASH_ACR_ACC64_Msk, FLASH_ACR_ACC64_Msk,
+                              cfg->timeout);
     if (err)
         return err;
 
-    whal_Reg_Update(FLASH_BASE_ADDR, FLASH_ACR_REG, FLASH_ACR_PRFTEN_Msk,
-                    whal_SetBits(FLASH_ACR_PRFTEN_Msk,
-                                 FLASH_ACR_PRFTEN_Pos, 1));
+    whal_Reg32_Update(FLASH_BASE_ADDR, FLASH_ACR_REG, FLASH_ACR_PRFTEN_Msk,
+                      whal_SetBits(FLASH_ACR_PRFTEN_Msk,
+                                   FLASH_ACR_PRFTEN_Pos, 1));
 
-    whal_Reg_Update(FLASH_BASE_ADDR, FLASH_ACR_REG, FLASH_ACR_LATENCY_Msk,
-                    whal_SetBits(FLASH_ACR_LATENCY_Msk,
-                                 FLASH_ACR_LATENCY_Pos, latency));
-    return whal_Reg_ReadPoll(FLASH_BASE_ADDR, FLASH_ACR_REG,
-                             FLASH_ACR_LATENCY_Msk,
-                             whal_SetBits(FLASH_ACR_LATENCY_Msk,
-                                          FLASH_ACR_LATENCY_Pos, latency),
-                             cfg->timeout);
+    whal_Reg32_Update(FLASH_BASE_ADDR, FLASH_ACR_REG, FLASH_ACR_LATENCY_Msk,
+                      whal_SetBits(FLASH_ACR_LATENCY_Msk,
+                                   FLASH_ACR_LATENCY_Pos, latency));
+    return whal_Reg32_ReadPoll(FLASH_BASE_ADDR, FLASH_ACR_REG,
+                               FLASH_ACR_LATENCY_Msk,
+                               whal_SetBits(FLASH_ACR_LATENCY_Msk,
+                                            FLASH_ACR_LATENCY_Pos, latency),
+                               cfg->timeout);
 }
 
 #ifndef WHAL_CFG_STM32L1_FLASH_DIRECT_API_MAPPING

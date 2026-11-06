@@ -332,7 +332,7 @@ Add the new board to `.github/workflows/boards.yml` by appending it to the `boar
    - Missing symbol for an aliased driver → the alias header is missing a `#define` for that function/type, or the stub `.c` isn't present.
    - `'whal_Stm32<orig>_<Type>_Dev' undeclared` in a single-instance leaf driver → the alias header for the new platform is missing the `#define whal_Stm32<new>_<Type>_Dev whal_Stm32<orig>_<Type>_Dev` line, OR the wolfHAL_board.h didn't provide `WHAL_CFG_STM32<ORIG>_<TYPE>_DEV` (the leaf `.c` defines the singleton from that name).
    - Duplicate symbol → the Makefile is picking up both `<newplatform>_*.c` and the original `<origplatform>_*.c`; restrict the wildcard to the new prefix only.
-   - Implicit declaration warnings for `whal_Reg_*` / `whal_SetBits` in a stub include → you probably wrote `#include <wolfHAL/...>` with angle brackets in the stub instead of `#include "<origplatform>_<type>.c"` with quotes. The stub must use quoted include so the preprocessor finds the sibling `.c` in the same directory.
+   - Implicit declaration warnings for `whal_Reg32_*` / `whal_SetBits` in a stub include → you probably wrote `#include <wolfHAL/...>` with angle brackets in the stub instead of `#include "<origplatform>_<type>.c"` with quotes. The stub must use quoted include so the preprocessor finds the sibling `.c` in the same directory.
 2. Flash the binary (user runs this) and run the test suite. Each suite prints `PASS`, `FAIL`, or `SKIP`.
 3. If UART output is garbled or missing bytes and the chip uses DMA, enable `CR1.FIFOEN` in the UART init before chasing further — DMA→USART without FIFO has caused byte drops on WBA.
 

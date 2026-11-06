@@ -54,16 +54,3 @@ whal_Error whal_Reg64_ReadPoll(uintptr_t base, uint32_t offset,
     return WHAL_SUCCESS;
 }
 #endif /* WHAL_HAVE_REG64 */
-
-#ifdef WHAL_CFG_REG_LEGACY
-whal_Error whal_Reg_ReadPoll(size_t base, size_t offset,
-                             size_t mask, size_t value,
-                             whal_Timeout *timeout)
-{
-    if (!WHAL_REG_FITS32(mask) || !WHAL_REG_FITS32(value)) {
-        return WHAL_EINVAL;
-    }
-    return whal_Reg32_ReadPoll(base + offset, 0, mask & 0xFFFFFFFFu,
-                               value & 0xFFFFFFFFu, timeout);
-}
-#endif /* WHAL_CFG_REG_LEGACY */

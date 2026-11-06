@@ -62,27 +62,27 @@ const whal_Rng whal_Stm32wb0_Rng_Dev = WHAL_CFG_STM32WB0_RNG_DEV;
 
 whal_Error whal_Stm32wb0_Rng_Init(whal_Rng *rngDev)
 {
-    size_t base = whal_Stm32wb0_Rng_Dev.base;
+    uintptr_t base = whal_Stm32wb0_Rng_Dev.base;
     (void)rngDev;
 
     /* Full CR write: clears RNG_DIS to enable the oscillators and wipes
      * any stale state the bootROM may have left in reserved bits.
      * Matches ST's HAL/LL pattern. The TST_CLK / REVCLK probe is the
      * optional clock-error detection feature, not a required init step. */
-    whal_Reg_Write(base, RNG_CR_REG, 0);
+    whal_Reg32_Write(base, RNG_CR_REG, 0);
 
     return WHAL_SUCCESS;
 }
 
 whal_Error whal_Stm32wb0_Rng_Deinit(whal_Rng *rngDev)
 {
-    size_t base = whal_Stm32wb0_Rng_Dev.base;
+    uintptr_t base = whal_Stm32wb0_Rng_Dev.base;
     (void)rngDev;
 
     /* Disable: set RNG_DIS to power down the internal free-running
      * oscillators. */
-    whal_Reg_Update(base, RNG_CR_REG, RNG_CR_RNG_DIS_Msk,
-                    whal_SetBits(RNG_CR_RNG_DIS_Msk, RNG_CR_RNG_DIS_Pos, 1));
+    whal_Reg32_Update(base, RNG_CR_REG, RNG_CR_RNG_DIS_Msk,
+                      whal_SetBits(RNG_CR_RNG_DIS_Msk, RNG_CR_RNG_DIS_Pos, 1));
     return WHAL_SUCCESS;
 }
 
@@ -90,7 +90,7 @@ whal_Error whal_Stm32wb0_Rng_Generate(whal_Rng *rngDev, void *rngData,
                                       size_t rngDataSz)
 {
     uint8_t *rngBuf = (uint8_t *)rngData;
-    size_t base = whal_Stm32wb0_Rng_Dev.base;
+    uintptr_t base = whal_Stm32wb0_Rng_Dev.base;
     size_t offset = 0;
     (void)rngDev;
 
@@ -100,7 +100,7 @@ whal_Error whal_Stm32wb0_Rng_Generate(whal_Rng *rngDev, void *rngData,
     while (offset < rngDataSz) {
 
         /* 32-bit-only read, low half is the random value. */
-        uint32_t word = whal_Reg_Read(base, RNG_VAL_REG);
+        uint32_t word = whal_Reg32_Read(base, RNG_VAL_REG);
         uint16_t rnd  = (uint16_t)(word & RNG_VAL_Msk);
 
         for (size_t i = 0; i < 2 && offset < rngDataSz; i++, offset++) {
@@ -109,8 +109,8 @@ whal_Error whal_Stm32wb0_Rng_Generate(whal_Rng *rngDev, void *rngData,
     }
 
     /* FAULT latches a bad bit sequence from the noise source; write 1 to clear */
-    if (whal_Reg_Read(base, RNG_SR_REG) & RNG_SR_FAULT_Msk) {
-        whal_Reg_Write(base, RNG_SR_REG, RNG_SR_FAULT_Msk);
+    if (whal_Reg32_Read(base, RNG_SR_REG) & RNG_SR_FAULT_Msk) {
+        whal_Reg32_Write(base, RNG_SR_REG, RNG_SR_FAULT_Msk);
         return WHAL_EHARDWARE;
     }
 

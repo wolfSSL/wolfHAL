@@ -33,7 +33,6 @@
  * @brief Memory-mapped register access with an explicit width.
  *
  * whal_Reg32_* access 32-bit registers, whal_Reg64_* 64-bit registers.
- * The older whal_Reg_* API needs WHAL_CFG_REG_LEGACY.
  */
 
 /* 64-bit registers: only where a 64-bit access is a single access */
@@ -194,115 +193,5 @@ whal_Error whal_Reg64_ReadPoll(uintptr_t base, uint32_t offset,
                                whal_Timeout *timeout);
 
 #endif /* WHAL_HAVE_REG64 */
-
-#ifdef WHAL_CFG_REG_LEGACY
-
-/* Legacy whal_Reg_* API: size_t arguments, 32-bit accesses. Where size_t
- * is wider, values and masks above 32 bits return WHAL_EINVAL. */
-#if SIZE_MAX > 0xFFFFFFFFu
-#define WHAL_REG_FITS32(x) ((x) <= 0xFFFFFFFFu)
-#else
-#define WHAL_REG_FITS32(x) (1)
-#endif
-
-/*
- * @brief Legacy: write a 32-bit register.
- *
- * @param base   Base address of the register block.
- * @param offset Byte offset from @p base to the register.
- * @param value  Value to write; must fit in 32 bits.
- *
- * @retval WHAL_SUCCESS Written.
- * @retval WHAL_EINVAL  @p value does not fit; nothing written.
- */
-static inline whal_Error whal_Reg_Write(size_t base, size_t offset,
-                                        size_t value)
-{
-    if (!WHAL_REG_FITS32(value)) {
-        return WHAL_EINVAL;
-    }
-    whal_Reg32_Write(base + offset, 0, value & 0xFFFFFFFFu);
-    return WHAL_SUCCESS;
-}
-
-/*
- * @brief Legacy: read a 32-bit register.
- *
- * @param base   Base address of the register block.
- * @param offset Byte offset from @p base to the register.
- *
- * @return The register value.
- */
-static inline size_t whal_Reg_Read(size_t base, size_t offset)
-{
-    return whal_Reg32_Read(base + offset, 0);
-}
-
-/*
- * @brief Legacy: read-modify-write the bits in @p mask of a 32-bit register.
- *
- * @param base   Base address of the register block.
- * @param offset Byte offset from @p base to the register.
- * @param mask   Bits to change; must fit in 32 bits.
- * @param value  New bits, already in position; must fit in 32 bits.
- *
- * @retval WHAL_SUCCESS Updated.
- * @retval WHAL_EINVAL  @p mask or @p value does not fit; nothing written.
- */
-static inline whal_Error whal_Reg_Update(size_t base, size_t offset,
-                                         size_t mask, size_t value)
-{
-    if (!WHAL_REG_FITS32(mask) || !WHAL_REG_FITS32(value)) {
-        return WHAL_EINVAL;
-    }
-    whal_Reg32_Update(base + offset, 0, mask & 0xFFFFFFFFu,
-                      value & 0xFFFFFFFFu);
-    return WHAL_SUCCESS;
-}
-
-/*
- * @brief Legacy: read a field of a 32-bit register.
- *
- * @param base   Base address of the register block.
- * @param offset Byte offset from @p base to the register.
- * @param msk    Bits of the field; must fit in 32 bits.
- * @param pos    Bit position of the field's LSB.
- * @param value  Output for the field; 0 on error.
- *
- * @retval WHAL_SUCCESS Read.
- * @retval WHAL_EINVAL  @p msk does not fit.
- */
-static inline whal_Error whal_Reg_Get(size_t base, size_t offset, size_t msk,
-                                      size_t pos, size_t *value)
-{
-    size_t reg;
-
-    if (!WHAL_REG_FITS32(msk)) {
-        *value = 0;
-        return WHAL_EINVAL;
-    }
-    reg = whal_Reg32_Read(base + offset, 0);
-    *value = whal_GetBits(msk, pos, reg);
-    return WHAL_SUCCESS;
-}
-
-/*
- * @brief Legacy: poll a 32-bit register until (reg & mask) == value.
- *
- * @param base    Base address of the register block.
- * @param offset  Byte offset from @p base to the register.
- * @param mask    Bits to compare; must fit in 32 bits.
- * @param value   Expected bits; must fit in 32 bits and in @p mask.
- * @param timeout Timeout instance (NULL for unbounded wait).
- *
- * @retval WHAL_SUCCESS  The masked bits matched @p value.
- * @retval WHAL_ETIMEOUT The timeout expired first.
- * @retval WHAL_EINVAL   @p mask or @p value does not fit.
- */
-whal_Error whal_Reg_ReadPoll(size_t base, size_t offset,
-                             size_t mask, size_t value,
-                             whal_Timeout *timeout);
-
-#endif /* WHAL_CFG_REG_LEGACY */
 
 #endif /* WHAL_REG_H */

@@ -28,8 +28,6 @@ GCC = $(GCC_PATH)arm-none-eabi-gcc
 LD = $(GCC_PATH)arm-none-eabi-gcc
 OBJCOPY = $(GCC_PATH)arm-none-eabi-objcopy
 
-# Drivers here use the legacy whal_Reg_* API
-CFLAGS += -DWHAL_CFG_REG_LEGACY
 CFLAGS += -Wall -Werror $(INCLUDE) -g3 -Os -ffunction-sections -fdata-sections \
  -ffreestanding -nostdlib -mcpu=cortex-m0 -mthumb \
  -DPLATFORM_STM32F0 -MMD -MP \

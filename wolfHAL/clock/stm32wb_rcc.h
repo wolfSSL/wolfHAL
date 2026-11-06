@@ -175,12 +175,12 @@ typedef struct {
 static inline whal_Error whal_Stm32wb_Rcc_EnableOsc(
     const whal_Stm32wb_Rcc_OscCfg *cfg)
 {
-    size_t rdy;
+    uint32_t rdy;
 
-    whal_Reg_Update(WHAL_STM32WB_RCC_BASE, cfg->onReg, cfg->onMsk, cfg->onMsk);
+    whal_Reg32_Update(WHAL_STM32WB_RCC_BASE, cfg->onReg, cfg->onMsk, cfg->onMsk);
     do {
-        whal_Reg_Get(WHAL_STM32WB_RCC_BASE, cfg->rdyReg, cfg->rdyMsk,
-                     cfg->rdyPos, &rdy);
+        whal_Reg32_Get(WHAL_STM32WB_RCC_BASE, cfg->rdyReg, cfg->rdyMsk,
+                       cfg->rdyPos, &rdy);
     } while (!rdy);
     return WHAL_SUCCESS;
 }
@@ -195,7 +195,7 @@ static inline whal_Error whal_Stm32wb_Rcc_EnableOsc(
 static inline whal_Error whal_Stm32wb_Rcc_DisableOsc(
     const whal_Stm32wb_Rcc_OscCfg *cfg)
 {
-    whal_Reg_Update(WHAL_STM32WB_RCC_BASE, cfg->onReg, cfg->onMsk, 0);
+    whal_Reg32_Update(WHAL_STM32WB_RCC_BASE, cfg->onReg, cfg->onMsk, 0);
     return WHAL_SUCCESS;
 }
 
@@ -211,20 +211,20 @@ static inline whal_Error whal_Stm32wb_Rcc_DisableOsc(
 static inline whal_Error whal_Stm32wb_Rcc_EnableMsi(
     whal_Stm32wb_Rcc_MsiRange range)
 {
-    size_t rdy;
+    uint32_t rdy;
 
-    whal_Reg_Update(WHAL_STM32WB_RCC_BASE, WHAL_STM32WB_RCC_CR_REG,
-                    WHAL_STM32WB_RCC_CR_MSION_Msk,
-                    WHAL_STM32WB_RCC_CR_MSION_Msk);
+    whal_Reg32_Update(WHAL_STM32WB_RCC_BASE, WHAL_STM32WB_RCC_CR_REG,
+                      WHAL_STM32WB_RCC_CR_MSION_Msk,
+                      WHAL_STM32WB_RCC_CR_MSION_Msk);
     do {
-        whal_Reg_Get(WHAL_STM32WB_RCC_BASE, WHAL_STM32WB_RCC_CR_REG,
-                     WHAL_STM32WB_RCC_CR_MSIRDY_Msk,
-                     WHAL_STM32WB_RCC_CR_MSIRDY_Pos, &rdy);
+        whal_Reg32_Get(WHAL_STM32WB_RCC_BASE, WHAL_STM32WB_RCC_CR_REG,
+                       WHAL_STM32WB_RCC_CR_MSIRDY_Msk,
+                       WHAL_STM32WB_RCC_CR_MSIRDY_Pos, &rdy);
     } while (!rdy);
-    whal_Reg_Update(WHAL_STM32WB_RCC_BASE, WHAL_STM32WB_RCC_CR_REG,
-                    WHAL_STM32WB_RCC_CR_MSIRANGE_Msk,
-                    whal_SetBits(WHAL_STM32WB_RCC_CR_MSIRANGE_Msk,
-                                 WHAL_STM32WB_RCC_CR_MSIRANGE_Pos, range));
+    whal_Reg32_Update(WHAL_STM32WB_RCC_BASE, WHAL_STM32WB_RCC_CR_REG,
+                      WHAL_STM32WB_RCC_CR_MSIRANGE_Msk,
+                      whal_SetBits(WHAL_STM32WB_RCC_CR_MSIRANGE_Msk,
+                                   WHAL_STM32WB_RCC_CR_MSIRANGE_Pos, range));
     return WHAL_SUCCESS;
 }
 
@@ -240,31 +240,31 @@ static inline whal_Error whal_Stm32wb_Rcc_EnableMsi(
 static inline whal_Error whal_Stm32wb_Rcc_EnablePll(
     const whal_Stm32wb_Rcc_PllCfg *cfg)
 {
-    size_t rdy;
+    uint32_t rdy;
 
-    whal_Reg_Update(WHAL_STM32WB_RCC_BASE, WHAL_STM32WB_RCC_PLLCFGR_REG,
-                    WHAL_STM32WB_RCC_PLLCFGR_Msk,
-                    whal_SetBits(WHAL_STM32WB_RCC_PLLCFGR_PLLSRC_Msk,
-                                 WHAL_STM32WB_RCC_PLLCFGR_PLLSRC_Pos, cfg->clkSrc) |
-                    whal_SetBits(WHAL_STM32WB_RCC_PLLCFGR_PLLM_Msk,
-                                 WHAL_STM32WB_RCC_PLLCFGR_PLLM_Pos,   cfg->m) |
-                    whal_SetBits(WHAL_STM32WB_RCC_PLLCFGR_PLLN_Msk,
-                                 WHAL_STM32WB_RCC_PLLCFGR_PLLN_Pos,   cfg->n) |
-                    whal_SetBits(WHAL_STM32WB_RCC_PLLCFGR_PLLP_Msk,
-                                 WHAL_STM32WB_RCC_PLLCFGR_PLLP_Pos,   cfg->p) |
-                    whal_SetBits(WHAL_STM32WB_RCC_PLLCFGR_PLLQ_Msk,
-                                 WHAL_STM32WB_RCC_PLLCFGR_PLLQ_Pos,   cfg->q) |
-                    whal_SetBits(WHAL_STM32WB_RCC_PLLCFGR_PLLREN_Msk,
-                                 WHAL_STM32WB_RCC_PLLCFGR_PLLREN_Pos, 1) |
-                    whal_SetBits(WHAL_STM32WB_RCC_PLLCFGR_PLLR_Msk,
-                                 WHAL_STM32WB_RCC_PLLCFGR_PLLR_Pos,   cfg->r));
-    whal_Reg_Update(WHAL_STM32WB_RCC_BASE, WHAL_STM32WB_RCC_CR_REG,
-                    WHAL_STM32WB_RCC_CR_PLLON_Msk,
-                    WHAL_STM32WB_RCC_CR_PLLON_Msk);
+    whal_Reg32_Update(WHAL_STM32WB_RCC_BASE, WHAL_STM32WB_RCC_PLLCFGR_REG,
+                      WHAL_STM32WB_RCC_PLLCFGR_Msk,
+                      whal_SetBits(WHAL_STM32WB_RCC_PLLCFGR_PLLSRC_Msk,
+                                   WHAL_STM32WB_RCC_PLLCFGR_PLLSRC_Pos, cfg->clkSrc) |
+                      whal_SetBits(WHAL_STM32WB_RCC_PLLCFGR_PLLM_Msk,
+                                   WHAL_STM32WB_RCC_PLLCFGR_PLLM_Pos,   cfg->m) |
+                      whal_SetBits(WHAL_STM32WB_RCC_PLLCFGR_PLLN_Msk,
+                                   WHAL_STM32WB_RCC_PLLCFGR_PLLN_Pos,   cfg->n) |
+                      whal_SetBits(WHAL_STM32WB_RCC_PLLCFGR_PLLP_Msk,
+                                   WHAL_STM32WB_RCC_PLLCFGR_PLLP_Pos,   cfg->p) |
+                      whal_SetBits(WHAL_STM32WB_RCC_PLLCFGR_PLLQ_Msk,
+                                   WHAL_STM32WB_RCC_PLLCFGR_PLLQ_Pos,   cfg->q) |
+                      whal_SetBits(WHAL_STM32WB_RCC_PLLCFGR_PLLREN_Msk,
+                                   WHAL_STM32WB_RCC_PLLCFGR_PLLREN_Pos, 1) |
+                      whal_SetBits(WHAL_STM32WB_RCC_PLLCFGR_PLLR_Msk,
+                                   WHAL_STM32WB_RCC_PLLCFGR_PLLR_Pos,   cfg->r));
+    whal_Reg32_Update(WHAL_STM32WB_RCC_BASE, WHAL_STM32WB_RCC_CR_REG,
+                      WHAL_STM32WB_RCC_CR_PLLON_Msk,
+                      WHAL_STM32WB_RCC_CR_PLLON_Msk);
     do {
-        whal_Reg_Get(WHAL_STM32WB_RCC_BASE, WHAL_STM32WB_RCC_CR_REG,
-                     WHAL_STM32WB_RCC_CR_PLLRDY_Msk,
-                     WHAL_STM32WB_RCC_CR_PLLRDY_Pos, &rdy);
+        whal_Reg32_Get(WHAL_STM32WB_RCC_BASE, WHAL_STM32WB_RCC_CR_REG,
+                       WHAL_STM32WB_RCC_CR_PLLRDY_Msk,
+                       WHAL_STM32WB_RCC_CR_PLLRDY_Pos, &rdy);
     } while (!rdy);
     return WHAL_SUCCESS;
 }
@@ -276,8 +276,8 @@ static inline whal_Error whal_Stm32wb_Rcc_EnablePll(
  */
 static inline whal_Error whal_Stm32wb_Rcc_DisablePll(void)
 {
-    whal_Reg_Update(WHAL_STM32WB_RCC_BASE, WHAL_STM32WB_RCC_CR_REG,
-                    WHAL_STM32WB_RCC_CR_PLLON_Msk, 0);
+    whal_Reg32_Update(WHAL_STM32WB_RCC_BASE, WHAL_STM32WB_RCC_CR_REG,
+                      WHAL_STM32WB_RCC_CR_PLLON_Msk, 0);
     return WHAL_SUCCESS;
 }
 
@@ -291,16 +291,16 @@ static inline whal_Error whal_Stm32wb_Rcc_DisablePll(void)
 static inline whal_Error whal_Stm32wb_Rcc_SetSysClock(
     whal_Stm32wb_Rcc_SysClockSrc src)
 {
-    size_t sws;
+    uint32_t sws;
 
-    whal_Reg_Update(WHAL_STM32WB_RCC_BASE, WHAL_STM32WB_RCC_CFGR_REG,
-                    WHAL_STM32WB_RCC_CFGR_SW_Msk,
-                    whal_SetBits(WHAL_STM32WB_RCC_CFGR_SW_Msk,
-                                 WHAL_STM32WB_RCC_CFGR_SW_Pos, src));
+    whal_Reg32_Update(WHAL_STM32WB_RCC_BASE, WHAL_STM32WB_RCC_CFGR_REG,
+                      WHAL_STM32WB_RCC_CFGR_SW_Msk,
+                      whal_SetBits(WHAL_STM32WB_RCC_CFGR_SW_Msk,
+                                   WHAL_STM32WB_RCC_CFGR_SW_Pos, src));
     do {
-        whal_Reg_Get(WHAL_STM32WB_RCC_BASE, WHAL_STM32WB_RCC_CFGR_REG,
-                     WHAL_STM32WB_RCC_CFGR_SWS_Msk,
-                     WHAL_STM32WB_RCC_CFGR_SWS_Pos, &sws);
+        whal_Reg32_Get(WHAL_STM32WB_RCC_BASE, WHAL_STM32WB_RCC_CFGR_REG,
+                       WHAL_STM32WB_RCC_CFGR_SWS_Msk,
+                       WHAL_STM32WB_RCC_CFGR_SWS_Pos, &sws);
     } while (sws != (size_t)src);
     return WHAL_SUCCESS;
 }
@@ -315,8 +315,8 @@ static inline whal_Error whal_Stm32wb_Rcc_SetSysClock(
 static inline whal_Error whal_Stm32wb_Rcc_EnablePeriphClk(
     const whal_Stm32wb_Rcc_PeriphClk *clk)
 {
-    whal_Reg_Update(WHAL_STM32WB_RCC_BASE, clk->regOffset, clk->enableMask,
-                    whal_SetBits(clk->enableMask, clk->enablePos, 1));
+    whal_Reg32_Update(WHAL_STM32WB_RCC_BASE, clk->regOffset, clk->enableMask,
+                      whal_SetBits(clk->enableMask, clk->enablePos, 1));
     return WHAL_SUCCESS;
 }
 
@@ -330,8 +330,8 @@ static inline whal_Error whal_Stm32wb_Rcc_EnablePeriphClk(
 static inline whal_Error whal_Stm32wb_Rcc_DisablePeriphClk(
     const whal_Stm32wb_Rcc_PeriphClk *clk)
 {
-    whal_Reg_Update(WHAL_STM32WB_RCC_BASE, clk->regOffset, clk->enableMask,
-                    whal_SetBits(clk->enableMask, clk->enablePos, 0));
+    whal_Reg32_Update(WHAL_STM32WB_RCC_BASE, clk->regOffset, clk->enableMask,
+                      whal_SetBits(clk->enableMask, clk->enablePos, 0));
     return WHAL_SUCCESS;
 }
 

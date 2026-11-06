@@ -309,118 +309,6 @@ static void Test_Reg64_ReadPollClearTimeout(void)
 
 #endif /* WHAL_HAVE_REG64 */
 
-/* Legacy whal_Reg_* (WHAL_CFG_REG_LEGACY) */
-
-#ifdef WHAL_CFG_REG_LEGACY
-
-static size_t LegacyBase(void)
-{
-    return (size_t)(uintptr_t)g_regs;
-}
-
-static void Test_RegLegacy_WriteOnlyItsWord(void)
-{
-    ResetRegs();
-    WHAL_ASSERT_EQ(whal_Reg_Write(LegacyBase(), 4, 0x12345678),
-                   WHAL_SUCCESS);
-    WHAL_ASSERT_EQ(g_regs[1], 0x12345678);
-    WHAL_ASSERT_EQ(g_regs[0], SENTINEL);
-    WHAL_ASSERT_EQ(g_regs[2], SENTINEL);
-    /* The largest 32-bit value is accepted */
-    WHAL_ASSERT_EQ(whal_Reg_Write(LegacyBase(), 4, 0xFFFFFFFFUL),
-                   WHAL_SUCCESS);
-    WHAL_ASSERT_EQ(g_regs[1] == 0xFFFFFFFFUL, 1);
-    WHAL_ASSERT_EQ(g_regs[2], SENTINEL);
-}
-
-static void Test_RegLegacy_ReadOnlyItsWord(void)
-{
-    ResetRegs();
-    g_regs[1] = 0x8000BEEF;
-    WHAL_ASSERT_EQ(whal_Reg_Read(LegacyBase(), 4) == 0x8000BEEFUL, 1);
-}
-
-static void Test_RegLegacy_UpdateOnlyItsField(void)
-{
-    ResetRegs();
-    g_regs[1] = 0xFFFF00F0;
-    WHAL_ASSERT_EQ(whal_Reg_Update(LegacyBase(), 4, 0x000000F0, 0x00000050),
-                   WHAL_SUCCESS);
-    WHAL_ASSERT_EQ(g_regs[1], 0xFFFF0050);
-    WHAL_ASSERT_EQ(g_regs[0], SENTINEL);
-    WHAL_ASSERT_EQ(g_regs[2], SENTINEL);
-}
-
-static void Test_RegLegacy_GetField(void)
-{
-    size_t val = 0;
-
-    ResetRegs();
-    g_regs[1] = 0xFFFFFFFF;
-    WHAL_ASSERT_EQ(whal_Reg_Get(LegacyBase(), 4, 0x00003C00, 10, &val),
-                   WHAL_SUCCESS);
-    WHAL_ASSERT_EQ(val, 0xF);
-    WHAL_ASSERT_EQ(whal_Reg_Get(LegacyBase(), 4, 0x80000000UL, 31, &val),
-                   WHAL_SUCCESS);
-    WHAL_ASSERT_EQ(val, 1);
-}
-
-static void Test_RegLegacy_ReadPoll(void)
-{
-    ResetRegs();
-    g_regs[1] = 0x7F;
-    WHAL_ASSERT_EQ(whal_Reg_ReadPoll(LegacyBase(), 4, 0x80, 0, Bounded()),
-                   WHAL_SUCCESS);
-    g_regs[1] = 0xFF;
-    WHAL_ASSERT_EQ(whal_Reg_ReadPoll(LegacyBase(), 4, 0x80, 0x80, Bounded()),
-                   WHAL_SUCCESS);
-}
-
-#ifndef WHAL_CFG_NO_TIMEOUT
-static void Test_RegLegacy_ReadPollTimeout(void)
-{
-    ResetRegs();
-    WHAL_ASSERT_EQ(whal_Reg_ReadPoll(LegacyBase(), 4, 0x80, 0x80,
-                                     RegTimeout(0, NULL)),
-                   WHAL_ETIMEOUT);
-}
-#endif
-
-#if SIZE_MAX > 0xFFFFFFFFu
-/* Low 32 bits are valid, so a missing check would write or match */
-#define LEGACY_WIDE (((size_t)1 << 32) | 0x80)
-
-static void Test_RegLegacy_WideRejected(void)
-{
-    size_t val = 123;
-
-    ResetRegs();
-    g_regs[1] = 0x11111111;
-    WHAL_ASSERT_EQ(whal_Reg_Write(LegacyBase(), 4, LEGACY_WIDE), WHAL_EINVAL);
-    WHAL_ASSERT_EQ(whal_Reg_Update(LegacyBase(), 4, LEGACY_WIDE, 0x80),
-                   WHAL_EINVAL);
-    WHAL_ASSERT_EQ(whal_Reg_Update(LegacyBase(), 4, 0xFF, LEGACY_WIDE),
-                   WHAL_EINVAL);
-    WHAL_ASSERT_EQ(g_regs[1], 0x11111111);
-    WHAL_ASSERT_EQ(g_regs[0], SENTINEL);
-    WHAL_ASSERT_EQ(g_regs[2], SENTINEL);
-
-    WHAL_ASSERT_EQ(whal_Reg_Get(LegacyBase(), 4, LEGACY_WIDE, 0, &val),
-                   WHAL_EINVAL);
-    WHAL_ASSERT_EQ(val == 0, 1);
-
-    g_regs[1] = 0x80;
-    WHAL_ASSERT_EQ(whal_Reg_ReadPoll(LegacyBase(), 4, LEGACY_WIDE, 0x80,
-                                     Bounded()),
-                   WHAL_EINVAL);
-    WHAL_ASSERT_EQ(whal_Reg_ReadPoll(LegacyBase(), 4, 0x80, LEGACY_WIDE,
-                                     Bounded()),
-                   WHAL_EINVAL);
-}
-#endif /* SIZE_MAX > 0xFFFFFFFFu */
-
-#endif /* WHAL_CFG_REG_LEGACY */
-
 void whal_Test_Reg(void)
 {
     WHAL_TEST_SUITE_START("reg");
@@ -447,20 +335,6 @@ void whal_Test_Reg(void)
     WHAL_TEST(Test_Reg64_ReadPollRetry);
     WHAL_TEST(Test_Reg64_ReadPollTimeout);
     WHAL_TEST(Test_Reg64_ReadPollClearTimeout);
-#endif
-#endif
-
-#ifdef WHAL_CFG_REG_LEGACY
-    WHAL_TEST(Test_RegLegacy_WriteOnlyItsWord);
-    WHAL_TEST(Test_RegLegacy_ReadOnlyItsWord);
-    WHAL_TEST(Test_RegLegacy_UpdateOnlyItsField);
-    WHAL_TEST(Test_RegLegacy_GetField);
-    WHAL_TEST(Test_RegLegacy_ReadPoll);
-#ifndef WHAL_CFG_NO_TIMEOUT
-    WHAL_TEST(Test_RegLegacy_ReadPollTimeout);
-#endif
-#if SIZE_MAX > 0xFFFFFFFFu
-    WHAL_TEST(Test_RegLegacy_WideRejected);
 #endif
 #endif
     WHAL_TEST_SUITE_END();

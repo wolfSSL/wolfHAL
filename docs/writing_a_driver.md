@@ -156,7 +156,7 @@ whal_Error whal_Myplatform_Uart_Init(whal_Uart *uartDev)
 {
     const whal_Myplatform_Uart_Cfg *cfg =
         (const whal_Myplatform_Uart_Cfg *)whal_Myplatform_Uart_Dev.cfg;
-    size_t base = whal_Myplatform_Uart_Dev.base;
+    uintptr_t base = whal_Myplatform_Uart_Dev.base;
     (void)uartDev;
     /* ... */
 }
@@ -177,7 +177,7 @@ whal_Error whal_Myplatform_Uart_Init(whal_Uart *uartDev)
 {
     const whal_Myplatform_Uart_Cfg *cfg =
         (const whal_Myplatform_Uart_Cfg *)uartDev->cfg;
-    size_t base = uartDev->base;
+    uintptr_t base = uartDev->base;
     /* ... */
 }
 ```
@@ -204,7 +204,7 @@ const whal_Uart whal_Myplatform_Uart_Dev = WHAL_CFG_MYPLATFORM_UART_DEV;
 whal_Error whal_Myplatform_Uart_Init(whal_Uart *uartDev)
 {
     const whal_Myplatform_Uart_Cfg *cfg;
-    size_t base;
+    uintptr_t base;
 #ifdef WHAL_CFG_MYPLATFORM_UART_SINGLE_INSTANCE
     cfg = (const whal_Myplatform_Uart_Cfg *)whal_Myplatform_Uart_Dev.cfg;
     base = whal_Myplatform_Uart_Dev.base;
@@ -260,19 +260,6 @@ whal_Reg32_Get(base, UART_FR_REG, UART_FR_CNT_Msk, UART_FR_CNT_Pos,
 ```
 
 The base is a `uintptr_t` and the offset a `uint32_t`.
-
-#### Legacy whal_Reg_* API
-
-The older `whal_Reg_Write`, `whal_Reg_Read`, `whal_Reg_Update`,
-`whal_Reg_Get` and `whal_Reg_ReadPoll` take `size_t` arguments. They are
-only available when `WHAL_CFG_REG_LEGACY` is defined, and do 32-bit
-accesses through `whal_Reg32_*`. Where `size_t` is wider than 32 bits, a
-value or mask above bit 31 returns `WHAL_EINVAL` and nothing is written.
-`Write`, `Update` and `Get` return `whal_Error`.
-
-The boards in `boards/` define `WHAL_CFG_REG_LEGACY` because the existing
-drivers still use this API. New drivers should use `whal_Reg32_*` /
-`whal_Reg64_*`.
 
 ### Timeouts
 
@@ -1153,7 +1140,7 @@ in the dispatch path.
 
 ```c
 struct whal_Crypto {
-    const size_t base;
+    const uintptr_t base;
     const whal_CryptoDriver *driver;
     const void *cfg;
 };
@@ -1468,7 +1455,7 @@ whal_Error whal_Myplatform_AesGcm_Oneshot(whal_AesGcm *dev,
                                           const void *in, void *out, size_t sz,
                                           void *tag, size_t tagSz)
 {
-    size_t base = dev->crypto->base;
+    uintptr_t base = dev->crypto->base;
     whal_Myplatform_Aes_Cfg *cfg =
         (whal_Myplatform_Aes_Cfg *)dev->crypto->cfg;
     /* Load key, IV, process AAD, encrypt/decrypt, compute tag */

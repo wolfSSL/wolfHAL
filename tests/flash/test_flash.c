@@ -131,7 +131,7 @@ static size_t ExtentBase(void)
 }
 
 /* On-chip flash below the end of the running image must not be erased */
-static int ExtentOverlapsImage(size_t base)
+static int ExtentOverlapsImage(uintptr_t base)
 {
     size_t imageEnd = (size_t)_sidata + (size_t)(_edata - _sdata);
 
@@ -141,7 +141,7 @@ static int ExtentOverlapsImage(size_t base)
 static void Test_Flash_EraseExtent(void)
 {
     const size_t sz = g_testFlashSectorSz;
-    const size_t base = ExtentBase();
+    const uintptr_t base = ExtentBase();
 
     if (ExtentOverlapsImage(base))
         WHAL_SKIP();
@@ -178,7 +178,7 @@ static void Test_Flash_EraseExtent(void)
 static void Test_Flash_EraseOneBytePastSector(void)
 {
     const size_t sz = g_testFlashSectorSz;
-    const size_t base = ExtentBase();
+    const uintptr_t base = ExtentBase();
 
     if (ExtentOverlapsImage(base))
         WHAL_SKIP();
