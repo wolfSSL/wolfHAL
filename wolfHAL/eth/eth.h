@@ -73,7 +73,7 @@ typedef struct {
  * @brief Ethernet device instance with a base address, driver vtable, and platform-specific cfg.
  */
 struct whal_Eth {
-    const size_t base;
+    const uintptr_t base;
     const whal_EthDriver *driver;
     void *cfg;
     uint8_t macAddr[6];

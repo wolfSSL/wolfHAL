@@ -49,9 +49,9 @@
 static void Test_Gpio_DirRegister(void)
 {
     /* PB21 should be configured as output (bit 21 set in DIR register) */
-    size_t val = 0;
-    whal_Reg_Get(whal_Pic32cz_Gpio_Dev.base, PORT_DIR_REG(LED_PORT),
-                 (1UL << LED_HW_PIN), LED_HW_PIN, &val);
+    uint32_t val = 0;
+    whal_Reg32_Get(whal_Pic32cz_Gpio_Dev.base, PORT_DIR_REG(LED_PORT),
+                   (1UL << LED_HW_PIN), LED_HW_PIN, &val);
     WHAL_ASSERT_EQ(val, 1);
 }
 
@@ -61,20 +61,20 @@ static void Test_Gpio_PinTableRegisters(void)
 {
     const whal_Pic32cz_Gpio_Cfg *cfg =
         (const whal_Pic32cz_Gpio_Cfg *)whal_Pic32cz_Gpio_Dev.cfg;
-    size_t base = whal_Pic32cz_Gpio_Dev.base;
+    uintptr_t base = whal_Pic32cz_Gpio_Dev.base;
 
     for (size_t i = 0; i < cfg->pinCfgCount; i++) {
         const whal_Pic32cz_Gpio_PinCfg *p = &cfg->pinCfg[i];
-        size_t pincfg = (whal_Reg_Read(base,
-                                       PORT_PINCFG_REG(p->port, p->pin)) >>
+        size_t pincfg = (whal_Reg32_Read(base,
+                                         PORT_PINCFG_REG(p->port, p->pin)) >>
                          PORT_PINCFG_Pos(p->pin)) & 0xFF;
-        size_t val = 0;
+        uint32_t val = 0;
 
         if (p->pmuxEn) {
             WHAL_ASSERT_EQ(pincfg & PINCFG_PMUXEN, PINCFG_PMUXEN);
-            whal_Reg_Get(base, PORT_PMUX_REG(p->port, p->pin),
-                         WHAL_BITMASK(4) << PORT_PMUX_Pos(p->pin),
-                         PORT_PMUX_Pos(p->pin), &val);
+            whal_Reg32_Get(base, PORT_PMUX_REG(p->port, p->pin),
+                           WHAL_BITMASK(4) << PORT_PMUX_Pos(p->pin),
+                           PORT_PMUX_Pos(p->pin), &val);
             WHAL_ASSERT_EQ(val, p->pmux);
             continue;
         }
@@ -83,8 +83,8 @@ static void Test_Gpio_PinTableRegisters(void)
         WHAL_ASSERT_EQ((pincfg & PINCFG_INEN) != 0, p->inEn);
         WHAL_ASSERT_EQ((pincfg & PINCFG_PULLEN) != 0, p->pullEn);
 
-        whal_Reg_Get(base, PORT_DIR_REG(p->port), 1UL << p->pin, p->pin,
-                     &val);
+        whal_Reg32_Get(base, PORT_DIR_REG(p->port), 1UL << p->pin, p->pin,
+                       &val);
         WHAL_ASSERT_EQ(val, p->dir);
     }
 }
@@ -94,9 +94,9 @@ static void Test_Gpio_SetHighReg(void)
     WHAL_ASSERT_EQ(whal_Gpio_Set(BOARD_GPIO_DEV, BOARD_LED_PIN, 1), WHAL_SUCCESS);
 
     /* Readback OUT register bit 21 */
-    size_t val = 0;
-    whal_Reg_Get(whal_Pic32cz_Gpio_Dev.base, PORT_OUT_REG(LED_PORT),
-                 (1UL << LED_HW_PIN), LED_HW_PIN, &val);
+    uint32_t val = 0;
+    whal_Reg32_Get(whal_Pic32cz_Gpio_Dev.base, PORT_OUT_REG(LED_PORT),
+                   (1UL << LED_HW_PIN), LED_HW_PIN, &val);
     WHAL_ASSERT_EQ(val, 1);
 }
 
@@ -104,19 +104,19 @@ static void Test_Gpio_SetLowReg(void)
 {
     WHAL_ASSERT_EQ(whal_Gpio_Set(BOARD_GPIO_DEV, BOARD_LED_PIN, 0), WHAL_SUCCESS);
 
-    size_t val = 0;
-    whal_Reg_Get(whal_Pic32cz_Gpio_Dev.base, PORT_OUT_REG(LED_PORT),
-                 (1UL << LED_HW_PIN), LED_HW_PIN, &val);
+    uint32_t val = 0;
+    whal_Reg32_Get(whal_Pic32cz_Gpio_Dev.base, PORT_OUT_REG(LED_PORT),
+                   (1UL << LED_HW_PIN), LED_HW_PIN, &val);
     WHAL_ASSERT_EQ(val, 0);
 }
 
 static void Test_Gpio_SetNonzeroReg(void)
 {
-    size_t val = 0;
+    uint32_t val = 0;
 
     WHAL_ASSERT_EQ(whal_Gpio_Set(BOARD_GPIO_DEV, BOARD_LED_PIN, 2), WHAL_SUCCESS);
-    whal_Reg_Get(whal_Pic32cz_Gpio_Dev.base, PORT_OUT_REG(LED_PORT),
-                 (1UL << LED_HW_PIN), LED_HW_PIN, &val);
+    whal_Reg32_Get(whal_Pic32cz_Gpio_Dev.base, PORT_OUT_REG(LED_PORT),
+                   (1UL << LED_HW_PIN), LED_HW_PIN, &val);
     WHAL_ASSERT_EQ(val, 1);
 
     WHAL_ASSERT_EQ(whal_Gpio_Set(BOARD_GPIO_DEV, BOARD_LED_PIN, 0), WHAL_SUCCESS);

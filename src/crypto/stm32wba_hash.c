@@ -105,16 +105,16 @@ static uint32_t AlgoBits(size_t algo)
     return whal_SetBits(HASH_CR_ALGO_Msk, HASH_CR_ALGO_Pos, algo);
 }
 
-static whal_Error WaitForReady(size_t base, whal_Timeout *timeout)
+static whal_Error WaitForReady(uintptr_t base, whal_Timeout *timeout)
 {
-    return whal_Reg_ReadPoll(base, HASH_SR_REG, HASH_SR_BUSY_Msk, 0, timeout);
+    return whal_Reg32_ReadPoll(base, HASH_SR_REG, HASH_SR_BUSY_Msk, 0, timeout);
 }
 
 /* Reset the hash core and clear DINIS so the context swap registers read 0. */
-static void ResetHash(size_t base)
+static void ResetHash(uintptr_t base)
 {
-    whal_Reg_Update(base, HASH_CR_REG, HASH_CR_INIT_Msk, HASH_CR_INIT_Msk);
-    whal_Reg_Update(base, HASH_SR_REG, HASH_SR_DINIS_Msk, 0);
+    whal_Reg32_Update(base, HASH_CR_REG, HASH_CR_INIT_Msk, HASH_CR_INIT_Msk);
+    whal_Reg32_Update(base, HASH_SR_REG, HASH_SR_DINIS_Msk, 0);
 }
 
 /* Reset the stream staging buffer; called from each Start. */
@@ -127,7 +127,7 @@ static void StreamReset(void)
 /* Accumulate Process input. Tops up the staging buffer to a full word if
  * it had leftovers, pushes full 32-bit DIN writes, and stashes the
  * trailing 0-3 bytes back into the staging buffer for the next call. */
-static void StreamWrite(size_t base, const uint8_t *in, size_t inSz)
+static void StreamWrite(uintptr_t base, const uint8_t *in, size_t inSz)
 {
     if (inSz > 0)
         g_streamHasData = 1;
@@ -138,13 +138,13 @@ static void StreamWrite(size_t base, const uint8_t *in, size_t inSz)
             inSz--;
         }
         if (g_streamBufBytes == 4) {
-            whal_Reg_Write(base, HASH_DIN_REG, whal_LoadBe32(g_streamBuf));
+            whal_Reg32_Write(base, HASH_DIN_REG, whal_LoadBe32(g_streamBuf));
             g_streamBufBytes = 0;
         }
     }
 
     while (inSz >= 4) {
-        whal_Reg_Write(base, HASH_DIN_REG, whal_LoadBe32(in));
+        whal_Reg32_Write(base, HASH_DIN_REG, whal_LoadBe32(in));
         in += 4;
         inSz -= 4;
     }
@@ -157,38 +157,38 @@ static void StreamWrite(size_t base, const uint8_t *in, size_t inSz)
 
 /* Push inSz bytes immediately before issuing DCAL: full words first, then
  * if any trailing bytes remain, set NBLW and push one partial word. */
-static void WriteTail(size_t base, const uint8_t *in, size_t inSz)
+static void WriteTail(uintptr_t base, const uint8_t *in, size_t inSz)
 {
     while (inSz >= 4) {
-        whal_Reg_Write(base, HASH_DIN_REG, whal_LoadBe32(in));
+        whal_Reg32_Write(base, HASH_DIN_REG, whal_LoadBe32(in));
         in += 4;
         inSz -= 4;
     }
 
     if (inSz > 0) {
-        whal_Reg_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk,
-                        whal_SetBits(HASH_STR_NBLW_Msk, HASH_STR_NBLW_Pos,
-                                     inSz * 8));
-        whal_Reg_Write(base, HASH_DIN_REG, whal_LoadBe32Partial(in, inSz));
+        whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk,
+                          whal_SetBits(HASH_STR_NBLW_Msk, HASH_STR_NBLW_Pos,
+                                       inSz * 8));
+        whal_Reg32_Write(base, HASH_DIN_REG, whal_LoadBe32Partial(in, inSz));
     }
 }
 
 /* Drain any buffered 0-3 trailing bytes as the final partial word right
  * before DCAL; sets NBLW correctly via WriteTail. */
-static void StreamDrain(size_t base)
+static void StreamDrain(uintptr_t base)
 {
     WriteTail(base, g_streamBuf, g_streamBufBytes);
     g_streamBufBytes = 0;
 }
 
-static void ReadDigest(size_t base, uint8_t *digest, size_t digestSz)
+static void ReadDigest(uintptr_t base, uint8_t *digest, size_t digestSz)
 {
     size_t words = digestSz / 4;
     size_t i;
 
     for (i = 0; i < words; i++)
         whal_StoreBe32(digest + i * 4,
-                       whal_Reg_Read(base, HASH_HR_BASE_REG + i * 4));
+                       whal_Reg32_Read(base, HASH_HR_BASE_REG + i * 4));
 }
 
 
@@ -272,7 +272,7 @@ whal_Error whal_Stm32wba_Sha1_Oneshot(whal_Sha1 *dev,
 {
     const whal_Stm32wba_Hash_Cfg *cfg =
         (const whal_Stm32wba_Hash_Cfg *)whal_Stm32wba_Hash_Dev.cfg;
-    size_t base = whal_Stm32wba_Hash_Dev.base;
+    uintptr_t base = whal_Stm32wba_Hash_Dev.base;
     whal_Error err;
     (void)dev;
 
@@ -280,18 +280,18 @@ whal_Error whal_Stm32wba_Sha1_Oneshot(whal_Sha1 *dev,
         (inSz > 0 && !in))
         return WHAL_EINVAL;
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
 
-    whal_Reg_Update(base, HASH_CR_REG,
-                    HASH_CR_ALGO_Msk | HASH_CR_DATATYPE_Msk |
-                    HASH_CR_MODE_Msk | HASH_CR_LKEY_Msk | HASH_CR_INIT_Msk,
-                    AlgoBits(HASH_ALGO_SHA1) | HASH_CR_INIT_Msk);
+    whal_Reg32_Update(base, HASH_CR_REG,
+                      HASH_CR_ALGO_Msk | HASH_CR_DATATYPE_Msk |
+                      HASH_CR_MODE_Msk | HASH_CR_LKEY_Msk | HASH_CR_INIT_Msk,
+                      AlgoBits(HASH_ALGO_SHA1) | HASH_CR_INIT_Msk);
 
     if (inSz > 0)
         WriteTail(base, (const uint8_t *)in, inSz);
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
-                    HASH_STR_DCAL_Msk);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
+                      HASH_STR_DCAL_Msk);
 
     err = WaitForReady(base, cfg->timeout);
     if (err)
@@ -303,15 +303,15 @@ whal_Error whal_Stm32wba_Sha1_Oneshot(whal_Sha1 *dev,
 
 whal_Error whal_Stm32wba_Sha1_Start(whal_Sha1 *dev)
 {
-    size_t base = whal_Stm32wba_Hash_Dev.base;
+    uintptr_t base = whal_Stm32wba_Hash_Dev.base;
     (void)dev;
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
 
-    whal_Reg_Update(base, HASH_CR_REG,
-                    HASH_CR_ALGO_Msk | HASH_CR_DATATYPE_Msk |
-                    HASH_CR_MODE_Msk | HASH_CR_LKEY_Msk | HASH_CR_INIT_Msk,
-                    AlgoBits(HASH_ALGO_SHA1) | HASH_CR_INIT_Msk);
+    whal_Reg32_Update(base, HASH_CR_REG,
+                      HASH_CR_ALGO_Msk | HASH_CR_DATATYPE_Msk |
+                      HASH_CR_MODE_Msk | HASH_CR_LKEY_Msk | HASH_CR_INIT_Msk,
+                      AlgoBits(HASH_ALGO_SHA1) | HASH_CR_INIT_Msk);
 
     StreamReset();
     return WHAL_SUCCESS;
@@ -334,7 +334,7 @@ whal_Error whal_Stm32wba_Sha1_Finalize(whal_Sha1 *dev,
 {
     const whal_Stm32wba_Hash_Cfg *cfg =
         (const whal_Stm32wba_Hash_Cfg *)whal_Stm32wba_Hash_Dev.cfg;
-    size_t base = whal_Stm32wba_Hash_Dev.base;
+    uintptr_t base = whal_Stm32wba_Hash_Dev.base;
     whal_Error err;
     (void)dev;
 
@@ -343,8 +343,8 @@ whal_Error whal_Stm32wba_Sha1_Finalize(whal_Sha1 *dev,
 
     StreamDrain(base);
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
-                    HASH_STR_DCAL_Msk);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
+                      HASH_STR_DCAL_Msk);
 
     err = WaitForReady(base, cfg->timeout);
     if (err)
@@ -370,7 +370,7 @@ whal_Error whal_Stm32wba_Sha224_Oneshot(whal_Sha224 *dev,
 {
     const whal_Stm32wba_Hash_Cfg *cfg =
         (const whal_Stm32wba_Hash_Cfg *)whal_Stm32wba_Hash_Dev.cfg;
-    size_t base = whal_Stm32wba_Hash_Dev.base;
+    uintptr_t base = whal_Stm32wba_Hash_Dev.base;
     whal_Error err;
     (void)dev;
 
@@ -378,18 +378,18 @@ whal_Error whal_Stm32wba_Sha224_Oneshot(whal_Sha224 *dev,
         (inSz > 0 && !in))
         return WHAL_EINVAL;
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
 
-    whal_Reg_Update(base, HASH_CR_REG,
-                    HASH_CR_ALGO_Msk | HASH_CR_DATATYPE_Msk |
-                    HASH_CR_MODE_Msk | HASH_CR_LKEY_Msk | HASH_CR_INIT_Msk,
-                    AlgoBits(HASH_ALGO_SHA224) | HASH_CR_INIT_Msk);
+    whal_Reg32_Update(base, HASH_CR_REG,
+                      HASH_CR_ALGO_Msk | HASH_CR_DATATYPE_Msk |
+                      HASH_CR_MODE_Msk | HASH_CR_LKEY_Msk | HASH_CR_INIT_Msk,
+                      AlgoBits(HASH_ALGO_SHA224) | HASH_CR_INIT_Msk);
 
     if (inSz > 0)
         WriteTail(base, (const uint8_t *)in, inSz);
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
-                    HASH_STR_DCAL_Msk);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
+                      HASH_STR_DCAL_Msk);
 
     err = WaitForReady(base, cfg->timeout);
     if (err)
@@ -401,15 +401,15 @@ whal_Error whal_Stm32wba_Sha224_Oneshot(whal_Sha224 *dev,
 
 whal_Error whal_Stm32wba_Sha224_Start(whal_Sha224 *dev)
 {
-    size_t base = whal_Stm32wba_Hash_Dev.base;
+    uintptr_t base = whal_Stm32wba_Hash_Dev.base;
     (void)dev;
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
 
-    whal_Reg_Update(base, HASH_CR_REG,
-                    HASH_CR_ALGO_Msk | HASH_CR_DATATYPE_Msk |
-                    HASH_CR_MODE_Msk | HASH_CR_LKEY_Msk | HASH_CR_INIT_Msk,
-                    AlgoBits(HASH_ALGO_SHA224) | HASH_CR_INIT_Msk);
+    whal_Reg32_Update(base, HASH_CR_REG,
+                      HASH_CR_ALGO_Msk | HASH_CR_DATATYPE_Msk |
+                      HASH_CR_MODE_Msk | HASH_CR_LKEY_Msk | HASH_CR_INIT_Msk,
+                      AlgoBits(HASH_ALGO_SHA224) | HASH_CR_INIT_Msk);
 
     StreamReset();
     return WHAL_SUCCESS;
@@ -432,7 +432,7 @@ whal_Error whal_Stm32wba_Sha224_Finalize(whal_Sha224 *dev,
 {
     const whal_Stm32wba_Hash_Cfg *cfg =
         (const whal_Stm32wba_Hash_Cfg *)whal_Stm32wba_Hash_Dev.cfg;
-    size_t base = whal_Stm32wba_Hash_Dev.base;
+    uintptr_t base = whal_Stm32wba_Hash_Dev.base;
     whal_Error err;
     (void)dev;
 
@@ -441,8 +441,8 @@ whal_Error whal_Stm32wba_Sha224_Finalize(whal_Sha224 *dev,
 
     StreamDrain(base);
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
-                    HASH_STR_DCAL_Msk);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
+                      HASH_STR_DCAL_Msk);
 
     err = WaitForReady(base, cfg->timeout);
     if (err)
@@ -468,7 +468,7 @@ whal_Error whal_Stm32wba_Sha256_Oneshot(whal_Sha256 *dev,
 {
     const whal_Stm32wba_Hash_Cfg *cfg =
         (const whal_Stm32wba_Hash_Cfg *)whal_Stm32wba_Hash_Dev.cfg;
-    size_t base = whal_Stm32wba_Hash_Dev.base;
+    uintptr_t base = whal_Stm32wba_Hash_Dev.base;
     whal_Error err;
     (void)dev;
 
@@ -476,18 +476,18 @@ whal_Error whal_Stm32wba_Sha256_Oneshot(whal_Sha256 *dev,
         (inSz > 0 && !in))
         return WHAL_EINVAL;
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
 
-    whal_Reg_Update(base, HASH_CR_REG,
-                    HASH_CR_ALGO_Msk | HASH_CR_DATATYPE_Msk |
-                    HASH_CR_MODE_Msk | HASH_CR_LKEY_Msk | HASH_CR_INIT_Msk,
-                    AlgoBits(HASH_ALGO_SHA256) | HASH_CR_INIT_Msk);
+    whal_Reg32_Update(base, HASH_CR_REG,
+                      HASH_CR_ALGO_Msk | HASH_CR_DATATYPE_Msk |
+                      HASH_CR_MODE_Msk | HASH_CR_LKEY_Msk | HASH_CR_INIT_Msk,
+                      AlgoBits(HASH_ALGO_SHA256) | HASH_CR_INIT_Msk);
 
     if (inSz > 0)
         WriteTail(base, (const uint8_t *)in, inSz);
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
-                    HASH_STR_DCAL_Msk);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
+                      HASH_STR_DCAL_Msk);
 
     err = WaitForReady(base, cfg->timeout);
     if (err)
@@ -499,15 +499,15 @@ whal_Error whal_Stm32wba_Sha256_Oneshot(whal_Sha256 *dev,
 
 whal_Error whal_Stm32wba_Sha256_Start(whal_Sha256 *dev)
 {
-    size_t base = whal_Stm32wba_Hash_Dev.base;
+    uintptr_t base = whal_Stm32wba_Hash_Dev.base;
     (void)dev;
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
 
-    whal_Reg_Update(base, HASH_CR_REG,
-                    HASH_CR_ALGO_Msk | HASH_CR_DATATYPE_Msk |
-                    HASH_CR_MODE_Msk | HASH_CR_LKEY_Msk | HASH_CR_INIT_Msk,
-                    AlgoBits(HASH_ALGO_SHA256) | HASH_CR_INIT_Msk);
+    whal_Reg32_Update(base, HASH_CR_REG,
+                      HASH_CR_ALGO_Msk | HASH_CR_DATATYPE_Msk |
+                      HASH_CR_MODE_Msk | HASH_CR_LKEY_Msk | HASH_CR_INIT_Msk,
+                      AlgoBits(HASH_ALGO_SHA256) | HASH_CR_INIT_Msk);
 
     StreamReset();
     return WHAL_SUCCESS;
@@ -530,7 +530,7 @@ whal_Error whal_Stm32wba_Sha256_Finalize(whal_Sha256 *dev,
 {
     const whal_Stm32wba_Hash_Cfg *cfg =
         (const whal_Stm32wba_Hash_Cfg *)whal_Stm32wba_Hash_Dev.cfg;
-    size_t base = whal_Stm32wba_Hash_Dev.base;
+    uintptr_t base = whal_Stm32wba_Hash_Dev.base;
     whal_Error err;
     (void)dev;
 
@@ -539,8 +539,8 @@ whal_Error whal_Stm32wba_Sha256_Finalize(whal_Sha256 *dev,
 
     StreamDrain(base);
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
-                    HASH_STR_DCAL_Msk);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
+                      HASH_STR_DCAL_Msk);
 
     err = WaitForReady(base, cfg->timeout);
     if (err)
@@ -567,7 +567,7 @@ whal_Error whal_Stm32wba_HmacSha1_Oneshot(whal_HmacSha1 *dev,
 {
     const whal_Stm32wba_Hash_Cfg *cfg =
         (const whal_Stm32wba_Hash_Cfg *)whal_Stm32wba_Hash_Dev.cfg;
-    size_t base = whal_Stm32wba_Hash_Dev.base;
+    uintptr_t base = whal_Stm32wba_Hash_Dev.base;
     size_t lkey;
     whal_Error err;
     (void)dev;
@@ -582,22 +582,22 @@ whal_Error whal_Stm32wba_HmacSha1_Oneshot(whal_HmacSha1 *dev,
 
     lkey = (keySz > 64) ? 1 : 0;
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
 
-    whal_Reg_Update(base, HASH_CR_REG,
-                    HASH_CR_ALGO_Msk | HASH_CR_DATATYPE_Msk |
-                    HASH_CR_MODE_Msk | HASH_CR_LKEY_Msk | HASH_CR_INIT_Msk,
-                    AlgoBits(HASH_ALGO_SHA1) |
-                    whal_SetBits(HASH_CR_MODE_Msk, HASH_CR_MODE_Pos,
-                                 HASH_MODE_HMAC) |
-                    whal_SetBits(HASH_CR_LKEY_Msk, HASH_CR_LKEY_Pos, lkey) |
-                    HASH_CR_INIT_Msk);
+    whal_Reg32_Update(base, HASH_CR_REG,
+                      HASH_CR_ALGO_Msk | HASH_CR_DATATYPE_Msk |
+                      HASH_CR_MODE_Msk | HASH_CR_LKEY_Msk | HASH_CR_INIT_Msk,
+                      AlgoBits(HASH_ALGO_SHA1) |
+                      whal_SetBits(HASH_CR_MODE_Msk, HASH_CR_MODE_Pos,
+                                   HASH_MODE_HMAC) |
+                      whal_SetBits(HASH_CR_LKEY_Msk, HASH_CR_LKEY_Pos, lkey) |
+                      HASH_CR_INIT_Msk);
 
     /* Inner key */
     WriteTail(base, (const uint8_t *)key, keySz);
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
-                    HASH_STR_DCAL_Msk);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
+                      HASH_STR_DCAL_Msk);
 
     err = WaitForReady(base, cfg->timeout);
     if (err) {
@@ -606,12 +606,12 @@ whal_Error whal_Stm32wba_HmacSha1_Oneshot(whal_HmacSha1 *dev,
     }
 
     /* Message */
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
     if (inSz > 0)
         WriteTail(base, (const uint8_t *)in, inSz);
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
-                    HASH_STR_DCAL_Msk);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
+                      HASH_STR_DCAL_Msk);
 
     err = WaitForReady(base, cfg->timeout);
     if (err) {
@@ -620,11 +620,11 @@ whal_Error whal_Stm32wba_HmacSha1_Oneshot(whal_HmacSha1 *dev,
     }
 
     /* Outer key */
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
     WriteTail(base, (const uint8_t *)key, keySz);
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
-                    HASH_STR_DCAL_Msk);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
+                      HASH_STR_DCAL_Msk);
 
     err = WaitForReady(base, cfg->timeout);
     if (err) {
@@ -641,7 +641,7 @@ whal_Error whal_Stm32wba_HmacSha1_Start(whal_HmacSha1 *dev,
 {
     const whal_Stm32wba_Hash_Cfg *cfg =
         (const whal_Stm32wba_Hash_Cfg *)whal_Stm32wba_Hash_Dev.cfg;
-    size_t base = whal_Stm32wba_Hash_Dev.base;
+    uintptr_t base = whal_Stm32wba_Hash_Dev.base;
     size_t lkey;
     whal_Error err;
     (void)dev;
@@ -651,22 +651,22 @@ whal_Error whal_Stm32wba_HmacSha1_Start(whal_HmacSha1 *dev,
 
     lkey = (keySz > 64) ? 1 : 0;
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
 
-    whal_Reg_Update(base, HASH_CR_REG,
-                    HASH_CR_ALGO_Msk | HASH_CR_DATATYPE_Msk |
-                    HASH_CR_MODE_Msk | HASH_CR_LKEY_Msk | HASH_CR_INIT_Msk,
-                    AlgoBits(HASH_ALGO_SHA1) |
-                    whal_SetBits(HASH_CR_MODE_Msk, HASH_CR_MODE_Pos,
-                                 HASH_MODE_HMAC) |
-                    whal_SetBits(HASH_CR_LKEY_Msk, HASH_CR_LKEY_Pos, lkey) |
-                    HASH_CR_INIT_Msk);
+    whal_Reg32_Update(base, HASH_CR_REG,
+                      HASH_CR_ALGO_Msk | HASH_CR_DATATYPE_Msk |
+                      HASH_CR_MODE_Msk | HASH_CR_LKEY_Msk | HASH_CR_INIT_Msk,
+                      AlgoBits(HASH_ALGO_SHA1) |
+                      whal_SetBits(HASH_CR_MODE_Msk, HASH_CR_MODE_Pos,
+                                   HASH_MODE_HMAC) |
+                      whal_SetBits(HASH_CR_LKEY_Msk, HASH_CR_LKEY_Pos, lkey) |
+                      HASH_CR_INIT_Msk);
 
     /* Inner key */
     WriteTail(base, (const uint8_t *)key, keySz);
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
-                    HASH_STR_DCAL_Msk);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
+                      HASH_STR_DCAL_Msk);
 
     err = WaitForReady(base, cfg->timeout);
     if (err) {
@@ -699,7 +699,7 @@ whal_Error whal_Stm32wba_HmacSha1_Finalize(whal_HmacSha1 *dev,
 {
     const whal_Stm32wba_Hash_Cfg *cfg =
         (const whal_Stm32wba_Hash_Cfg *)whal_Stm32wba_Hash_Dev.cfg;
-    size_t base = whal_Stm32wba_Hash_Dev.base;
+    uintptr_t base = whal_Stm32wba_Hash_Dev.base;
     whal_Error err;
     (void)dev;
 
@@ -712,11 +712,11 @@ whal_Error whal_Stm32wba_HmacSha1_Finalize(whal_HmacSha1 *dev,
     }
 
     /* Drain any buffered tail bytes, then DCAL to close message phase. */
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
     StreamDrain(base);
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
-                    HASH_STR_DCAL_Msk);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
+                      HASH_STR_DCAL_Msk);
 
     err = WaitForReady(base, cfg->timeout);
     if (err) {
@@ -725,11 +725,11 @@ whal_Error whal_Stm32wba_HmacSha1_Finalize(whal_HmacSha1 *dev,
     }
 
     /* Outer key */
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
     WriteTail(base, (const uint8_t *)g_hmacSha1State.key, g_hmacSha1State.keySz);
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
-                    HASH_STR_DCAL_Msk);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
+                      HASH_STR_DCAL_Msk);
 
     err = WaitForReady(base, cfg->timeout);
     if (err) {
@@ -758,7 +758,7 @@ whal_Error whal_Stm32wba_HmacSha224_Oneshot(whal_HmacSha224 *dev,
 {
     const whal_Stm32wba_Hash_Cfg *cfg =
         (const whal_Stm32wba_Hash_Cfg *)whal_Stm32wba_Hash_Dev.cfg;
-    size_t base = whal_Stm32wba_Hash_Dev.base;
+    uintptr_t base = whal_Stm32wba_Hash_Dev.base;
     size_t lkey;
     whal_Error err;
     (void)dev;
@@ -773,22 +773,22 @@ whal_Error whal_Stm32wba_HmacSha224_Oneshot(whal_HmacSha224 *dev,
 
     lkey = (keySz > 64) ? 1 : 0;
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
 
-    whal_Reg_Update(base, HASH_CR_REG,
-                    HASH_CR_ALGO_Msk | HASH_CR_DATATYPE_Msk |
-                    HASH_CR_MODE_Msk | HASH_CR_LKEY_Msk | HASH_CR_INIT_Msk,
-                    AlgoBits(HASH_ALGO_SHA224) |
-                    whal_SetBits(HASH_CR_MODE_Msk, HASH_CR_MODE_Pos,
-                                 HASH_MODE_HMAC) |
-                    whal_SetBits(HASH_CR_LKEY_Msk, HASH_CR_LKEY_Pos, lkey) |
-                    HASH_CR_INIT_Msk);
+    whal_Reg32_Update(base, HASH_CR_REG,
+                      HASH_CR_ALGO_Msk | HASH_CR_DATATYPE_Msk |
+                      HASH_CR_MODE_Msk | HASH_CR_LKEY_Msk | HASH_CR_INIT_Msk,
+                      AlgoBits(HASH_ALGO_SHA224) |
+                      whal_SetBits(HASH_CR_MODE_Msk, HASH_CR_MODE_Pos,
+                                   HASH_MODE_HMAC) |
+                      whal_SetBits(HASH_CR_LKEY_Msk, HASH_CR_LKEY_Pos, lkey) |
+                      HASH_CR_INIT_Msk);
 
     /* Inner key */
     WriteTail(base, (const uint8_t *)key, keySz);
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
-                    HASH_STR_DCAL_Msk);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
+                      HASH_STR_DCAL_Msk);
 
     err = WaitForReady(base, cfg->timeout);
     if (err) {
@@ -797,12 +797,12 @@ whal_Error whal_Stm32wba_HmacSha224_Oneshot(whal_HmacSha224 *dev,
     }
 
     /* Message */
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
     if (inSz > 0)
         WriteTail(base, (const uint8_t *)in, inSz);
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
-                    HASH_STR_DCAL_Msk);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
+                      HASH_STR_DCAL_Msk);
 
     err = WaitForReady(base, cfg->timeout);
     if (err) {
@@ -811,11 +811,11 @@ whal_Error whal_Stm32wba_HmacSha224_Oneshot(whal_HmacSha224 *dev,
     }
 
     /* Outer key */
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
     WriteTail(base, (const uint8_t *)key, keySz);
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
-                    HASH_STR_DCAL_Msk);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
+                      HASH_STR_DCAL_Msk);
 
     err = WaitForReady(base, cfg->timeout);
     if (err) {
@@ -832,7 +832,7 @@ whal_Error whal_Stm32wba_HmacSha224_Start(whal_HmacSha224 *dev,
 {
     const whal_Stm32wba_Hash_Cfg *cfg =
         (const whal_Stm32wba_Hash_Cfg *)whal_Stm32wba_Hash_Dev.cfg;
-    size_t base = whal_Stm32wba_Hash_Dev.base;
+    uintptr_t base = whal_Stm32wba_Hash_Dev.base;
     size_t lkey;
     whal_Error err;
     (void)dev;
@@ -842,22 +842,22 @@ whal_Error whal_Stm32wba_HmacSha224_Start(whal_HmacSha224 *dev,
 
     lkey = (keySz > 64) ? 1 : 0;
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
 
-    whal_Reg_Update(base, HASH_CR_REG,
-                    HASH_CR_ALGO_Msk | HASH_CR_DATATYPE_Msk |
-                    HASH_CR_MODE_Msk | HASH_CR_LKEY_Msk | HASH_CR_INIT_Msk,
-                    AlgoBits(HASH_ALGO_SHA224) |
-                    whal_SetBits(HASH_CR_MODE_Msk, HASH_CR_MODE_Pos,
-                                 HASH_MODE_HMAC) |
-                    whal_SetBits(HASH_CR_LKEY_Msk, HASH_CR_LKEY_Pos, lkey) |
-                    HASH_CR_INIT_Msk);
+    whal_Reg32_Update(base, HASH_CR_REG,
+                      HASH_CR_ALGO_Msk | HASH_CR_DATATYPE_Msk |
+                      HASH_CR_MODE_Msk | HASH_CR_LKEY_Msk | HASH_CR_INIT_Msk,
+                      AlgoBits(HASH_ALGO_SHA224) |
+                      whal_SetBits(HASH_CR_MODE_Msk, HASH_CR_MODE_Pos,
+                                   HASH_MODE_HMAC) |
+                      whal_SetBits(HASH_CR_LKEY_Msk, HASH_CR_LKEY_Pos, lkey) |
+                      HASH_CR_INIT_Msk);
 
     /* Inner key */
     WriteTail(base, (const uint8_t *)key, keySz);
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
-                    HASH_STR_DCAL_Msk);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
+                      HASH_STR_DCAL_Msk);
 
     err = WaitForReady(base, cfg->timeout);
     if (err) {
@@ -890,7 +890,7 @@ whal_Error whal_Stm32wba_HmacSha224_Finalize(whal_HmacSha224 *dev,
 {
     const whal_Stm32wba_Hash_Cfg *cfg =
         (const whal_Stm32wba_Hash_Cfg *)whal_Stm32wba_Hash_Dev.cfg;
-    size_t base = whal_Stm32wba_Hash_Dev.base;
+    uintptr_t base = whal_Stm32wba_Hash_Dev.base;
     whal_Error err;
     (void)dev;
 
@@ -903,11 +903,11 @@ whal_Error whal_Stm32wba_HmacSha224_Finalize(whal_HmacSha224 *dev,
     }
 
     /* Drain any buffered tail bytes, then DCAL to close message phase. */
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
     StreamDrain(base);
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
-                    HASH_STR_DCAL_Msk);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
+                      HASH_STR_DCAL_Msk);
 
     err = WaitForReady(base, cfg->timeout);
     if (err) {
@@ -916,11 +916,11 @@ whal_Error whal_Stm32wba_HmacSha224_Finalize(whal_HmacSha224 *dev,
     }
 
     /* Outer key */
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
     WriteTail(base, (const uint8_t *)g_hmacSha224State.key, g_hmacSha224State.keySz);
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
-                    HASH_STR_DCAL_Msk);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
+                      HASH_STR_DCAL_Msk);
 
     err = WaitForReady(base, cfg->timeout);
     if (err) {
@@ -949,7 +949,7 @@ whal_Error whal_Stm32wba_HmacSha256_Oneshot(whal_HmacSha256 *dev,
 {
     const whal_Stm32wba_Hash_Cfg *cfg =
         (const whal_Stm32wba_Hash_Cfg *)whal_Stm32wba_Hash_Dev.cfg;
-    size_t base = whal_Stm32wba_Hash_Dev.base;
+    uintptr_t base = whal_Stm32wba_Hash_Dev.base;
     size_t lkey;
     whal_Error err;
     (void)dev;
@@ -964,22 +964,22 @@ whal_Error whal_Stm32wba_HmacSha256_Oneshot(whal_HmacSha256 *dev,
 
     lkey = (keySz > 64) ? 1 : 0;
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
 
-    whal_Reg_Update(base, HASH_CR_REG,
-                    HASH_CR_ALGO_Msk | HASH_CR_DATATYPE_Msk |
-                    HASH_CR_MODE_Msk | HASH_CR_LKEY_Msk | HASH_CR_INIT_Msk,
-                    AlgoBits(HASH_ALGO_SHA256) |
-                    whal_SetBits(HASH_CR_MODE_Msk, HASH_CR_MODE_Pos,
-                                 HASH_MODE_HMAC) |
-                    whal_SetBits(HASH_CR_LKEY_Msk, HASH_CR_LKEY_Pos, lkey) |
-                    HASH_CR_INIT_Msk);
+    whal_Reg32_Update(base, HASH_CR_REG,
+                      HASH_CR_ALGO_Msk | HASH_CR_DATATYPE_Msk |
+                      HASH_CR_MODE_Msk | HASH_CR_LKEY_Msk | HASH_CR_INIT_Msk,
+                      AlgoBits(HASH_ALGO_SHA256) |
+                      whal_SetBits(HASH_CR_MODE_Msk, HASH_CR_MODE_Pos,
+                                   HASH_MODE_HMAC) |
+                      whal_SetBits(HASH_CR_LKEY_Msk, HASH_CR_LKEY_Pos, lkey) |
+                      HASH_CR_INIT_Msk);
 
     /* Inner key */
     WriteTail(base, (const uint8_t *)key, keySz);
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
-                    HASH_STR_DCAL_Msk);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
+                      HASH_STR_DCAL_Msk);
 
     err = WaitForReady(base, cfg->timeout);
     if (err) {
@@ -988,12 +988,12 @@ whal_Error whal_Stm32wba_HmacSha256_Oneshot(whal_HmacSha256 *dev,
     }
 
     /* Message */
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
     if (inSz > 0)
         WriteTail(base, (const uint8_t *)in, inSz);
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
-                    HASH_STR_DCAL_Msk);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
+                      HASH_STR_DCAL_Msk);
 
     err = WaitForReady(base, cfg->timeout);
     if (err) {
@@ -1002,11 +1002,11 @@ whal_Error whal_Stm32wba_HmacSha256_Oneshot(whal_HmacSha256 *dev,
     }
 
     /* Outer key */
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
     WriteTail(base, (const uint8_t *)key, keySz);
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
-                    HASH_STR_DCAL_Msk);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
+                      HASH_STR_DCAL_Msk);
 
     err = WaitForReady(base, cfg->timeout);
     if (err) {
@@ -1023,7 +1023,7 @@ whal_Error whal_Stm32wba_HmacSha256_Start(whal_HmacSha256 *dev,
 {
     const whal_Stm32wba_Hash_Cfg *cfg =
         (const whal_Stm32wba_Hash_Cfg *)whal_Stm32wba_Hash_Dev.cfg;
-    size_t base = whal_Stm32wba_Hash_Dev.base;
+    uintptr_t base = whal_Stm32wba_Hash_Dev.base;
     size_t lkey;
     whal_Error err;
     (void)dev;
@@ -1033,22 +1033,22 @@ whal_Error whal_Stm32wba_HmacSha256_Start(whal_HmacSha256 *dev,
 
     lkey = (keySz > 64) ? 1 : 0;
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
 
-    whal_Reg_Update(base, HASH_CR_REG,
-                    HASH_CR_ALGO_Msk | HASH_CR_DATATYPE_Msk |
-                    HASH_CR_MODE_Msk | HASH_CR_LKEY_Msk | HASH_CR_INIT_Msk,
-                    AlgoBits(HASH_ALGO_SHA256) |
-                    whal_SetBits(HASH_CR_MODE_Msk, HASH_CR_MODE_Pos,
-                                 HASH_MODE_HMAC) |
-                    whal_SetBits(HASH_CR_LKEY_Msk, HASH_CR_LKEY_Pos, lkey) |
-                    HASH_CR_INIT_Msk);
+    whal_Reg32_Update(base, HASH_CR_REG,
+                      HASH_CR_ALGO_Msk | HASH_CR_DATATYPE_Msk |
+                      HASH_CR_MODE_Msk | HASH_CR_LKEY_Msk | HASH_CR_INIT_Msk,
+                      AlgoBits(HASH_ALGO_SHA256) |
+                      whal_SetBits(HASH_CR_MODE_Msk, HASH_CR_MODE_Pos,
+                                   HASH_MODE_HMAC) |
+                      whal_SetBits(HASH_CR_LKEY_Msk, HASH_CR_LKEY_Pos, lkey) |
+                      HASH_CR_INIT_Msk);
 
     /* Inner key */
     WriteTail(base, (const uint8_t *)key, keySz);
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
-                    HASH_STR_DCAL_Msk);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
+                      HASH_STR_DCAL_Msk);
 
     err = WaitForReady(base, cfg->timeout);
     if (err) {
@@ -1081,7 +1081,7 @@ whal_Error whal_Stm32wba_HmacSha256_Finalize(whal_HmacSha256 *dev,
 {
     const whal_Stm32wba_Hash_Cfg *cfg =
         (const whal_Stm32wba_Hash_Cfg *)whal_Stm32wba_Hash_Dev.cfg;
-    size_t base = whal_Stm32wba_Hash_Dev.base;
+    uintptr_t base = whal_Stm32wba_Hash_Dev.base;
     whal_Error err;
     (void)dev;
 
@@ -1094,11 +1094,11 @@ whal_Error whal_Stm32wba_HmacSha256_Finalize(whal_HmacSha256 *dev,
     }
 
     /* Drain any buffered tail bytes, then DCAL to close message phase. */
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
     StreamDrain(base);
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
-                    HASH_STR_DCAL_Msk);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
+                      HASH_STR_DCAL_Msk);
 
     err = WaitForReady(base, cfg->timeout);
     if (err) {
@@ -1107,11 +1107,11 @@ whal_Error whal_Stm32wba_HmacSha256_Finalize(whal_HmacSha256 *dev,
     }
 
     /* Outer key */
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_NBLW_Msk, 0);
     WriteTail(base, (const uint8_t *)g_hmacSha256State.key, g_hmacSha256State.keySz);
 
-    whal_Reg_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
-                    HASH_STR_DCAL_Msk);
+    whal_Reg32_Update(base, HASH_STR_REG, HASH_STR_DCAL_Msk,
+                      HASH_STR_DCAL_Msk);
 
     err = WaitForReady(base, cfg->timeout);
     if (err) {

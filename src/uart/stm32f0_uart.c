@@ -89,11 +89,11 @@ whal_Error whal_Stm32f0_Uart_Init(whal_Uart *uartDev)
 #ifdef WHAL_CFG_STM32F0_UART_SINGLE_INSTANCE
     const whal_Stm32f0_Uart_Cfg *cfg =
         (const whal_Stm32f0_Uart_Cfg *)whal_Stm32f0_Uart_Dev.cfg;
-    size_t base = whal_Stm32f0_Uart_Dev.base;
+    uintptr_t base = whal_Stm32f0_Uart_Dev.base;
     (void)uartDev;
 #else
     whal_Stm32f0_Uart_Cfg *cfg;
-    size_t base;
+    uintptr_t base;
 
     if (!uartDev || !uartDev->cfg)
         return WHAL_EINVAL;
@@ -102,15 +102,15 @@ whal_Error whal_Stm32f0_Uart_Init(whal_Uart *uartDev)
     cfg = (whal_Stm32f0_Uart_Cfg *)uartDev->cfg;
 #endif
 
-    whal_Reg_Update(base, UART_BRR_REG, UART_BRR_Msk,
-                    whal_SetBits(UART_BRR_Msk, UART_BRR_Pos, cfg->brr));
+    whal_Reg32_Update(base, UART_BRR_REG, UART_BRR_Msk,
+                      whal_SetBits(UART_BRR_Msk, UART_BRR_Pos, cfg->brr));
 
     /* Enable UE, RE, TE — no FIFOEN on STM32F0 */
-    whal_Reg_Update(base, UART_CR1_REG,
-                    UART_CR1_UE_Msk | UART_CR1_RE_Msk | UART_CR1_TE_Msk,
-                    whal_SetBits(UART_CR1_UE_Msk, UART_CR1_UE_Pos, 1) |
-                    whal_SetBits(UART_CR1_RE_Msk, UART_CR1_RE_Pos, 1) |
-                    whal_SetBits(UART_CR1_TE_Msk, UART_CR1_TE_Pos, 1));
+    whal_Reg32_Update(base, UART_CR1_REG,
+                      UART_CR1_UE_Msk | UART_CR1_RE_Msk | UART_CR1_TE_Msk,
+                      whal_SetBits(UART_CR1_UE_Msk, UART_CR1_UE_Pos, 1) |
+                      whal_SetBits(UART_CR1_RE_Msk, UART_CR1_RE_Pos, 1) |
+                      whal_SetBits(UART_CR1_TE_Msk, UART_CR1_TE_Pos, 1));
 
     return WHAL_SUCCESS;
 }
@@ -118,10 +118,10 @@ whal_Error whal_Stm32f0_Uart_Init(whal_Uart *uartDev)
 whal_Error whal_Stm32f0_Uart_Deinit(whal_Uart *uartDev)
 {
 #ifdef WHAL_CFG_STM32F0_UART_SINGLE_INSTANCE
-    size_t base = whal_Stm32f0_Uart_Dev.base;
+    uintptr_t base = whal_Stm32f0_Uart_Dev.base;
     (void)uartDev;
 #else
-    size_t base;
+    uintptr_t base;
 
     if (!uartDev)
         return WHAL_EINVAL;
@@ -129,14 +129,14 @@ whal_Error whal_Stm32f0_Uart_Deinit(whal_Uart *uartDev)
     base = uartDev->base;
 #endif
 
-    whal_Reg_Update(base, UART_CR1_REG,
-                    UART_CR1_UE_Msk | UART_CR1_RE_Msk | UART_CR1_TE_Msk,
-                    whal_SetBits(UART_CR1_UE_Msk, UART_CR1_UE_Pos, 0) |
-                    whal_SetBits(UART_CR1_RE_Msk, UART_CR1_RE_Pos, 0) |
-                    whal_SetBits(UART_CR1_TE_Msk, UART_CR1_TE_Pos, 0));
+    whal_Reg32_Update(base, UART_CR1_REG,
+                      UART_CR1_UE_Msk | UART_CR1_RE_Msk | UART_CR1_TE_Msk,
+                      whal_SetBits(UART_CR1_UE_Msk, UART_CR1_UE_Pos, 0) |
+                      whal_SetBits(UART_CR1_RE_Msk, UART_CR1_RE_Pos, 0) |
+                      whal_SetBits(UART_CR1_TE_Msk, UART_CR1_TE_Pos, 0));
 
-    whal_Reg_Update(base, UART_BRR_REG, UART_BRR_Msk,
-                    whal_SetBits(UART_BRR_Msk, UART_BRR_Pos, 0));
+    whal_Reg32_Update(base, UART_BRR_REG, UART_BRR_Msk,
+                      whal_SetBits(UART_BRR_Msk, UART_BRR_Pos, 0));
 
     return WHAL_SUCCESS;
 }
@@ -148,13 +148,13 @@ whal_Error whal_Stm32f0_Uart_Send(whal_Uart *uartDev, const void *data,
 #ifdef WHAL_CFG_STM32F0_UART_SINGLE_INSTANCE
     const whal_Stm32f0_Uart_Cfg *cfg =
         (const whal_Stm32f0_Uart_Cfg *)whal_Stm32f0_Uart_Dev.cfg;
-    size_t base = whal_Stm32f0_Uart_Dev.base;
+    uintptr_t base = whal_Stm32f0_Uart_Dev.base;
     (void)uartDev;
 
     if (!data)
         return WHAL_EINVAL;
 #else
-    size_t base;
+    uintptr_t base;
     whal_Stm32f0_Uart_Cfg *cfg;
 
     if (!uartDev || !uartDev->cfg || !data)
@@ -166,11 +166,11 @@ whal_Error whal_Stm32f0_Uart_Send(whal_Uart *uartDev, const void *data,
 
     for (size_t i = 0; i < dataSz; ++i) {
         whal_Error err;
-        whal_Reg_Update(base, UART_TDR_REG, UART_TDR_Msk,
-                        whal_SetBits(UART_TDR_Msk, UART_TDR_Pos, buf[i]));
+        whal_Reg32_Update(base, UART_TDR_REG, UART_TDR_Msk,
+                          whal_SetBits(UART_TDR_Msk, UART_TDR_Pos, buf[i]));
 
-        err = whal_Reg_ReadPoll(base, UART_ISR_REG, UART_ISR_TC_Msk,
-                                UART_ISR_TC_Msk, cfg->timeout);
+        err = whal_Reg32_ReadPoll(base, UART_ISR_REG, UART_ISR_TC_Msk,
+                                  UART_ISR_TC_Msk, cfg->timeout);
         if (err)
             return err;
     }
@@ -184,13 +184,13 @@ whal_Error whal_Stm32f0_Uart_Recv(whal_Uart *uartDev, void *data, size_t dataSz)
 #ifdef WHAL_CFG_STM32F0_UART_SINGLE_INSTANCE
     const whal_Stm32f0_Uart_Cfg *cfg =
         (const whal_Stm32f0_Uart_Cfg *)whal_Stm32f0_Uart_Dev.cfg;
-    size_t base = whal_Stm32f0_Uart_Dev.base;
+    uintptr_t base = whal_Stm32f0_Uart_Dev.base;
     (void)uartDev;
 
     if (!data)
         return WHAL_EINVAL;
 #else
-    size_t base;
+    uintptr_t base;
     whal_Stm32f0_Uart_Cfg *cfg;
 
     if (!uartDev || !uartDev->cfg || !data)
@@ -201,20 +201,20 @@ whal_Error whal_Stm32f0_Uart_Recv(whal_Uart *uartDev, void *data, size_t dataSz)
 #endif
 
     for (size_t i = 0; i < dataSz; ++i) {
-        size_t d;
+        uint32_t d;
         size_t isr;
-        whal_Error err = whal_Reg_ReadPoll(base, UART_ISR_REG,
-                                           UART_ISR_RXNE_Msk,
-                                           UART_ISR_RXNE_Msk, cfg->timeout);
+        whal_Error err = whal_Reg32_ReadPoll(base, UART_ISR_REG,
+                                             UART_ISR_RXNE_Msk,
+                                             UART_ISR_RXNE_Msk, cfg->timeout);
         if (err)
             return err;
 
-        isr = whal_Reg_Read(base, UART_ISR_REG);
-        whal_Reg_Get(base, UART_RDR_REG, UART_RDR_Msk, UART_RDR_Pos, &d);
+        isr = whal_Reg32_Read(base, UART_ISR_REG);
+        whal_Reg32_Get(base, UART_RDR_REG, UART_RDR_Msk, UART_RDR_Pos, &d);
         buf[i] = d;
 
         if (isr & UART_ISR_ERR_Msk) {
-            whal_Reg_Write(base, UART_ICR_REG, isr & UART_ISR_ERR_Msk);
+            whal_Reg32_Write(base, UART_ICR_REG, isr & UART_ISR_ERR_Msk);
             return WHAL_EHARDWARE;
         }
     }

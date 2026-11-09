@@ -103,11 +103,11 @@ whal_Error whal_Stm32f4_Uart_Init(whal_Uart *uartDev)
 #ifdef WHAL_CFG_STM32F4_UART_SINGLE_INSTANCE
     const whal_Stm32f4_Uart_Cfg *cfg =
         (const whal_Stm32f4_Uart_Cfg *)whal_Stm32f4_Uart_Dev.cfg;
-    size_t base = whal_Stm32f4_Uart_Dev.base;
+    uintptr_t base = whal_Stm32f4_Uart_Dev.base;
     (void)uartDev;
 #else
     whal_Stm32f4_Uart_Cfg *cfg;
-    size_t base;
+    uintptr_t base;
 
     if (!uartDev || !uartDev->cfg)
         return WHAL_EINVAL;
@@ -119,16 +119,16 @@ whal_Error whal_Stm32f4_Uart_Init(whal_Uart *uartDev)
     brr = cfg->brr;
 
     /* Set baud rate */
-    whal_Reg_Update(base, UART_BRR_REG,
-                    UART_BRR_Msk,
-                    whal_SetBits(UART_BRR_Msk, UART_BRR_Pos, brr));
+    whal_Reg32_Update(base, UART_BRR_REG,
+                      UART_BRR_Msk,
+                      whal_SetBits(UART_BRR_Msk, UART_BRR_Pos, brr));
 
     /* Enable USART, transmitter, and receiver */
-    whal_Reg_Update(base, UART_CR1_REG,
-                    UART_CR1_UE_Msk | UART_CR1_RE_Msk | UART_CR1_TE_Msk,
-                    whal_SetBits(UART_CR1_UE_Msk, UART_CR1_UE_Pos, 1) |
-                    whal_SetBits(UART_CR1_RE_Msk, UART_CR1_RE_Pos, 1) |
-                    whal_SetBits(UART_CR1_TE_Msk, UART_CR1_TE_Pos, 1));
+    whal_Reg32_Update(base, UART_CR1_REG,
+                      UART_CR1_UE_Msk | UART_CR1_RE_Msk | UART_CR1_TE_Msk,
+                      whal_SetBits(UART_CR1_UE_Msk, UART_CR1_UE_Pos, 1) |
+                      whal_SetBits(UART_CR1_RE_Msk, UART_CR1_RE_Pos, 1) |
+                      whal_SetBits(UART_CR1_TE_Msk, UART_CR1_TE_Pos, 1));
 
     return WHAL_SUCCESS;
 }
@@ -136,10 +136,10 @@ whal_Error whal_Stm32f4_Uart_Init(whal_Uart *uartDev)
 whal_Error whal_Stm32f4_Uart_Deinit(whal_Uart *uartDev)
 {
 #ifdef WHAL_CFG_STM32F4_UART_SINGLE_INSTANCE
-    size_t base = whal_Stm32f4_Uart_Dev.base;
+    uintptr_t base = whal_Stm32f4_Uart_Dev.base;
     (void)uartDev;
 #else
-    size_t base;
+    uintptr_t base;
 
     if (!uartDev)
         return WHAL_EINVAL;
@@ -148,16 +148,16 @@ whal_Error whal_Stm32f4_Uart_Deinit(whal_Uart *uartDev)
 #endif
 
     /* Disable USART, transmitter, and receiver */
-    whal_Reg_Update(base, UART_CR1_REG,
-                    UART_CR1_UE_Msk | UART_CR1_RE_Msk | UART_CR1_TE_Msk,
-                    whal_SetBits(UART_CR1_UE_Msk, UART_CR1_UE_Pos, 0) |
-                    whal_SetBits(UART_CR1_RE_Msk, UART_CR1_RE_Pos, 0) |
-                    whal_SetBits(UART_CR1_TE_Msk, UART_CR1_TE_Pos, 0));
+    whal_Reg32_Update(base, UART_CR1_REG,
+                      UART_CR1_UE_Msk | UART_CR1_RE_Msk | UART_CR1_TE_Msk,
+                      whal_SetBits(UART_CR1_UE_Msk, UART_CR1_UE_Pos, 0) |
+                      whal_SetBits(UART_CR1_RE_Msk, UART_CR1_RE_Pos, 0) |
+                      whal_SetBits(UART_CR1_TE_Msk, UART_CR1_TE_Pos, 0));
 
     /* Clear baud rate */
-    whal_Reg_Update(base, UART_BRR_REG,
-                    UART_BRR_Msk,
-                    whal_SetBits(UART_BRR_Msk, UART_BRR_Pos, 0));
+    whal_Reg32_Update(base, UART_BRR_REG,
+                      UART_BRR_Msk,
+                      whal_SetBits(UART_BRR_Msk, UART_BRR_Pos, 0));
 
     return WHAL_SUCCESS;
 }
@@ -168,13 +168,13 @@ whal_Error whal_Stm32f4_Uart_Send(whal_Uart *uartDev, const void *data, size_t d
 #ifdef WHAL_CFG_STM32F4_UART_SINGLE_INSTANCE
     const whal_Stm32f4_Uart_Cfg *cfg =
         (const whal_Stm32f4_Uart_Cfg *)whal_Stm32f4_Uart_Dev.cfg;
-    size_t base = whal_Stm32f4_Uart_Dev.base;
+    uintptr_t base = whal_Stm32f4_Uart_Dev.base;
     (void)uartDev;
 
     if (!data)
         return WHAL_EINVAL;
 #else
-    size_t base;
+    uintptr_t base;
     whal_Stm32f4_Uart_Cfg *cfg;
 
     if (!uartDev || !uartDev->cfg || !data)
@@ -191,35 +191,35 @@ whal_Error whal_Stm32f4_Uart_Send(whal_Uart *uartDev, const void *data, size_t d
         whal_Error err;
 
         /* Wait for transmit data register empty */
-        err = whal_Reg_ReadPoll(base, UART_SR_REG, UART_SR_TXE_Msk,
-                                UART_SR_TXE_Msk, cfg->timeout);
+        err = whal_Reg32_ReadPoll(base, UART_SR_REG, UART_SR_TXE_Msk,
+                                  UART_SR_TXE_Msk, cfg->timeout);
         if (err)
             return err;
 
         /* Write byte to data register (must not read DR — use pure write) */
-        whal_Reg_Write(base, UART_DR_REG, buf[i]);
+        whal_Reg32_Write(base, UART_DR_REG, buf[i]);
     }
 
     /* Wait for the last frame to finish shifting out */
-    return whal_Reg_ReadPoll(base, UART_SR_REG, UART_SR_TC_Msk,
-                             UART_SR_TC_Msk, cfg->timeout);
+    return whal_Reg32_ReadPoll(base, UART_SR_REG, UART_SR_TC_Msk,
+                               UART_SR_TC_Msk, cfg->timeout);
 }
 
 whal_Error whal_Stm32f4_Uart_Recv(whal_Uart *uartDev, void *data, size_t dataSz)
 {
     uint8_t *buf = data;
-    size_t d;
+    uint32_t d;
     size_t sr;
 #ifdef WHAL_CFG_STM32F4_UART_SINGLE_INSTANCE
     const whal_Stm32f4_Uart_Cfg *cfg =
         (const whal_Stm32f4_Uart_Cfg *)whal_Stm32f4_Uart_Dev.cfg;
-    size_t base = whal_Stm32f4_Uart_Dev.base;
+    uintptr_t base = whal_Stm32f4_Uart_Dev.base;
     (void)uartDev;
 
     if (!data)
         return WHAL_EINVAL;
 #else
-    size_t base;
+    uintptr_t base;
     whal_Stm32f4_Uart_Cfg *cfg;
 
     if (!uartDev || !uartDev->cfg || !data)
@@ -231,16 +231,16 @@ whal_Error whal_Stm32f4_Uart_Recv(whal_Uart *uartDev, void *data, size_t dataSz)
 
     for (size_t i = 0; i < dataSz; ++i) {
         /* Wait for receive data register not empty */
-        whal_Error err = whal_Reg_ReadPoll(base, UART_SR_REG,
-                                           UART_SR_RXNE_Msk,
-                                           UART_SR_RXNE_Msk, cfg->timeout);
+        whal_Error err = whal_Reg32_ReadPoll(base, UART_SR_REG,
+                                             UART_SR_RXNE_Msk,
+                                             UART_SR_RXNE_Msk, cfg->timeout);
         if (err)
             return err;
 
         /* Reading SR then DR also clears the error flags */
-        sr = whal_Reg_Read(base, UART_SR_REG);
-        whal_Reg_Get(base, UART_DR_REG,
-                     UART_DR_Msk, UART_DR_Pos, &d);
+        sr = whal_Reg32_Read(base, UART_SR_REG);
+        whal_Reg32_Get(base, UART_DR_REG,
+                       UART_DR_Msk, UART_DR_Pos, &d);
 
         buf[i] = d;
 

@@ -37,7 +37,7 @@
 /* Spin budget for one tick to elapse; far longer than a 1 ms tick */
 #define TICK_SPIN_MAX       10000000UL
 
-static size_t SysTickBase(void)
+static uintptr_t SysTickBase(void)
 {
     return whal_SysTick_Dev.base;
 }
@@ -62,9 +62,9 @@ static int TickAdvances(void)
 static void CheckConfig(void)
 {
     const whal_SysTick_Cfg *cfg = SysTickCfg();
-    size_t csr = whal_Reg_Read(SysTickBase(), SYSTICK_CSR);
+    size_t csr = whal_Reg32_Read(SysTickBase(), SYSTICK_CSR);
 
-    WHAL_ASSERT_EQ(whal_Reg_Read(SysTickBase(), SYSTICK_RVR) & RVR_RELOAD_Msk,
+    WHAL_ASSERT_EQ(whal_Reg32_Read(SysTickBase(), SYSTICK_RVR) & RVR_RELOAD_Msk,
                    cfg->cyclesPerTick - 1);
     WHAL_ASSERT_EQ((csr & CSR_CLKSOURCE) != 0,
                    cfg->clkSrc == WHAL_SYSTICK_CLKSRC_SYSCLK);
@@ -87,12 +87,12 @@ static void Test_SysTick_StopStart(void)
     size_t cvr1, cvr2;
 
     stopErr = whal_Timer_Stop(WHAL_INTERNAL_DEV);
-    csr = whal_Reg_Read(SysTickBase(), SYSTICK_CSR);
+    csr = whal_Reg32_Read(SysTickBase(), SYSTICK_CSR);
 
     /* A stopped counter holds its value */
-    cvr1 = whal_Reg_Read(SysTickBase(), SYSTICK_CVR);
+    cvr1 = whal_Reg32_Read(SysTickBase(), SYSTICK_CVR);
     for (volatile size_t i = 0; i < 1000; i++) {}
-    cvr2 = whal_Reg_Read(SysTickBase(), SYSTICK_CVR);
+    cvr2 = whal_Reg32_Read(SysTickBase(), SYSTICK_CVR);
 
     /* Restart before asserting so later tests keep a time base */
     WHAL_ASSERT_EQ(whal_Timer_Start(WHAL_INTERNAL_DEV), WHAL_SUCCESS);
@@ -101,7 +101,7 @@ static void Test_SysTick_StopStart(void)
     WHAL_ASSERT_EQ(csr & CSR_ENABLE, 0);
     WHAL_ASSERT_EQ(cvr1, cvr2);
 
-    WHAL_ASSERT_EQ(whal_Reg_Read(SysTickBase(), SYSTICK_CSR) & CSR_ENABLE,
+    WHAL_ASSERT_EQ(whal_Reg32_Read(SysTickBase(), SYSTICK_CSR) & CSR_ENABLE,
                    CSR_ENABLE);
     WHAL_ASSERT_EQ(TickAdvances(), 1);
 }
@@ -113,8 +113,8 @@ static void Test_SysTick_Deinit(void)
     size_t cvr;
 
     deinitErr = whal_Timer_Deinit(WHAL_INTERNAL_DEV);
-    csr = whal_Reg_Read(SysTickBase(), SYSTICK_CSR);
-    cvr = whal_Reg_Read(SysTickBase(), SYSTICK_CVR);
+    csr = whal_Reg32_Read(SysTickBase(), SYSTICK_CSR);
+    cvr = whal_Reg32_Read(SysTickBase(), SYSTICK_CVR);
 
     /* Restore the tick before asserting so later tests keep a time base */
     WHAL_ASSERT_EQ(whal_Timer_Init(WHAL_INTERNAL_DEV), WHAL_SUCCESS);

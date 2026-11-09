@@ -212,10 +212,10 @@ void Board_WaitMs(size_t ms)
 static whal_Error Board_SetVosRange1(void)
 {
     /* Set VOS to Range 1 */
-    whal_Reg_Update(PWR_BASE, PWR_VOSR_REG, PWR_VOSR_VOS_Msk, PWR_VOSR_VOS_Msk);
+    whal_Reg32_Update(PWR_BASE, PWR_VOSR_REG, PWR_VOSR_VOS_Msk, PWR_VOSR_VOS_Msk);
 
     /* Wait for VOSRDY */
-    while (!(whal_Reg_Read(PWR_BASE, PWR_VOSR_REG) & PWR_VOSR_VOSRDY_Msk))
+    while (!(whal_Reg32_Read(PWR_BASE, PWR_VOSR_REG) & PWR_VOSR_VOSRDY_Msk))
         ;
 
     return WHAL_SUCCESS;

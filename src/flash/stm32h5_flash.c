@@ -154,13 +154,13 @@ whal_Error whal_Stm32h5_Flash_Deinit(whal_Flash *flashDev)
 whal_Error whal_Stm32h5_Flash_Lock(whal_Flash *flashDev, size_t addr,
                                    size_t len)
 {
-    size_t base = whal_Stm32h5_Flash_Dev.base;
+    uintptr_t base = whal_Stm32h5_Flash_Dev.base;
     (void)flashDev;
     (void)addr;
     (void)len;
 
-    whal_Reg_Update(base, FLASH_NSCR_REG, FLASH_NSCR_LOCK_Msk,
-                    whal_SetBits(FLASH_NSCR_LOCK_Msk, FLASH_NSCR_LOCK_Pos, 1));
+    whal_Reg32_Update(base, FLASH_NSCR_REG, FLASH_NSCR_LOCK_Msk,
+                      whal_SetBits(FLASH_NSCR_LOCK_Msk, FLASH_NSCR_LOCK_Pos, 1));
 
     return WHAL_SUCCESS;
 }
@@ -168,17 +168,17 @@ whal_Error whal_Stm32h5_Flash_Lock(whal_Flash *flashDev, size_t addr,
 whal_Error whal_Stm32h5_Flash_Unlock(whal_Flash *flashDev, size_t addr,
                                      size_t len)
 {
-    size_t base = whal_Stm32h5_Flash_Dev.base;
+    uintptr_t base = whal_Stm32h5_Flash_Dev.base;
     (void)flashDev;
     (void)addr;
     (void)len;
 
-    if (whal_Reg_Read(base, FLASH_NSCR_REG) & FLASH_NSCR_LOCK_Msk) {
-        whal_Reg_Write(base, FLASH_NSKEYR_REG, FLASH_KEY1);
-        whal_Reg_Write(base, FLASH_NSKEYR_REG, FLASH_KEY2);
+    if (whal_Reg32_Read(base, FLASH_NSCR_REG) & FLASH_NSCR_LOCK_Msk) {
+        whal_Reg32_Write(base, FLASH_NSKEYR_REG, FLASH_KEY1);
+        whal_Reg32_Write(base, FLASH_NSKEYR_REG, FLASH_KEY2);
     }
 
-    if (whal_Reg_Read(base, FLASH_NSCR_REG) & FLASH_NSCR_LOCK_Msk)
+    if (whal_Reg32_Read(base, FLASH_NSCR_REG) & FLASH_NSCR_LOCK_Msk)
         return WHAL_EHARDWARE;
 
     return WHAL_SUCCESS;
@@ -206,18 +206,18 @@ whal_Error whal_Stm32h5_Flash_Read(whal_Flash *flashDev, size_t addr,
     return WHAL_SUCCESS;
 }
 
-static whal_Error WaitNotBusy(size_t base, whal_Timeout *timeout)
+static whal_Error WaitNotBusy(uintptr_t base, whal_Timeout *timeout)
 {
-    return whal_Reg_ReadPoll(base, FLASH_NSSR_REG, FLASH_NSSR_BSY_Msk,
-                             0, timeout);
+    return whal_Reg32_ReadPoll(base, FLASH_NSSR_REG, FLASH_NSSR_BSY_Msk,
+                               0, timeout);
 }
 
-static whal_Error CheckErrors(size_t base)
+static whal_Error CheckErrors(uintptr_t base)
 {
-    size_t sr = whal_Reg_Read(base, FLASH_NSSR_REG);
+    size_t sr = whal_Reg32_Read(base, FLASH_NSSR_REG);
     if (sr & FLASH_NSSR_ALL_ERR) {
         /* Clear all error flags */
-        whal_Reg_Write(base, FLASH_NSCCR_REG, FLASH_NSCCR_CLR_ALL);
+        whal_Reg32_Write(base, FLASH_NSCCR_REG, FLASH_NSCCR_CLR_ALL);
         return WHAL_EHARDWARE;
     }
     return WHAL_SUCCESS;
@@ -228,7 +228,7 @@ whal_Error whal_Stm32h5_Flash_Write(whal_Flash *flashDev, size_t addr,
 {
     const whal_Stm32h5_Flash_Cfg *cfg =
         (const whal_Stm32h5_Flash_Cfg *)whal_Stm32h5_Flash_Dev.cfg;
-    size_t base = whal_Stm32h5_Flash_Dev.base;
+    uintptr_t base = whal_Stm32h5_Flash_Dev.base;
     const uint8_t *dataBuf = (const uint8_t *)data;
     whal_Error err;
     (void)flashDev;
@@ -250,11 +250,11 @@ whal_Error whal_Stm32h5_Flash_Write(whal_Flash *flashDev, size_t addr,
         return err;
 
     /* Clear all error and status flags */
-    whal_Reg_Write(base, FLASH_NSCCR_REG, FLASH_NSCCR_CLR_ALL);
+    whal_Reg32_Write(base, FLASH_NSCCR_REG, FLASH_NSCCR_CLR_ALL);
 
     /* Enable programming */
-    whal_Reg_Update(base, FLASH_NSCR_REG, FLASH_NSCR_PG_Msk,
-                    whal_SetBits(FLASH_NSCR_PG_Msk, FLASH_NSCR_PG_Pos, 1));
+    whal_Reg32_Update(base, FLASH_NSCR_REG, FLASH_NSCR_PG_Msk,
+                      whal_SetBits(FLASH_NSCR_PG_Msk, FLASH_NSCR_PG_Pos, 1));
 
     /* Program data in 128-bit (16 byte) flash-word chunks */
     for (size_t i = 0; i < dataSz; i += 16) {
@@ -276,7 +276,7 @@ whal_Error whal_Stm32h5_Flash_Write(whal_Flash *flashDev, size_t addr,
 
 cleanup:
     /* Disable programming */
-    whal_Reg_Update(base, FLASH_NSCR_REG, FLASH_NSCR_PG_Msk, 0);
+    whal_Reg32_Update(base, FLASH_NSCR_REG, FLASH_NSCR_PG_Msk, 0);
 
     return err;
 }
@@ -286,7 +286,7 @@ whal_Error whal_Stm32h5_Flash_Erase(whal_Flash *flashDev, size_t addr,
 {
     const whal_Stm32h5_Flash_Cfg *cfg =
         (const whal_Stm32h5_Flash_Cfg *)whal_Stm32h5_Flash_Dev.cfg;
-    size_t base = whal_Stm32h5_Flash_Dev.base;
+    uintptr_t base = whal_Stm32h5_Flash_Dev.base;
     whal_Error err;
     size_t offset;
     size_t startSector, endSector;
@@ -306,7 +306,7 @@ whal_Error whal_Stm32h5_Flash_Erase(whal_Flash *flashDev, size_t addr,
         return err;
 
     /* Clear all error and status flags */
-    whal_Reg_Write(base, FLASH_NSCCR_REG, FLASH_NSCCR_CLR_ALL);
+    whal_Reg32_Write(base, FLASH_NSCCR_REG, FLASH_NSCCR_CLR_ALL);
 
     /* Every STM32H5 is dual-bank with the flash split evenly between banks */
     sectorsPerBank = (cfg->size / 2) >> FLASH_SECTOR_SHIFT;
@@ -319,15 +319,15 @@ whal_Error whal_Stm32h5_Flash_Erase(whal_Flash *flashDev, size_t addr,
         size_t sectorInBank = sector - (bank * sectorsPerBank);
 
         /* Configure and start sector erase in one write */
-        whal_Reg_Update(base, FLASH_NSCR_REG,
-                        FLASH_NSCR_SER_Msk | FLASH_NSCR_SNB_Msk |
-                        FLASH_NSCR_BKSEL_Msk | FLASH_NSCR_STRT_Msk,
-                        whal_SetBits(FLASH_NSCR_SER_Msk, FLASH_NSCR_SER_Pos, 1) |
-                        whal_SetBits(FLASH_NSCR_SNB_Msk, FLASH_NSCR_SNB_Pos,
-                                     sectorInBank) |
-                        whal_SetBits(FLASH_NSCR_BKSEL_Msk, FLASH_NSCR_BKSEL_Pos,
-                                     bank) |
-                        whal_SetBits(FLASH_NSCR_STRT_Msk, FLASH_NSCR_STRT_Pos, 1));
+        whal_Reg32_Update(base, FLASH_NSCR_REG,
+                          FLASH_NSCR_SER_Msk | FLASH_NSCR_SNB_Msk |
+                          FLASH_NSCR_BKSEL_Msk | FLASH_NSCR_STRT_Msk,
+                          whal_SetBits(FLASH_NSCR_SER_Msk, FLASH_NSCR_SER_Pos, 1) |
+                          whal_SetBits(FLASH_NSCR_SNB_Msk, FLASH_NSCR_SNB_Pos,
+                                       sectorInBank) |
+                          whal_SetBits(FLASH_NSCR_BKSEL_Msk, FLASH_NSCR_BKSEL_Pos,
+                                       bank) |
+                          whal_SetBits(FLASH_NSCR_STRT_Msk, FLASH_NSCR_STRT_Pos, 1));
 
         err = WaitNotBusy(base, cfg->timeout);
         if (err)
@@ -340,7 +340,7 @@ whal_Error whal_Stm32h5_Flash_Erase(whal_Flash *flashDev, size_t addr,
 
 cleanup:
     /* Clear sector erase mode */
-    whal_Reg_Update(base, FLASH_NSCR_REG, FLASH_NSCR_SER_Msk, 0);
+    whal_Reg32_Update(base, FLASH_NSCR_REG, FLASH_NSCR_SER_Msk, 0);
 
     return err;
 }
@@ -350,11 +350,11 @@ cleanup:
 whal_Error whal_Stm32h5_Flash_Ext_SetLatency(whal_Flash *flashDev,
                                              uint8_t latency)
 {
-    size_t base = whal_Stm32h5_Flash_Dev.base;
+    uintptr_t base = whal_Stm32h5_Flash_Dev.base;
     (void)flashDev;
 
-    whal_Reg_Update(base, FLASH_ACR_REG,
-                    FLASH_ACR_LATENCY_WRHIGHFREQ_Msk, latency);
+    whal_Reg32_Update(base, FLASH_ACR_REG,
+                      FLASH_ACR_LATENCY_WRHIGHFREQ_Msk, latency);
 
     return WHAL_SUCCESS;
 }

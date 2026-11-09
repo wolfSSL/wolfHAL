@@ -101,51 +101,51 @@ const whal_Flash whal_Stm32wb0_Flash_Dev = WHAL_CFG_STM32WB0_FLASH_DEV;
  * CMDDONE, clear it, then sweep CMDERR/ILLCMD into an error code. All
  * polling loops are bounded by the configured whal_Timeout.
  */
-static whal_Error whal_Stm32wb0_Flash_RunCommand(size_t base, uint32_t cmd,
+static whal_Error whal_Stm32wb0_Flash_RunCommand(uintptr_t base, uint32_t cmd,
                                                  whal_Timeout *timeout)
 {
     whal_Error err;
     size_t irq;
 
     /* Clear any stale start/done/error flags before launching. */
-    whal_Reg_Write(base, FLASH_IRQSTAT_REG,
-                   FLASH_IRQ_CMDSTART_Msk | FLASH_IRQ_CMDDONE_Msk |
+    whal_Reg32_Write(base, FLASH_IRQSTAT_REG,
+                     FLASH_IRQ_CMDSTART_Msk | FLASH_IRQ_CMDDONE_Msk |
                        FLASH_IRQ_ALL_ERR_Msk);
 
-    whal_Reg_Write(base, FLASH_COMMAND_REG, cmd);
+    whal_Reg32_Write(base, FLASH_COMMAND_REG, cmd);
 
     /* Wait for CMDSTART (controller has accepted the opcode). */
     WHAL_TIMEOUT_START(timeout);
     while (1) {
         if (WHAL_TIMEOUT_EXPIRED(timeout))
             return WHAL_ETIMEOUT;
-        irq = whal_Reg_Read(base, FLASH_IRQRAW_REG);
+        irq = whal_Reg32_Read(base, FLASH_IRQRAW_REG);
         if (irq & FLASH_IRQ_ALL_ERR_Msk) {
-            whal_Reg_Write(base, FLASH_IRQSTAT_REG, FLASH_IRQ_ALL_ERR_Msk);
+            whal_Reg32_Write(base, FLASH_IRQSTAT_REG, FLASH_IRQ_ALL_ERR_Msk);
             return WHAL_EHARDWARE;
         }
         if (irq & FLASH_IRQ_CMDSTART_Msk)
             break;
     }
-    whal_Reg_Write(base, FLASH_IRQSTAT_REG, FLASH_IRQ_CMDSTART_Msk);
+    whal_Reg32_Write(base, FLASH_IRQSTAT_REG, FLASH_IRQ_CMDSTART_Msk);
 
     /* Wait for CMDDONE. */
     WHAL_TIMEOUT_START(timeout);
     while (1) {
         if (WHAL_TIMEOUT_EXPIRED(timeout))
             return WHAL_ETIMEOUT;
-        irq = whal_Reg_Read(base, FLASH_IRQRAW_REG);
+        irq = whal_Reg32_Read(base, FLASH_IRQRAW_REG);
         if (irq & FLASH_IRQ_ALL_ERR_Msk) {
-            whal_Reg_Write(base, FLASH_IRQSTAT_REG, FLASH_IRQ_ALL_ERR_Msk);
+            whal_Reg32_Write(base, FLASH_IRQSTAT_REG, FLASH_IRQ_ALL_ERR_Msk);
             err = WHAL_EHARDWARE;
             /* Still clear CMDDONE if present so we don't leave it set. */
-            whal_Reg_Write(base, FLASH_IRQSTAT_REG, FLASH_IRQ_CMDDONE_Msk);
+            whal_Reg32_Write(base, FLASH_IRQSTAT_REG, FLASH_IRQ_CMDDONE_Msk);
             return err;
         }
         if (irq & FLASH_IRQ_CMDDONE_Msk)
             break;
     }
-    whal_Reg_Write(base, FLASH_IRQSTAT_REG, FLASH_IRQ_CMDDONE_Msk);
+    whal_Reg32_Write(base, FLASH_IRQSTAT_REG, FLASH_IRQ_CMDDONE_Msk);
 
     return WHAL_SUCCESS;
 }
@@ -183,30 +183,30 @@ whal_Error whal_Stm32wb0_Flash_Deinit(whal_Flash *flashDev)
 whal_Error whal_Stm32wb0_Flash_Lock(whal_Flash *flashDev, size_t addr,
                                     size_t len)
 {
-    size_t base = whal_Stm32wb0_Flash_Dev.base;
+    uintptr_t base = whal_Stm32wb0_Flash_Dev.base;
     (void)flashDev;
     (void)addr;
     (void)len;
 
     /* A segment from page 0 with the largest SIZE ends at the last page */
-    whal_Reg_Write(base, FLASH_PAGEPROT0_REG,
-                   whal_SetBits(FLASH_PAGEPROT_SEG0_OFFSET_Msk,
-                                FLASH_PAGEPROT_SEG0_OFFSET_Pos, 0) |
-                   whal_SetBits(FLASH_PAGEPROT_SEG0_SIZE_Msk,
-                                FLASH_PAGEPROT_SEG0_SIZE_Pos, 0x7F));
+    whal_Reg32_Write(base, FLASH_PAGEPROT0_REG,
+                     whal_SetBits(FLASH_PAGEPROT_SEG0_OFFSET_Msk,
+                                  FLASH_PAGEPROT_SEG0_OFFSET_Pos, 0) |
+                     whal_SetBits(FLASH_PAGEPROT_SEG0_SIZE_Msk,
+                                  FLASH_PAGEPROT_SEG0_SIZE_Pos, 0x7F));
     return WHAL_SUCCESS;
 }
 
 whal_Error whal_Stm32wb0_Flash_Unlock(whal_Flash *flashDev, size_t addr,
                                       size_t len)
 {
-    size_t base = whal_Stm32wb0_Flash_Dev.base;
+    uintptr_t base = whal_Stm32wb0_Flash_Dev.base;
     (void)flashDev;
     (void)addr;
     (void)len;
 
-    whal_Reg_Write(base, FLASH_PAGEPROT0_REG, 0);
-    whal_Reg_Write(base, FLASH_PAGEPROT1_REG, 0);
+    whal_Reg32_Write(base, FLASH_PAGEPROT0_REG, 0);
+    whal_Reg32_Write(base, FLASH_PAGEPROT1_REG, 0);
     return WHAL_SUCCESS;
 }
 
@@ -238,7 +238,7 @@ whal_Error whal_Stm32wb0_Flash_Write(whal_Flash *flashDev, size_t addr,
 {
     const whal_Stm32wb0_Flash_Cfg *cfg =
         (const whal_Stm32wb0_Flash_Cfg *)whal_Stm32wb0_Flash_Dev.cfg;
-    size_t base = whal_Stm32wb0_Flash_Dev.base;
+    uintptr_t base = whal_Stm32wb0_Flash_Dev.base;
     const uint8_t *dataBuf = (const uint8_t *)data;
     whal_Error err;
     (void)flashDev;
@@ -263,9 +263,9 @@ whal_Error whal_Stm32wb0_Flash_Write(whal_Flash *flashDev, size_t addr,
                ((uint32_t)dataBuf[i + 2] << 16) |
                ((uint32_t)dataBuf[i + 3] << 24);
 
-        whal_Reg_Write(base, FLASH_ADDRESS_REG,
-                       whal_Stm32wb0_Flash_AddrToHw(cfg, addr + i));
-        whal_Reg_Write(base, FLASH_DATA0_REG, word);
+        whal_Reg32_Write(base, FLASH_ADDRESS_REG,
+                         whal_Stm32wb0_Flash_AddrToHw(cfg, addr + i));
+        whal_Reg32_Write(base, FLASH_DATA0_REG, word);
 
         err = whal_Stm32wb0_Flash_RunCommand(base, FLASH_COMMAND_WRITE,
                                              cfg->timeout);
@@ -280,7 +280,7 @@ whal_Error whal_Stm32wb0_Flash_Erase(whal_Flash *flashDev, size_t addr,
 {
     const whal_Stm32wb0_Flash_Cfg *cfg =
         (const whal_Stm32wb0_Flash_Cfg *)whal_Stm32wb0_Flash_Dev.cfg;
-    size_t base = whal_Stm32wb0_Flash_Dev.base;
+    uintptr_t base = whal_Stm32wb0_Flash_Dev.base;
     whal_Error err;
     (void)flashDev;
 
@@ -298,7 +298,7 @@ whal_Error whal_Stm32wb0_Flash_Erase(whal_Flash *flashDev, size_t addr,
     for (size_t p = firstPage; p <= lastPage; ++p) {
         /* For ERASE, ADDRESS[15:9] = page number, lower bits zero. */
         uint32_t hwAddr = (uint32_t)(p * FLASH_PAGE_SIZE / FLASH_WORD_SIZE);
-        whal_Reg_Write(base, FLASH_ADDRESS_REG, hwAddr);
+        whal_Reg32_Write(base, FLASH_ADDRESS_REG, hwAddr);
 
         err = whal_Stm32wb0_Flash_RunCommand(base, FLASH_COMMAND_ERASE,
                                              cfg->timeout);
@@ -311,12 +311,12 @@ whal_Error whal_Stm32wb0_Flash_Erase(whal_Flash *flashDev, size_t addr,
 whal_Error whal_Stm32wb0_Flash_Ext_SetLatency(whal_Flash *flashDev,
     enum whal_Stm32wb0_Flash_Latency latency)
 {
-    size_t base = whal_Stm32wb0_Flash_Dev.base;
+    uintptr_t base = whal_Stm32wb0_Flash_Dev.base;
     (void)flashDev;
 
-    whal_Reg_Update(base, FLASH_CONFIG_REG, FLASH_CONFIG_WAIT_STATES_Msk,
-                    whal_SetBits(FLASH_CONFIG_WAIT_STATES_Msk,
-                                 FLASH_CONFIG_WAIT_STATES_Pos, latency));
+    whal_Reg32_Update(base, FLASH_CONFIG_REG, FLASH_CONFIG_WAIT_STATES_Msk,
+                      whal_SetBits(FLASH_CONFIG_WAIT_STATES_Msk,
+                                   FLASH_CONFIG_WAIT_STATES_Pos, latency));
     return WHAL_SUCCESS;
 }
 

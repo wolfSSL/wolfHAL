@@ -62,7 +62,7 @@ typedef struct {
  * @brief Crypto hardware device instance.
  */
 struct whal_Crypto {
-    const size_t base;
+    const uintptr_t base;
     const whal_CryptoDriver *driver;
     const void *cfg;
 };

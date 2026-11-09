@@ -57,7 +57,7 @@ typedef struct {
  * @brief Block device instance tying configuration to a driver implementation.
  */
 struct whal_Block {
-    const size_t base;
+    const uintptr_t base;
     const whal_BlockDriver *driver;
     void *cfg;
 };
