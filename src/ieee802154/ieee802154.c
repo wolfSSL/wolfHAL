@@ -24,22 +24,28 @@
 
 whal_Error whal_Ieee802154_Init(whal_Ieee802154 *radioDev)
 {
-    if (!radioDev || !radioDev->driver || !radioDev->driver->Init)
+    if (!radioDev)
         return WHAL_EINVAL;
+    if (!radioDev->driver || !radioDev->driver->Init)
+        return WHAL_ENOTSUP;
     return radioDev->driver->Init(radioDev);
 }
 
 whal_Error whal_Ieee802154_Deinit(whal_Ieee802154 *radioDev)
 {
-    if (!radioDev || !radioDev->driver || !radioDev->driver->Deinit)
+    if (!radioDev)
         return WHAL_EINVAL;
+    if (!radioDev->driver || !radioDev->driver->Deinit)
+        return WHAL_ENOTSUP;
     return radioDev->driver->Deinit(radioDev);
 }
 
 whal_Error whal_Ieee802154_GetCaps(whal_Ieee802154 *radioDev, uint32_t *caps)
 {
-    if (!radioDev || !radioDev->driver || !radioDev->driver->GetCaps || !caps)
+    if (!radioDev || !caps)
         return WHAL_EINVAL;
+    if (!radioDev->driver || !radioDev->driver->GetCaps)
+        return WHAL_ENOTSUP;
     return radioDev->driver->GetCaps(radioDev, caps);
 }
 
@@ -47,8 +53,10 @@ whal_Error whal_Ieee802154_SetAttr(whal_Ieee802154 *radioDev,
                                    whal_Ieee802154_Attr attr,
                                    const whal_Ieee802154_AttrVal *val)
 {
-    if (!radioDev || !radioDev->driver || !radioDev->driver->SetAttr || !val)
+    if (!radioDev || !val)
         return WHAL_EINVAL;
+    if (!radioDev->driver || !radioDev->driver->SetAttr)
+        return WHAL_ENOTSUP;
     return radioDev->driver->SetAttr(radioDev, attr, val);
 }
 
@@ -56,8 +64,10 @@ whal_Error whal_Ieee802154_GetAttr(whal_Ieee802154 *radioDev,
                                    whal_Ieee802154_Attr attr,
                                    whal_Ieee802154_AttrVal *val)
 {
-    if (!radioDev || !radioDev->driver || !radioDev->driver->GetAttr || !val)
+    if (!radioDev || !val)
         return WHAL_EINVAL;
+    if (!radioDev->driver || !radioDev->driver->GetAttr)
+        return WHAL_ENOTSUP;
     return radioDev->driver->GetAttr(radioDev, attr, val);
 }
 
@@ -65,81 +75,97 @@ whal_Error whal_Ieee802154_Transmit(whal_Ieee802154 *radioDev,
                                     const uint8_t *frame, size_t len,
                                     const whal_Ieee802154_TxCfg *txCfg)
 {
-    if (!radioDev || !radioDev->driver || !radioDev->driver->Transmit ||
-        !frame || !txCfg || len == 0 || len > WHAL_IEEE802154_FRAME_MAX)
+    if (!radioDev || !frame || !txCfg || len == 0 ||
+        len > WHAL_IEEE802154_FRAME_MAX)
         return WHAL_EINVAL;
+    if (!radioDev->driver || !radioDev->driver->Transmit)
+        return WHAL_ENOTSUP;
     return radioDev->driver->Transmit(radioDev, frame, len, txCfg);
 }
 
 whal_Error whal_Ieee802154_GetRssi(whal_Ieee802154 *radioDev, int8_t *rssi)
 {
-    if (!radioDev || !radioDev->driver || !radioDev->driver->GetRssi || !rssi)
+    if (!radioDev || !rssi)
         return WHAL_EINVAL;
+    if (!radioDev->driver || !radioDev->driver->GetRssi)
+        return WHAL_ENOTSUP;
     return radioDev->driver->GetRssi(radioDev, rssi);
 }
 
 whal_Error whal_Ieee802154_Cca(whal_Ieee802154 *radioDev, bool *busy)
 {
-    if (!radioDev || !radioDev->driver || !radioDev->driver->Cca || !busy)
+    if (!radioDev || !busy)
         return WHAL_EINVAL;
+    if (!radioDev->driver || !radioDev->driver->Cca)
+        return WHAL_ENOTSUP;
     return radioDev->driver->Cca(radioDev, busy);
 }
 
 whal_Error whal_Ieee802154_EnergyDetect(whal_Ieee802154 *radioDev,
                                         uint32_t durationUs)
 {
-    if (!radioDev || !radioDev->driver || !radioDev->driver->EnergyDetect)
+    if (!radioDev)
         return WHAL_EINVAL;
+    if (!radioDev->driver || !radioDev->driver->EnergyDetect)
+        return WHAL_ENOTSUP;
     return radioDev->driver->EnergyDetect(radioDev, durationUs);
 }
 
 whal_Error whal_Ieee802154_PendingTableEnable(whal_Ieee802154 *radioDev,
                                               bool enable)
 {
-    if (!radioDev || !radioDev->driver || !radioDev->driver->PendingTableEnable)
+    if (!radioDev)
         return WHAL_EINVAL;
+    if (!radioDev->driver || !radioDev->driver->PendingTableEnable)
+        return WHAL_ENOTSUP;
     return radioDev->driver->PendingTableEnable(radioDev, enable);
 }
 
 whal_Error whal_Ieee802154_PendingTableAddShort(whal_Ieee802154 *radioDev,
                                                 uint16_t addr)
 {
-    if (!radioDev || !radioDev->driver ||
-        !radioDev->driver->PendingTableAddShort)
+    if (!radioDev)
         return WHAL_EINVAL;
+    if (!radioDev->driver || !radioDev->driver->PendingTableAddShort)
+        return WHAL_ENOTSUP;
     return radioDev->driver->PendingTableAddShort(radioDev, addr);
 }
 
 whal_Error whal_Ieee802154_PendingTableAddExtended(whal_Ieee802154 *radioDev,
                                                    const uint8_t *addr)
 {
-    if (!radioDev || !radioDev->driver ||
-        !radioDev->driver->PendingTableAddExtended || !addr)
+    if (!radioDev || !addr)
         return WHAL_EINVAL;
+    if (!radioDev->driver || !radioDev->driver->PendingTableAddExtended)
+        return WHAL_ENOTSUP;
     return radioDev->driver->PendingTableAddExtended(radioDev, addr);
 }
 
 whal_Error whal_Ieee802154_PendingTableRemoveShort(whal_Ieee802154 *radioDev,
                                                    uint16_t addr)
 {
-    if (!radioDev || !radioDev->driver ||
-        !radioDev->driver->PendingTableRemoveShort)
+    if (!radioDev)
         return WHAL_EINVAL;
+    if (!radioDev->driver || !radioDev->driver->PendingTableRemoveShort)
+        return WHAL_ENOTSUP;
     return radioDev->driver->PendingTableRemoveShort(radioDev, addr);
 }
 
 whal_Error whal_Ieee802154_PendingTableRemoveExtended(whal_Ieee802154 *radioDev,
                                                       const uint8_t *addr)
 {
-    if (!radioDev || !radioDev->driver ||
-        !radioDev->driver->PendingTableRemoveExtended || !addr)
+    if (!radioDev || !addr)
         return WHAL_EINVAL;
+    if (!radioDev->driver || !radioDev->driver->PendingTableRemoveExtended)
+        return WHAL_ENOTSUP;
     return radioDev->driver->PendingTableRemoveExtended(radioDev, addr);
 }
 
 whal_Error whal_Ieee802154_PendingTableClear(whal_Ieee802154 *radioDev)
 {
-    if (!radioDev || !radioDev->driver || !radioDev->driver->PendingTableClear)
+    if (!radioDev)
         return WHAL_EINVAL;
+    if (!radioDev->driver || !radioDev->driver->PendingTableClear)
+        return WHAL_ENOTSUP;
     return radioDev->driver->PendingTableClear(radioDev);
 }

@@ -134,10 +134,11 @@ whal_Error whal_Esp32c6_Ieee802154_GetAttr(whal_Ieee802154 *radioDev,
  *
  * @param radioDev Radio device instance.
  * @param frame    MAC header and payload, no FCS.
- * @param len      Frame length.
+ * @param len      Frame length, at most WHAL_IEEE802154_FRAME_MAX.
  * @param txCfg    CSMA-CA and retry settings for this frame.
  *
  * @retval WHAL_SUCCESS   Transmit started.
+ * @retval WHAL_EINVAL    Invalid arguments or frame too long.
  * @retval WHAL_ENOTREADY A transmit or energy detection is in progress.
  * @retval WHAL_ENOTSUP   txCfg values out of range.
  */
@@ -167,15 +168,16 @@ whal_Error whal_Esp32c6_Ieee802154_GetRssi(whal_Ieee802154 *radioDev,
 whal_Error whal_Esp32c6_Ieee802154_Cca(whal_Ieee802154 *radioDev, bool *busy);
 
 /*
- * @brief Start energy detection on the current channel. The peak level is
- * reported by EdConfirm.
+ * @brief Start energy detection on the current channel. The duration is split
+ * into 8-symbol (128 us) averaged measurements, and EdConfirm reports the
+ * highest of them.
  *
  * @param radioDev   Radio device instance.
  * @param durationUs Measurement duration, rounded down to 16 us symbols.
  *
  * @retval WHAL_SUCCESS   Detection started.
  * @retval WHAL_ENOTREADY A transmit or energy detection is in progress.
- * @retval WHAL_ENOTSUP   Duration shorter than one symbol or too long.
+ * @retval WHAL_ENOTSUP   Duration shorter than one symbol.
  */
 whal_Error whal_Esp32c6_Ieee802154_EnergyDetect(whal_Ieee802154 *radioDev,
                                                 uint32_t durationUs);

@@ -54,6 +54,7 @@ extern volatile uint32_t g_tick;
 #define BOARD_UART_DEV  ((whal_Uart *)&whal_Esp32c6_UsbSerialJtag_Dev)
 #define BOARD_TIMER_DEV (&g_whalTimer)
 #define BOARD_RTC_WDT_DEV ((whal_Watchdog *)&whal_Esp32c6_RtcWdt_Dev)
+#define BOARD_WATCHDOG_DEV (&g_whalTimg0Wdt)
 #define BOARD_FLASH_DEV   ((whal_Flash *)&whal_Esp32c6_Flash_Dev)
 #define BOARD_IEEE802154_DEV ((whal_Ieee802154 *)&whal_Esp32c6_Ieee802154_Dev)
 

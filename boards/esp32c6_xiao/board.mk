@@ -22,7 +22,7 @@
 _BOARD_DIR := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
 
 PLATFORM = esp32c6
-TESTS ?= gpio uart flash
+TESTS ?= gpio uart flash timer irq
 
 GCC_PREFIX ?= riscv-none-elf-
 GCC     = $(GCC_PATH)$(GCC_PREFIX)gcc

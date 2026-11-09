@@ -142,12 +142,12 @@ const whal_Ieee802154 whal_Esp32c6_Ieee802154_Dev = WHAL_CFG_ESP32C6_IEEE802154_
 #define ZB_SEC_EN_Msk                   (1UL << 0)
 
 /* 2450 MHz band: channel k is at 2405 + 5(k - 11) MHz; the HOP field counts
- * MHz above 2400. */
+ * MHz above 2402. */
 #define ZB_CHANNEL_MIN                  11
 #define ZB_CHANNEL_MAX                  26
 #define ZB_CHANNEL_TO_HOP(ch)           (((ch) - ZB_CHANNEL_MIN) * 5 + 3)
 
-/* TX power index: 3 (-15 dBm) to 15 (+20 dBm) in 3 dB steps. */
+/* TX power index: 3 (-15 dBm) to 14 (+18 dBm) in 3 dB steps; 15 is +20 dBm. */
 #define ZB_TX_POWER_DBM_MIN             (-15)
 #define ZB_TX_POWER_DBM_MAX             20
 #define ZB_TX_POWER_IDX_MIN             3
@@ -156,6 +156,7 @@ const whal_Ieee802154 whal_Esp32c6_Ieee802154_Dev = WHAL_CFG_ESP32C6_IEEE802154_
 #define ZB_RX_SENSITIVITY_DBM           (-104)
 #define ZB_SYMBOL_US                    16
 #define ZB_CCA_SYMBOLS                  8
+#define ZB_ED_SYMBOLS                   8
 #define ZB_UNIT_BACKOFF_US              (20 * ZB_SYMBOL_US)
 #define ZB_ACK_WAIT_LIMIT_US            200000
 #define ZB_PENDING_TABLE_SZ             16
@@ -230,10 +231,16 @@ typedef struct {
     uint8_t retries;
 } ZbTx;
 
+typedef struct {
+    uint32_t symbolsLeft;
+    int8_t maxRss;
+} ZbEd;
+
 static volatile ZbState s_state;
 static ZbPib s_pib;
 static ZbPendingTable s_pending;
 static ZbTx s_tx;
+static ZbEd s_ed;
 static uint32_t s_rngState;
 
 /* DMA buffers: byte 0 is the PHY header (frame length including FCS). The
@@ -357,6 +364,7 @@ static void Esp32c6_Ieee802154_Stop(size_t base)
 
 static void Esp32c6_Ieee802154_Idle(size_t base)
 {
+    Esp32c6_Ieee802154_ApplyPib(base);
     if (s_pib.rxOnWhenIdle) {
         Esp32c6_Ieee802154_StartRx(base);
     } else {
@@ -378,6 +386,17 @@ static void Esp32c6_Ieee802154_StartTimer(size_t base, size_t thresholdReg,
 {
     whal_Reg_Write(base, thresholdReg, us);
     Esp32c6_Ieee802154_Cmd(base, startCmd);
+}
+
+static void Esp32c6_Ieee802154_EdStep(size_t base)
+{
+    uint32_t symbols = s_ed.symbolsLeft < ZB_ED_SYMBOLS ?
+                       s_ed.symbolsLeft : ZB_ED_SYMBOLS;
+
+    s_ed.symbolsLeft -= symbols;
+    whal_Reg_Update(base, ZB_ED_DURATION_REG, ZB_ED_DURATION_Msk, symbols);
+    Esp32c6_Ieee802154_Cmd(base, ZB_CMD_ED_START);
+    s_state = ZB_STATE_ED;
 }
 
 static void Esp32c6_Ieee802154_TxAttempt(size_t base)
@@ -707,7 +726,6 @@ whal_Error whal_Esp32c6_Ieee802154_SetAttr(whal_Ieee802154 *radioDev,
 
     if (s_state == ZB_STATE_IDLE || s_state == ZB_STATE_RX) {
         Esp32c6_Ieee802154_Stop(base);
-        Esp32c6_Ieee802154_ApplyPib(base);
         Esp32c6_Ieee802154_Idle(base);
     }
 
@@ -782,6 +800,10 @@ whal_Error whal_Esp32c6_Ieee802154_Transmit(whal_Ieee802154 *radioDev,
     size_t i;
     (void)radioDev;
 
+    if (!frame || !txCfg || len == 0 || len > WHAL_IEEE802154_FRAME_MAX) {
+        return WHAL_EINVAL;
+    }
+
     if (txCfg->csmaCa &&
         (txCfg->maxCsmaBackoffs > 5 || txCfg->maxBe < 3 || txCfg->maxBe > 8 ||
          txCfg->minBe > txCfg->maxBe)) {
@@ -845,7 +867,7 @@ whal_Error whal_Esp32c6_Ieee802154_EnergyDetect(whal_Ieee802154 *radioDev,
     size_t irq;
     (void)radioDev;
 
-    if (symbols == 0 || symbols > WHAL_BITMASK(24)) {
+    if (symbols == 0) {
         return WHAL_ENOTSUP;
     }
 
@@ -858,9 +880,9 @@ whal_Error whal_Esp32c6_Ieee802154_EnergyDetect(whal_Ieee802154 *radioDev,
 
     Esp32c6_Ieee802154_Stop(base);
     Esp32c6_Ieee802154_ApplyPib(base);
-    whal_Reg_Update(base, ZB_ED_DURATION_REG, ZB_ED_DURATION_Msk, symbols);
-    Esp32c6_Ieee802154_Cmd(base, ZB_CMD_ED_START);
-    s_state = ZB_STATE_ED;
+    s_ed.symbolsLeft = symbols;
+    s_ed.maxRss = INT8_MIN;
+    Esp32c6_Ieee802154_EdStep(base);
 
     Esp32c6_Ieee802154_IrqRestore(irq);
 
@@ -1127,11 +1149,19 @@ void whal_Esp32c6_Ieee802154_IrqHandler(whal_Ieee802154 *radioDev,
         int8_t rss = (int8_t)whal_GetBits(ZB_ED_RSS_Msk, ZB_ED_RSS_Pos,
                                           whal_Reg_Read(base, ZB_ED_CFG_REG));
 
-        s_state = ZB_STATE_IDLE;
-        if (cb && cb->EdConfirm) {
-            cb->EdConfirm(ctx, rss);
+        if (rss > s_ed.maxRss) {
+            s_ed.maxRss = rss;
         }
-        Esp32c6_Ieee802154_Resume(base);
+
+        if (s_ed.symbolsLeft > 0) {
+            Esp32c6_Ieee802154_EdStep(base);
+        } else {
+            s_state = ZB_STATE_IDLE;
+            if (cb && cb->EdConfirm) {
+                cb->EdConfirm(ctx, s_ed.maxRss);
+            }
+            Esp32c6_Ieee802154_Resume(base);
+        }
     }
 }
 

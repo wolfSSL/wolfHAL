@@ -147,7 +147,10 @@ whal_Error whal_Esp32c6_Gpio_Get(whal_Gpio *gpioDev, size_t pin, size_t *value)
     }
 
     pinCfg = &cfg->pinCfg[pin];
-    whal_Reg_Get(base, pinCfg->outputEnable ? GPIO_OUT_REG : GPIO_IN_REG,
+    whal_Reg_Get(base,
+                 (pinCfg->outputEnable &&
+                  !(pinCfg->ioMuxCfg & IO_MUX_FUN_IE_Msk)) ?
+                     GPIO_OUT_REG : GPIO_IN_REG,
                  1UL << pinCfg->pin, pinCfg->pin, value);
 
     return WHAL_SUCCESS;

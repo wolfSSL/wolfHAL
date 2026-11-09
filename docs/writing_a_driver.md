@@ -1908,7 +1908,9 @@ Return WHAL_ENOTSUP if the radio only performs CCA as part of a transmit.
 ### EnergyDetect
 
 Measure the energy on the current channel for the given duration. EdConfirm
-reports the level in dBm.
+reports the peak level in dBm: the highest of the 8-symbol averaged
+measurements taken over the duration, as IEEE 802.15.4 defines for an energy
+detection scan.
 
 ### PendingTable*
 

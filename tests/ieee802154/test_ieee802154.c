@@ -108,11 +108,21 @@ static void Test_Ieee802154_Api(void)
                    WHAL_EINVAL);
     WHAL_ASSERT_EQ(whal_Ieee802154_GetRssi(BOARD_IEEE802154_DEV, NULL),
                    WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Ieee802154_Cca(BOARD_IEEE802154_DEV, NULL),
+                   WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Ieee802154_PendingTableAddExtended(BOARD_IEEE802154_DEV,
+                                                           NULL), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Ieee802154_PendingTableRemoveExtended(
+                       BOARD_IEEE802154_DEV, NULL), WHAL_EINVAL);
 
     val.bytes[0] = 0;
     WHAL_ASSERT_EQ(whal_Ieee802154_SetAttr(BOARD_IEEE802154_DEV,
                                            WHAL_IEEE802154_ATTR_EUI64, &val),
                    WHAL_EINVAL);
+    val.i8 = 0;
+    WHAL_ASSERT_EQ(whal_Ieee802154_SetAttr(BOARD_IEEE802154_DEV,
+                                           WHAL_IEEE802154_ATTR_RX_SENSITIVITY,
+                                           &val), WHAL_EINVAL);
 }
 
 static void Test_Ieee802154_AttrRoundTrip(void)
@@ -243,6 +253,55 @@ static void Test_Ieee802154_TransmitNoAck(void)
     WHAL_ASSERT_EQ(g_events.txStatus, WHAL_IEEE802154_TX_NO_ACK);
 }
 
+static void Test_Ieee802154_PendingTable(void)
+{
+    static const uint8_t extAddr[WHAL_IEEE802154_EXT_ADDR_SZ] = {
+        0x10, 0x32, 0x54, 0x76, 0x98, 0xBA, 0xDC, 0xFE,
+    };
+    uint32_t caps = 0;
+
+    WHAL_ASSERT_EQ(whal_Ieee802154_GetCaps(BOARD_IEEE802154_DEV, &caps),
+                   WHAL_SUCCESS);
+    if (!(caps & WHAL_IEEE802154_CAP_PENDING_TABLE)) {
+        WHAL_SKIP();
+    }
+
+    WHAL_ASSERT_EQ(whal_Ieee802154_PendingTableEnable(BOARD_IEEE802154_DEV,
+                                                      true), WHAL_SUCCESS);
+
+    WHAL_ASSERT_EQ(whal_Ieee802154_PendingTableAddShort(BOARD_IEEE802154_DEV,
+                                                        TEST_SHORT_ADDR),
+                   WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(whal_Ieee802154_PendingTableAddShort(BOARD_IEEE802154_DEV,
+                                                        TEST_SHORT_ADDR),
+                   WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(whal_Ieee802154_PendingTableRemoveShort(BOARD_IEEE802154_DEV,
+                                                           TEST_SHORT_ADDR),
+                   WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(whal_Ieee802154_PendingTableRemoveShort(BOARD_IEEE802154_DEV,
+                                                           TEST_SHORT_ADDR),
+                   WHAL_SUCCESS);
+
+    WHAL_ASSERT_EQ(whal_Ieee802154_PendingTableAddExtended(BOARD_IEEE802154_DEV,
+                                                           extAddr),
+                   WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(whal_Ieee802154_PendingTableAddExtended(BOARD_IEEE802154_DEV,
+                                                           extAddr),
+                   WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(whal_Ieee802154_PendingTableRemoveExtended(
+                       BOARD_IEEE802154_DEV, extAddr), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(whal_Ieee802154_PendingTableRemoveExtended(
+                       BOARD_IEEE802154_DEV, extAddr), WHAL_SUCCESS);
+
+    WHAL_ASSERT_EQ(whal_Ieee802154_PendingTableAddShort(BOARD_IEEE802154_DEV,
+                                                        TEST_SHORT_ADDR),
+                   WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(whal_Ieee802154_PendingTableClear(BOARD_IEEE802154_DEV),
+                   WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(whal_Ieee802154_PendingTableEnable(BOARD_IEEE802154_DEV,
+                                                      false), WHAL_SUCCESS);
+}
+
 static void Test_Ieee802154_EnergyDetect(void)
 {
     uint32_t caps = 0;
@@ -273,6 +332,7 @@ void whal_Test_Ieee802154(void)
     WHAL_TEST(Test_Ieee802154_Eui64);
     WHAL_TEST(Test_Ieee802154_TransmitBroadcast);
     WHAL_TEST(Test_Ieee802154_TransmitNoAck);
+    WHAL_TEST(Test_Ieee802154_PendingTable);
     WHAL_TEST(Test_Ieee802154_EnergyDetect);
     WHAL_TEST_SUITE_END();
 
