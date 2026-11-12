@@ -24,14 +24,21 @@ WHAL_DIR = $(CURDIR)/../..
 INCLUDE = -I$(WHAL_DIR)
 CFLAGS += -Wall -Werror $(INCLUDE) -g3
 
-TEST_SRC = main.c test_bitops.c test_dispatch.c test_endian.c test_reg.c test_timeout.c
+TEST_SRC = main.c test_bitops.c test_dispatch.c test_endian.c test_reg.c test_timeout.c \
+           ../spimem/test_cadence_ospi_spimem.c \
+           ../flash/test_spimem_nor_flash.c \
+           ../spimem/test_versal2_ospi_dma.c
 
 WHAL_SRC = $(WHAL_DIR)/src/reg.c \
            $(WHAL_DIR)/src/gpio/gpio.c \
            $(WHAL_DIR)/src/uart/uart.c \
            $(WHAL_DIR)/src/flash/flash.c \
+           $(WHAL_DIR)/src/flash/spimem_nor_flash.c \
            $(WHAL_DIR)/src/timer/timer.c \
            $(WHAL_DIR)/src/spi/spi.c \
+           $(WHAL_DIR)/src/spimem/spimem.c \
+           $(WHAL_DIR)/src/spimem/cadence_ospi_spimem.c \
+           $(WHAL_DIR)/src/spimem/versal2_ospi_dma.c \
            $(WHAL_DIR)/src/rng/rng.c \
            $(WHAL_DIR)/src/block/block.c \
            $(WHAL_DIR)/src/pwm/pwm.c \

@@ -752,6 +752,58 @@ After the loop, wait for the bus to go idle before returning.
 
 ---
 
+## SPI Memory
+
+Header: `wolfHAL/spimem/spimem.h`
+
+The SPI memory driver is for flash controllers that send one complete
+command at a time: opcode, address, dummy cycles and data, with chip select
+driven by the controller (for example the Cadence OSPI STIG engine). These
+controllers cannot act as a byte-stream SPI bus, so they do not use the SPI
+API above. Memory drivers such as `spimem_nor_flash` build on this API and
+implement `whal_Flash` for the application.
+
+Each operation carries its bus mode, as Linux spi-mem does: the lines for
+the opcode, the address and the data, and DTR. A memory driver can then
+mix modes, for example a 1-bit read and an octal DTR reset.
+
+### Init
+
+Configure and enable the controller from its configuration struct (clock,
+chip select, read capture), so it does not depend on what an earlier boot
+stage left. Do not set a bus mode here; Exec sets it for each operation.
+
+### Deinit
+
+Disable the controller.
+
+### Exec
+
+Run one `whal_SpiMemOp`:
+
+- `opcode` — the command byte
+- `opLines` / `addrLines` / `dataLines` — 1, 2, 4 or 8 lines for each phase
+  (`WHAL_SPIMEM_OP_INIT_1BIT` sets all three to 1)
+- `dtr` — 1 for DTR (data on both clock edges)
+- `addrBytes` / `addr` — 0, 3 or 4 address bytes
+- `dummyCycles` — clock cycles between the address and the data
+- `dir` / `data` / `dataSz` — no data, data in (read) or data out (write)
+
+Wait until the controller is done before returning. A read with an address
+may be split into several commands at increasing addresses, so a memory
+driver can read any length in one call. Every other operation must run as
+one command: return `WHAL_EINVAL` if it does not fit. Return `WHAL_EINVAL` for
+a line count that is not 1, 2, 4 or 8, and `WHAL_ENOTSUP` for a bus mode
+the controller cannot run.
+
+### MaxDataSz
+
+Report the largest `dataSz` the controller can run in one command for an
+operation like the given one. Memory drivers use it to split writes, for
+example a page program into several smaller programs.
+
+---
+
 ## I2C
 
 Header: `wolfHAL/i2c/i2c.h`
