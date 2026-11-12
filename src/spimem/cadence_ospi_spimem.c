@@ -102,6 +102,7 @@
 
 /* DEV_SIZE_CONFIG - address bytes, page, block and flash size */
 #define OSPI_DEV_SIZE_CONFIG_REG 0x14
+#define OSPI_DEV_SIZE_ADDR_BYTES_Msk 0xFUL
 
 /* SRAM_PARTITION_CFG - SRAM split between indirect read and write */
 #define OSPI_SRAM_PARTITION_CFG_REG 0x18
@@ -481,8 +482,8 @@ cleanup:
     return err;
 }
 
-/* DMA reads the aligned middle (with a hook, no dummy, no DTR), STIG the
- * rest. A DMA error fails the read; no silent STIG fallback. */
+/* DMA reads the aligned middle (with a hook, no dummy, no DTR, devSize
+ * address size), STIG the rest. A DMA error fails the read. */
 static whal_Error whal_CadenceOspi_SpiMem_Read(
     uintptr_t base, const whal_CadenceOspi_SpiMem_Cfg *cfg,
     const whal_SpiMemOp *op)
@@ -495,7 +496,11 @@ static whal_Error whal_CadenceOspi_SpiMem_Read(
     size_t tail;
     whal_Error err;
 
-    if (cfg->dma && op->dummyCycles == 0 && !op->dtr) {
+    /* The indirect read sends the DEV_SIZE_CONFIG address size (AM028
+     * dev_size_config_reg num_addr_bytes_fld, 0 = 1 byte). */
+    if (cfg->dma && op->dummyCycles == 0 && !op->dtr &&
+        op->addrBytes ==
+            (cfg->devSize & OSPI_DEV_SIZE_ADDR_BYTES_Msk) + 1) {
         if (!cfg->dma->Arm || !cfg->dma->Wait) {
             return WHAL_EINVAL;
         }

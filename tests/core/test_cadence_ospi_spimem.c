@@ -230,6 +230,9 @@ static uint32_t g_armRdConfig;   /* DEV_INSTR_RD_CONFIG when Arm runs */
 static whal_Error g_armRet;
 static whal_Error g_waitRet;
 static int g_dmaCtx;
+/* Address bytes the indirect read sends: DEV_SIZE_CONFIG[3:0] + 1 when
+ * Wait runs (AM028 dev_size_config_reg num_addr_bytes_fld). */
+static uint32_t g_waitAddrBytes;
 
 static whal_Error FakeArm(void *ctx, void *buf, size_t len)
 {
@@ -258,6 +261,7 @@ static whal_Error FakeWait(void *ctx, void *buf, size_t len)
     g_waitBuf = buf;
     g_waitLen = len;
     g_waitIndCtrl = REG(T_IND_RD_CTRL);
+    g_waitAddrBytes = (REG(T_DEV_SIZE) & 0xF) + 1;
     if (g_waitRet != WHAL_SUCCESS) {
         return g_waitRet;
     }
@@ -315,6 +319,7 @@ static void Setup(void)
     g_armIndCtrl = 0xFFFFFFFF;
     g_waitIndCtrl = 0xFFFFFFFF;
     g_armRdConfig = 0;
+    g_waitAddrBytes = 0;
     g_armRet = WHAL_SUCCESS;
     g_waitRet = WHAL_SUCCESS;
 
@@ -612,6 +617,39 @@ static void Test_CadenceOspi_ReadDmaHeadTail(void)
     for (i = 0; i < 300; i++) {
         WHAL_ASSERT_EQ(buf[i], Pat(0x2000 + (uint32_t)i));
     }
+}
+
+/* The op's address size differs from DEV_SIZE_CONFIG (set by Init). A DMA
+ * read must send the op's address size; STIG for all of it is also fine. */
+static void ReadDmaAddrBytes(uint32_t devSize, uint8_t addrBytes)
+{
+    whal_SpiMem dev = DEV_INIT;
+    int i;
+
+    Setup();
+    g_cfg.dma = &g_dma;
+    g_cfg.devSize = devSize;
+    REG(T_DEV_SIZE) = devSize;
+    WHAL_ASSERT_EQ(Run(&dev, 0x03, addrBytes, 0, WHAL_SPIMEM_DIR_IN, 0x4000,
+                       g_buf, 256), WHAL_SUCCESS);
+    if (g_waitCalls > 0) {
+        WHAL_ASSERT_EQ(g_waitAddrBytes, addrBytes);
+    }
+    else {
+        WHAL_ASSERT_EQ(g_ncmd, 256 / 8);
+        WHAL_ASSERT_EQ(Field(g_ctrl[0], T_ADDR_BYTES_Pos, 3), addrBytes - 1);
+    }
+    for (i = 0; i < 256; i++) {
+        WHAL_ASSERT_EQ(g_buf[i], Pat(0x4000 + (uint32_t)i));
+    }
+}
+
+/* 3-byte op on the 4-byte VEK385 setup, and 4-byte op on a 3-byte setup. */
+static void Test_CadenceOspi_ReadDmaAddrBytes(void)
+{
+    NEED_EMU();
+    ReadDmaAddrBytes(WHAL_VERSAL2_OSPI_DEV_SIZE_VEK385, 3);
+    ReadDmaAddrBytes((WHAL_VERSAL2_OSPI_DEV_SIZE_VEK385 & ~0xFUL) | 2UL, 4);
 }
 
 /* Too short for one aligned DMA block: STIG only. */
@@ -1003,6 +1041,7 @@ void whal_Test_CadenceOspi_SpiMem(void)
     WHAL_TEST(Test_CadenceOspi_ReadUnalignedAddrUsesStig);
     WHAL_TEST(Test_CadenceOspi_ReadDmaWhole);
     WHAL_TEST(Test_CadenceOspi_ReadDmaHeadTail);
+    WHAL_TEST(Test_CadenceOspi_ReadDmaAddrBytes);
     WHAL_TEST(Test_CadenceOspi_ReadDmaTooShort);
     WHAL_TEST(Test_CadenceOspi_ReadDmaWaitFails);
     WHAL_TEST(Test_CadenceOspi_ReadDmaArmFails);

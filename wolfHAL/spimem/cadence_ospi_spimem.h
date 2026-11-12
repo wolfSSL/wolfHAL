@@ -107,7 +107,8 @@ whal_Error whal_CadenceOspi_SpiMem_Deinit(whal_SpiMem *spiMemDev);
  * @brief Run one SPI memory operation.
  *
  * Address reads go as 8-byte STIG commands, or DMA for the aligned middle
- * (dma set, no dummy, no DTR). A DTR read must be an even length.
+ * (dma set, no dummy, no DTR, addrBytes matches devSize). A DTR read must
+ * be an even length.
  *
  * @param spiMemDev Device instance.
  * @param op        Operation to run.
