@@ -68,7 +68,11 @@ use `g_peripheralSensor[]`).
 ## Core Tests
 
 Host-side unit tests (bitops, dispatch, endian, reg, timeout) live in `core/`
-and build with the native compiler:
+and build with the native compiler. Driver tests against an emulated
+register block or a fake flash live with their type
+(`spimem/test_cadence_ospi_spimem.c`, `spimem/test_versal2_ospi_dma.c`,
+`flash/test_spimem_nor_flash.c`) and are built into the same `core/`
+binary:
 
 ```
 cd core && make && make run

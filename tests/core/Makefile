@@ -25,8 +25,9 @@ INCLUDE = -I$(WHAL_DIR)
 CFLAGS += -Wall -Werror $(INCLUDE) -g3
 
 TEST_SRC = main.c test_bitops.c test_dispatch.c test_endian.c test_reg.c test_timeout.c \
-           test_cadence_ospi_spimem.c test_spimem_nor_flash.c \
-           test_versal2_ospi_dma.c
+           ../spimem/test_cadence_ospi_spimem.c \
+           ../flash/test_spimem_nor_flash.c \
+           ../spimem/test_versal2_ospi_dma.c
 
 WHAL_SRC = $(WHAL_DIR)/src/reg.c \
            $(WHAL_DIR)/src/gpio/gpio.c \
