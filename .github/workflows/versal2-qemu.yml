@@ -1,0 +1,50 @@
+name: Versal Gen 2 QEMU Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  QEMU_VERSION: 11.1.3
+
+jobs:
+  qemu:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        extra_cflags: ["", "-DWHAL_CFG_NO_TIMEOUT", "-DWHAL_CFG_64BIT_TICK"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu ninja-build \
+            libglib2.0-dev libpixman-1-dev python3-venv flex bison
+
+      # The amd-versal2-virt machine needs QEMU 10.1 or later.
+      - name: Cache QEMU
+        id: cache-qemu
+        uses: actions/cache@v4
+        with:
+          path: ~/qemu
+          key: qemu-${{ env.QEMU_VERSION }}-aarch64-${{ runner.os }}
+
+      - name: Build QEMU
+        if: steps.cache-qemu.outputs.cache-hit != 'true'
+        run: |
+          wget -q https://download.qemu.org/qemu-${QEMU_VERSION}.tar.xz
+          tar xf qemu-${QEMU_VERSION}.tar.xz
+          cd qemu-${QEMU_VERSION}
+          ./configure --prefix=$HOME/qemu --target-list=aarch64-softmmu \
+            --disable-docs --disable-tools --disable-werror
+          make -j$(nproc) install
+
+      - name: Build and run the VEK385 tests on QEMU
+        working-directory: tests
+        run: |
+          CFLAGS="${{ matrix.extra_cflags }}" make BOARD=versal2_vek385
+          CFLAGS="${{ matrix.extra_cflags }}" make BOARD=versal2_vek385 qemu \
+            QEMU=$HOME/qemu/bin/qemu-system-aarch64
