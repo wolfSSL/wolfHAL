@@ -73,3 +73,15 @@ and build with the native compiler:
 ```
 cd core && make && make run
 ```
+
+## QEMU Tests
+
+The `versal2_vek385` board runs the hardware tests on QEMU 10.1 or later
+(`amd-versal2-virt` machine). Results print on UART1. Its `TESTS` include
+`pl011_uart` (`uart/test_pl011_uart.c`, the PL011 driver against an
+emulated register block); the PL011 platform tests use UART0 in loopback:
+
+```
+make BOARD=versal2_vek385
+make BOARD=versal2_vek385 qemu QEMU=/path/to/qemu-system-aarch64
+```

@@ -26,6 +26,7 @@ build configuration.
 | ST NUCLEO-N657X0-Q | STM32N6 | Cortex-M55 | `stm32n657a0_nucleo/` |
 | ST NUCLEO-U5A5ZJ-Q | STM32U5 | Cortex-M33 | `stm32u5a5zj_nucleo/` |
 | ST NUCLEO-WBA55CG | STM32WBA | Cortex-M33 | `stm32wba55cg_nucleo/` |
+| AMD VEK385 (also QEMU `amd-versal2-virt`) | Versal Gen 2 | Cortex-A78 | `versal2_vek385/` |
 
 ## Board Directory Contents
 
