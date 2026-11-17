@@ -731,6 +731,14 @@ whal_Error whal_CadenceOspi_SpiMem_Exec(whal_SpiMem *spiMemDev,
     if (op->dtr && op->dir == WHAL_SPIMEM_DIR_IN && (op->dataSz & 1)) {
         return WHAL_EINVAL;
     }
+    /* A read's byte count and last address must fit 32 bits (AM028
+     * indirect_read_xfer_num_bytes_reg; op->addr is 32 bits). */
+    if (op->dir == WHAL_SPIMEM_DIR_IN && op->addrBytes > 0 &&
+        op->dataSz > 0 &&
+        (op->dataSz > UINT32_MAX ||
+         op->dataSz - 1 > UINT32_MAX - op->addr)) {
+        return WHAL_EINVAL;
+    }
 
     err = whal_CadenceOspi_SpiMem_SetBusMode(base, cfg->timeout, op);
     if (err) {
@@ -764,10 +772,10 @@ whal_Error whal_CadenceOspi_SpiMem_MaxDataSz(whal_SpiMem *spiMemDev,
         return WHAL_EINVAL;
     }
 
-    /* A read with an address is split into commands, so it has no
-     * limit. */
+    /* A read with an address is split into commands, so only its 32-bit
+     * byte count limits it (AM028 indirect_read_xfer_num_bytes_reg). */
     if (op->dir == WHAL_SPIMEM_DIR_IN && op->addrBytes > 0) {
-        *maxSz = SIZE_MAX;
+        *maxSz = UINT32_MAX;
     }
     else {
         *maxSz = OSPI_STIG_MAX_DATA_BYTES;

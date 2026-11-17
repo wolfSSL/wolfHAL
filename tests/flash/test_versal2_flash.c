@@ -281,6 +281,16 @@ static void Test_Versal2Flash_InitBadCfg(void)
     cfg = g_dmaFlashCfg;
     cfg.addrBytes = 2;
     WHAL_ASSERT_EQ(whal_Flash_Init(&dev), WHAL_EINVAL);
+    /* The capacity must fit the address bytes: 16 MB for 3, 4 GB for 4 */
+    cfg = g_dmaFlashCfg;
+    cfg.addrBytes = 3;
+    cfg.capacity = 0x1000001;
+    WHAL_ASSERT_EQ(whal_Flash_Init(&dev), WHAL_EINVAL);
+    cfg.capacity = 0x1000000;
+    WHAL_ASSERT_EQ(whal_Flash_Init(&dev), WHAL_SUCCESS);
+    cfg = g_dmaFlashCfg;
+    cfg.capacity = 0x100000001ULL;
+    WHAL_ASSERT_EQ(whal_Flash_Init(&dev), WHAL_EINVAL);
     cfg = g_dmaFlashCfg;
     cfg.rstRegAddrBytes = 2;
     WHAL_ASSERT_EQ(whal_Flash_Init(&dev), WHAL_EINVAL);

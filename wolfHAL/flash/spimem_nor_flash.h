@@ -56,7 +56,7 @@
  */
 typedef struct whal_SpiMemNor_Flash_Cfg {
     whal_SpiMem *spiMemDev;  /* SPI memory controller */
-    size_t capacity;         /* flash size in bytes */
+    size_t capacity;         /* flash size in bytes, within addrBytes */
     size_t pageSz;           /* program page in bytes, a power of two */
     size_t eraseSz;          /* erase block in bytes, a power of two */
     uint8_t addrBytes;       /* 3 or 4, for read, program, erase */

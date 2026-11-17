@@ -207,7 +207,7 @@ static void Test_Versal2SpiMem_WriteEnable(void)
     WHAL_ASSERT_EQ(sr & 0x03, 0);
 }
 
-/* STIG carries 8 data bytes; a read with an address has no limit. */
+/* STIG carries 8 data bytes; a read with an address has a 32-bit count. */
 static void Test_Versal2SpiMem_MaxDataSz(void)
 {
     whal_SpiMemOp op = WHAL_SPIMEM_OP_INIT_1BIT;
@@ -223,7 +223,7 @@ static void Test_Versal2SpiMem_MaxDataSz(void)
     op.dir = WHAL_SPIMEM_DIR_IN;
     WHAL_ASSERT_EQ(whal_SpiMem_MaxDataSz(&g_whalOspi, &op, &max),
                    WHAL_SUCCESS);
-    WHAL_ASSERT_EQ(max, SIZE_MAX);
+    WHAL_ASSERT_EQ(max == UINT32_MAX, 1);
     WHAL_ASSERT_EQ(whal_SpiMem_MaxDataSz(&g_whalOspi, &op, NULL),
                    WHAL_EINVAL);
 }
@@ -264,6 +264,16 @@ static void Test_Versal2SpiMem_BadOps(void)
     op = good;
     op.dtr = 1;
     op.dataSz = 1;
+    WHAL_ASSERT_EQ(whal_SpiMem_Exec(&g_whalOspi, &op), WHAL_EINVAL);
+    /* A read may not run past address FFFFFFFFh or count over 32 bits */
+    op = good;
+    op.opcode = BOARD_FLASH_READ4;
+    op.addrBytes = 4;
+    op.addr = 0xFFFFFFFF;
+    op.dataSz = 2;
+    WHAL_ASSERT_EQ(whal_SpiMem_Exec(&g_whalOspi, &op), WHAL_EINVAL);
+    op.addr = 0;
+    op.dataSz = 0x100000000ULL;
     WHAL_ASSERT_EQ(whal_SpiMem_Exec(&g_whalOspi, &op), WHAL_EINVAL);
     /* AM028: dual-byte opcode mode is octal only */
     op = good;

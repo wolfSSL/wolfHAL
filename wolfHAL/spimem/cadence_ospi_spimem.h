@@ -119,7 +119,8 @@ whal_Error whal_CadenceOspi_SpiMem_Deinit(whal_SpiMem *spiMemDev);
  * @retval WHAL_EINVAL    Invalid arguments, a line count that is not 1, 2,
  *                        4 or 8, opBytes not 1 or 2, more than 4 address
  *                        bytes, more than 31 dummy cycles, too much data,
- *                        or an odd DTR read.
+ *                        an odd DTR read, or a read past address
+ *                        FFFFFFFFh.
  * @retval WHAL_ENOTSUP   A 2-byte opcode on fewer than 8 lines (AM028:
  *                        dual-byte opcode mode is octal only).
  * @retval WHAL_ETIMEOUT  The controller did not finish in time.
@@ -132,7 +133,8 @@ whal_Error whal_CadenceOspi_SpiMem_Exec(whal_SpiMem *spiMemDev,
  * @brief Get the largest data size for one operation like op.
  *
  * 8 bytes (one STIG command) for every operation except a read with an
- * address, which has no limit (SIZE_MAX).
+ * address, which is limited by its 32-bit byte count (UINT32_MAX). A DMA
+ * may allow less: Exec then returns the DMA's error.
  *
  * @param spiMemDev Device instance.
  * @param op        Operation.

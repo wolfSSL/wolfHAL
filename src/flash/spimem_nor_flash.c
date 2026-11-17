@@ -299,6 +299,7 @@ whal_Error whal_SpiMemNor_Flash_Init(whal_Flash *flashDev)
 {
     whal_SpiMemNor_Flash_Cfg *cfg;
     uint8_t id[READ_ID_SZ] = {0};
+    uint64_t lastAddr;
     whal_Error err;
 
     err = SpiMemNor_GetCfg(flashDev, &cfg);
@@ -318,6 +319,12 @@ whal_Error whal_SpiMemNor_Flash_Init(whal_Flash *flashDev)
         return WHAL_EINVAL;
     }
     if (cfg->addrBytes != 3 && cfg->addrBytes != 4) {
+        return WHAL_EINVAL;
+    }
+    /* The last address must fit in addrBytes, or commands for high
+     * addresses would go to low ones. */
+    lastAddr = cfg->capacity - 1;
+    if ((lastAddr >> (8 * cfg->addrBytes)) != 0) {
         return WHAL_EINVAL;
     }
     if (cfg->rstRegAddrBytes != 0 && cfg->rstRegAddrBytes != 3 &&

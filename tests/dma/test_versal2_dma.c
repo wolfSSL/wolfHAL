@@ -76,6 +76,15 @@ static void Test_Versal2Dma_Init(void)
 static void Test_Versal2Dma_Configure(void)
 {
     whal_DmaMemXfer x = { g_buf, sizeof(g_buf) };
+    whal_DmaMemXfer max = { g_buf, WHAL_VERSAL2_OSPI_DMA_MAX_LEN };
+    void (*clean)(void *buf, size_t len) = g_cfg.CacheCleanInval;
+    whal_Error err;
+
+    /* The largest length is taken (set up only, so no 512 MB flush) */
+    g_cfg.CacheCleanInval = NULL;
+    err = whal_Dma_Configure(&g_dma, WHAL_VERSAL2_OSPI_DMA_CH, &max);
+    g_cfg.CacheCleanInval = clean;
+    WHAL_ASSERT_EQ(err, WHAL_SUCCESS);
 
     WHAL_ASSERT_EQ(whal_Dma_Configure(&g_dma, WHAL_VERSAL2_OSPI_DMA_CH, &x),
                    WHAL_SUCCESS);
@@ -92,6 +101,7 @@ static void Test_Versal2Dma_BadArgs(void)
     whal_DmaMemXfer noLen = { g_buf, 0 };
     whal_DmaMemXfer oddBuf = { &g_buf[1], 4 };
     whal_DmaMemXfer oddLen = { g_buf, 6 };
+    whal_DmaMemXfer bigLen = { g_buf, WHAL_VERSAL2_OSPI_DMA_MAX_LEN + 4 };
     size_t ch = WHAL_VERSAL2_OSPI_DMA_CH;
 
     WHAL_ASSERT_EQ(whal_Dma_Configure(&g_dma, ch, NULL), WHAL_EINVAL);
@@ -99,6 +109,8 @@ static void Test_Versal2Dma_BadArgs(void)
     WHAL_ASSERT_EQ(whal_Dma_Configure(&g_dma, ch, &noLen), WHAL_EINVAL);
     WHAL_ASSERT_EQ(whal_Dma_Configure(&g_dma, ch, &oddBuf), WHAL_EINVAL);
     WHAL_ASSERT_EQ(whal_Dma_Configure(&g_dma, ch, &oddLen), WHAL_EINVAL);
+    /* More than the DST_SIZE field holds (AM028: SIZE is bits 28:2) */
+    WHAL_ASSERT_EQ(whal_Dma_Configure(&g_dma, ch, &bigLen), WHAL_EINVAL);
     WHAL_ASSERT_EQ(whal_Dma_Configure(&g_dma, ch + 1, &x), WHAL_EINVAL);
     WHAL_ASSERT_EQ(whal_Dma_Start(&g_dma, ch + 1), WHAL_EINVAL);
     WHAL_ASSERT_EQ(whal_Dma_Stop(&g_dma, ch + 1), WHAL_EINVAL);

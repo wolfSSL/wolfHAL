@@ -49,6 +49,10 @@
 /* The only channel. */
 #define WHAL_VERSAL2_OSPI_DMA_CH 0
 
+/* Largest transfer in bytes: the SIZE field is bits 28:2, and bits 31:29
+ * ignore writes (AM028 OSPIDMA_DST_SIZE). */
+#define WHAL_VERSAL2_OSPI_DMA_MAX_LEN 0x1FFFFFFCUL
+
 /*
  * @brief OSPI DMA configuration (the whal_Dma cfg).
  */
@@ -96,12 +100,12 @@ whal_Error whal_Versal2_OspiDma_Deinit(whal_Dma *dmaDev);
  *
  * @param dmaDev DMA instance.
  * @param ch     WHAL_VERSAL2_OSPI_DMA_CH.
- * @param chCfg  A whal_DmaMemXfer: buf 4-byte aligned, len
- *               not 0 and a multiple of 4.
+ * @param chCfg  A whal_DmaMemXfer: buf 4-byte aligned, len not 0, a
+ *               multiple of 4, at most WHAL_VERSAL2_OSPI_DMA_MAX_LEN.
  *
  * @retval WHAL_SUCCESS Configured.
- * @retval WHAL_EINVAL  Null pointer, bad channel, NULL buf, len 0, or buf
- *                      or len not 4-byte aligned.
+ * @retval WHAL_EINVAL  Null pointer, bad channel, NULL buf, len 0, buf or
+ *                      len not 4-byte aligned, or len too large.
  * @retval WHAL_ENOTREADY The channel is still busy (AM028 DST_STS BUSY).
  */
 whal_Error whal_Versal2_OspiDma_Configure(whal_Dma *dmaDev, size_t ch,

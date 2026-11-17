@@ -142,6 +142,10 @@ whal_Error whal_Versal2_OspiDma_Configure(whal_Dma *dmaDev, size_t ch,
         (x->len & DMA_WORD_ALIGN_Msk) != 0) {
         return WHAL_EINVAL;
     }
+    /* A longer length would be cut to the SIZE field (AM028 DST_SIZE). */
+    if (x->len > WHAL_VERSAL2_OSPI_DMA_MAX_LEN) {
+        return WHAL_EINVAL;
+    }
     /* A busy channel can't take a new command (AM028 DST_STS BUSY). */
     if (whal_Reg32_Read(dmaDev->base, DMA_DST_STS_REG) &
         DMA_DST_STS_BUSY_Msk) {
