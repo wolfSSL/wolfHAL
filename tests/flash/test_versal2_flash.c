@@ -301,6 +301,13 @@ static void Test_Versal2Flash_InitBadCfg(void)
     cfg = g_dmaFlashCfg;
     cfg.eraseSz = 0;
     WHAL_ASSERT_EQ(whal_Flash_Init(&dev), WHAL_EINVAL);
+    /* 1 is a power of two, but not a page or block size */
+    cfg = g_dmaFlashCfg;
+    cfg.pageSz = 1;
+    WHAL_ASSERT_EQ(whal_Flash_Init(&dev), WHAL_EINVAL);
+    cfg = g_dmaFlashCfg;
+    cfg.eraseSz = 1;
+    WHAL_ASSERT_EQ(whal_Flash_Init(&dev), WHAL_EINVAL);
     cfg = g_dmaFlashCfg;
     cfg.capacity = 0;
     WHAL_ASSERT_EQ(whal_Flash_Init(&dev), WHAL_EINVAL);
@@ -390,8 +397,6 @@ static void Test_Versal2Flash_LockUnlock(void)
                    WHAL_ENOTSUP);
     WHAL_ASSERT_EQ(whal_Flash_Unlock(&g_dmaFlash, TEST_ADDR, TEST_LEN),
                    WHAL_ENOTSUP);
-    WHAL_ASSERT_EQ(whal_SpiMemNor_Flash_Lock(NULL, 0, 0), WHAL_EINVAL);
-    WHAL_ASSERT_EQ(whal_SpiMemNor_Flash_Unlock(NULL, 0, 0), WHAL_EINVAL);
     WHAL_ASSERT_EQ(whal_Flash_Deinit(&g_dmaFlash), WHAL_SUCCESS);
 }
 

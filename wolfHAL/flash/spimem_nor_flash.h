@@ -57,8 +57,8 @@
 typedef struct whal_SpiMemNor_Flash_Cfg {
     whal_SpiMem *spiMemDev;  /* SPI memory controller */
     size_t capacity;         /* flash size in bytes, within addrBytes */
-    size_t pageSz;           /* program page in bytes, a power of two */
-    size_t eraseSz;          /* erase block in bytes, a power of two */
+    size_t pageSz;           /* program page in bytes, a power of two > 1 */
+    size_t eraseSz;          /* erase block in bytes, a power of two > 1 */
     uint8_t addrBytes;       /* 3 or 4, for read, program, erase */
     uint8_t readOp;          /* read opcode */
     uint8_t readDummy;       /* dummy cycles of the read opcode */
@@ -123,12 +123,11 @@ extern const whal_FlashDriver whal_SpiMemNor_Flash_Driver;
 whal_Error whal_SpiMemNor_Flash_Init(whal_Flash *flashDev);
 
 /*
- * @brief Deinitialize the driver. Sends no commands.
+ * @brief Deinitialize the driver. Nothing to undo; sends no commands.
  *
- * @param flashDev Flash device instance.
+ * @param flashDev Flash device instance (not used).
  *
- * @retval WHAL_SUCCESS Deinit completed.
- * @retval WHAL_EINVAL  Null pointer.
+ * @retval WHAL_SUCCESS Always.
  */
 whal_Error whal_SpiMemNor_Flash_Deinit(whal_Flash *flashDev);
 
@@ -138,12 +137,11 @@ whal_Error whal_SpiMemNor_Flash_Deinit(whal_Flash *flashDev);
  * No protect commands are sent: the flash stays writable. The caller
  * guards the regions it must not change.
  *
- * @param flashDev Flash device instance.
+ * @param flashDev Ignored.
  * @param addr     Ignored.
  * @param len      Ignored.
  *
- * @retval WHAL_ENOTSUP Always, for a valid device.
- * @retval WHAL_EINVAL  Null pointer.
+ * @retval WHAL_ENOTSUP Always.
  */
 whal_Error whal_SpiMemNor_Flash_Lock(whal_Flash *flashDev, size_t addr,
                                      size_t len);
@@ -153,12 +151,11 @@ whal_Error whal_SpiMemNor_Flash_Lock(whal_Flash *flashDev, size_t addr,
  *
  * No protect commands are sent, so the block protect bits are not changed.
  *
- * @param flashDev Flash device instance.
+ * @param flashDev Ignored.
  * @param addr     Ignored.
  * @param len      Ignored.
  *
- * @retval WHAL_ENOTSUP Always, for a valid device.
- * @retval WHAL_EINVAL  Null pointer.
+ * @retval WHAL_ENOTSUP Always.
  */
 whal_Error whal_SpiMemNor_Flash_Unlock(whal_Flash *flashDev, size_t addr,
                                        size_t len);

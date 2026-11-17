@@ -57,8 +57,8 @@ const whal_Flash whal_SpiMemNor_Flash_Dev = WHAL_CFG_SPIMEM_NOR_FLASH_DEV;
 #endif
 
 /* Get the configuration of a device */
-static whal_Error SpiMemNor_GetCfg(whal_Flash *flashDev,
-                                   whal_SpiMemNor_Flash_Cfg **cfg)
+static inline whal_Error SpiMemNor_GetCfg(whal_Flash *flashDev,
+                                          whal_SpiMemNor_Flash_Cfg **cfg)
 {
 #ifdef WHAL_CFG_SPIMEM_NOR_FLASH_SINGLE_INSTANCE
     (void)flashDev;
@@ -73,8 +73,8 @@ static whal_Error SpiMemNor_GetCfg(whal_Flash *flashDev,
 }
 
 /* Check that addr..addr+size is inside the flash */
-static whal_Error SpiMemNor_CheckRange(whal_SpiMemNor_Flash_Cfg *cfg,
-                                       size_t addr, size_t size)
+static inline whal_Error SpiMemNor_CheckRange(whal_SpiMemNor_Flash_Cfg *cfg,
+                                              size_t addr, size_t size)
 {
     if (addr > cfg->capacity || size > cfg->capacity - addr) {
         return WHAL_EINVAL;
@@ -83,7 +83,8 @@ static whal_Error SpiMemNor_CheckRange(whal_SpiMemNor_Flash_Cfg *cfg,
 }
 
 /* Send a command with no address and no data */
-static whal_Error SpiMemNor_Cmd(whal_SpiMemNor_Flash_Cfg *cfg, uint8_t opcode)
+static inline whal_Error SpiMemNor_Cmd(whal_SpiMemNor_Flash_Cfg *cfg,
+                                       uint8_t opcode)
 {
     whal_SpiMemOp op = WHAL_SPIMEM_OP_INIT_1BIT;
 
@@ -93,8 +94,8 @@ static whal_Error SpiMemNor_Cmd(whal_SpiMemNor_Flash_Cfg *cfg, uint8_t opcode)
 }
 
 /* Read a one byte register (status or error) */
-static whal_Error SpiMemNor_ReadReg(whal_SpiMemNor_Flash_Cfg *cfg,
-                                    uint8_t opcode, uint8_t *val)
+static inline whal_Error SpiMemNor_ReadReg(whal_SpiMemNor_Flash_Cfg *cfg,
+                                           uint8_t opcode, uint8_t *val)
 {
     whal_SpiMemOp op = WHAL_SPIMEM_OP_INIT_1BIT;
 
@@ -307,15 +308,15 @@ whal_Error whal_SpiMemNor_Flash_Init(whal_Flash *flashDev)
         return err;
     }
 
-    /* Writes and erases split with masks, so the sizes must be powers of
-     * two. spiMemDev may be WHAL_INTERNAL_DEV (NULL), so it is not checked. */
+    /* Writes and erases split with masks: sizes are powers of two, 2 or
+     * more. spiMemDev may be WHAL_INTERNAL_DEV (NULL), so it is not checked. */
     if (cfg->capacity == 0) {
         return WHAL_EINVAL;
     }
-    if (cfg->pageSz == 0 || (cfg->pageSz & (cfg->pageSz - 1)) != 0) {
+    if (cfg->pageSz < 2 || (cfg->pageSz & (cfg->pageSz - 1)) != 0) {
         return WHAL_EINVAL;
     }
-    if (cfg->eraseSz == 0 || (cfg->eraseSz & (cfg->eraseSz - 1)) != 0) {
+    if (cfg->eraseSz < 2 || (cfg->eraseSz & (cfg->eraseSz - 1)) != 0) {
         return WHAL_EINVAL;
     }
     if (cfg->addrBytes != 3 && cfg->addrBytes != 4) {
@@ -378,24 +379,19 @@ whal_Error whal_SpiMemNor_Flash_ReadId(whal_Flash *flashDev, uint8_t id[3])
 
 whal_Error whal_SpiMemNor_Flash_Deinit(whal_Flash *flashDev)
 {
-    whal_SpiMemNor_Flash_Cfg *cfg;
+    (void)flashDev;
 
-    return SpiMemNor_GetCfg(flashDev, &cfg);
+    /* Nothing to undo: the driver keeps no state */
+    return WHAL_SUCCESS;
 }
 
 whal_Error whal_SpiMemNor_Flash_Lock(whal_Flash *flashDev, size_t addr,
                                      size_t len)
 {
-    whal_SpiMemNor_Flash_Cfg *cfg;
-    whal_Error err;
-
+    (void)flashDev;
     (void)addr;
     (void)len;
 
-    err = SpiMemNor_GetCfg(flashDev, &cfg);
-    if (err) {
-        return err;
-    }
     /* No protect commands are sent: the caller guards the flash */
     return WHAL_ENOTSUP;
 }
@@ -403,16 +399,10 @@ whal_Error whal_SpiMemNor_Flash_Lock(whal_Flash *flashDev, size_t addr,
 whal_Error whal_SpiMemNor_Flash_Unlock(whal_Flash *flashDev, size_t addr,
                                        size_t len)
 {
-    whal_SpiMemNor_Flash_Cfg *cfg;
-    whal_Error err;
-
+    (void)flashDev;
     (void)addr;
     (void)len;
 
-    err = SpiMemNor_GetCfg(flashDev, &cfg);
-    if (err) {
-        return err;
-    }
     /* No protect commands are sent: the caller guards the flash */
     return WHAL_ENOTSUP;
 }

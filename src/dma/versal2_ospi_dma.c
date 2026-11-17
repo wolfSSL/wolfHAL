@@ -88,7 +88,7 @@
 #endif /* WHAL_CFG_VERSAL2_OSPI_DMA_DIRECT_API_MAPPING */
 
 /* Get the cfg; ch must be the one channel. */
-static whal_Error whal_Versal2_OspiDma_GetCfg(
+static inline whal_Error whal_Versal2_OspiDma_GetCfg(
     whal_Dma *dmaDev, size_t ch, const whal_Versal2_OspiDma_Cfg **cfg)
 {
     if (!dmaDev || !dmaDev->cfg || ch != WHAL_VERSAL2_OSPI_DMA_CH) {
