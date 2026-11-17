@@ -83,7 +83,7 @@ the PL011 driver against an emulated register block) and the OSPI
 platform tests, which run on QEMU's OSPI controller, OSPI DMA and flash
 models (and on the board): `spimem/test_versal2_spimem.c`,
 `dma/test_versal2_dma.c` and `flash/test_versal2_flash.c`. The PL011
-platform tests use UART0 in loopback; the flash tests use the last 512 KB
+platform tests use UART0 in loopback; the flash tests use the last 256 KB
 of the OSPI flash:
 
 ```

@@ -118,8 +118,9 @@ whal_Error whal_Versal2_OspiDma_Configure(whal_Dma *dmaDev, size_t ch,
  * @param dmaDev DMA instance.
  * @param ch     WHAL_VERSAL2_OSPI_DMA_CH.
  *
- * @retval WHAL_SUCCESS Started.
- * @retval WHAL_EINVAL  Null pointer, bad channel, or not configured.
+ * @retval WHAL_SUCCESS   Started.
+ * @retval WHAL_EINVAL    Null pointer, bad channel, or not configured.
+ * @retval WHAL_ENOTREADY A transfer is still running (DST_STS BUSY).
  */
 whal_Error whal_Versal2_OspiDma_Start(whal_Dma *dmaDev, size_t ch);
 
@@ -146,7 +147,7 @@ whal_Error whal_Versal2_OspiDma_Stop(whal_Dma *dmaDev, size_t ch);
  * @param ch     WHAL_VERSAL2_OSPI_DMA_CH.
  *
  * @retval WHAL_SUCCESS   The data is in the buffer.
- * @retval WHAL_EINVAL    Null pointer or bad channel.
+ * @retval WHAL_EINVAL    Null pointer, bad channel, or not configured.
  * @retval WHAL_EHARDWARE The DMA reported an error.
  * @retval WHAL_ETIMEOUT  The DMA did not finish in time.
  */

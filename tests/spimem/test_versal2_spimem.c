@@ -119,6 +119,44 @@ static whal_SpiMem g_pieceOspi = {
     .cfg = &g_pieceCfg,
 };
 
+/* The board DMA with cache hooks that record their calls. */
+static int g_hookSeq;
+static int g_cleanAt;
+static int g_invalAt;
+static void *g_cleanBuf;
+static void *g_invalBuf;
+static size_t g_cleanLen;
+static size_t g_invalLen;
+
+static void HookClean(void *buf, size_t len)
+{
+    g_hookSeq++;
+    g_cleanAt = g_hookSeq;
+    g_cleanBuf = buf;
+    g_cleanLen = len;
+}
+
+static void HookInval(void *buf, size_t len)
+{
+    g_hookSeq++;
+    g_invalAt = g_hookSeq;
+    g_invalBuf = buf;
+    g_invalLen = len;
+}
+
+static whal_Versal2_OspiDma_Cfg g_hookDmaCfg;
+static whal_Dma g_hookDma = {
+    .base = WHAL_VERSAL2_OSPI_BASE,
+    .driver = &whal_Versal2_OspiDma_Driver,
+    .cfg = &g_hookDmaCfg,
+};
+static whal_CadenceOspi_SpiMem_Cfg g_hookCfg;
+static whal_SpiMem g_hookOspi = {
+    .base = WHAL_VERSAL2_OSPI_BASE,
+    .driver = WHAL_VERSAL2_OSPI_DRIVER,
+    .cfg = &g_hookCfg,
+};
+
 /* The board controller with no window. */
 static whal_CadenceOspi_SpiMem_Cfg g_noMapCfg;
 static whal_SpiMem g_noMapOspi = {
@@ -130,6 +168,7 @@ static whal_SpiMem g_noMapOspi = {
 static void Setup(void)
 {
     const whal_CadenceOspi_SpiMem_Cfg *board = g_whalOspi.cfg;
+    const whal_Versal2_OspiDma_Cfg *dma = g_whalOspiDma.cfg;
     size_t i;
 
     g_stigCfg = *board;
@@ -143,6 +182,12 @@ static void Setup(void)
     g_faultCfg = *board;
     g_faultCfg.dma = &g_faultDma;
     g_pieceCfg = g_faultCfg;
+
+    g_hookDmaCfg = *dma;
+    g_hookDmaCfg.CacheCleanInval = HookClean;
+    g_hookDmaCfg.CacheInval = HookInval;
+    g_hookCfg = *board;
+    g_hookCfg.dma = &g_hookDma;
 
     g_noMapCfg = *board;
     g_noMapCfg.mapBase = 0;
@@ -248,6 +293,11 @@ static void Test_Versal2SpiMem_MaxDataSz(void)
     WHAL_ASSERT_EQ(whal_SpiMem_MaxDataSz(&g_whalOspi, &op, &max),
                    WHAL_SUCCESS);
     WHAL_ASSERT_EQ(max == UINT32_MAX, 1);
+    /* A read with no address is one STIG command */
+    op.addrBytes = 0;
+    WHAL_ASSERT_EQ(whal_SpiMem_MaxDataSz(&g_whalOspi, &op, &max),
+                   WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(max, 8);
     WHAL_ASSERT_EQ(whal_SpiMem_MaxDataSz(&g_whalOspi, &op, NULL),
                    WHAL_EINVAL);
 }
@@ -269,6 +319,10 @@ static void Test_Versal2SpiMem_BadOps(void)
     WHAL_ASSERT_EQ(whal_SpiMem_Exec(&g_whalOspi, &op), WHAL_EINVAL);
     op = good;
     op.opBytes = 3;
+    WHAL_ASSERT_EQ(whal_SpiMem_Exec(&g_whalOspi, &op), WHAL_EINVAL);
+    /* A 1-byte opcode must fit 8 bits */
+    op = good;
+    op.opcode = 0x105;
     WHAL_ASSERT_EQ(whal_SpiMem_Exec(&g_whalOspi, &op), WHAL_EINVAL);
     op = good;
     op.addrBytes = 5;
@@ -455,6 +509,57 @@ static void Test_Versal2SpiMem_DmaPieces(void)
     CheckPieces(2, 0, 64, 0);
 }
 
+/* One read with the hook DMA: the cache is cleaned before the transfer
+ * and invalidated after it, once each, over the DMA part buf, len. */
+static void CheckHooks(size_t off, size_t len, uint8_t *buf, size_t dmaLen)
+{
+    g_hookSeq = 0;
+    g_cleanAt = 0;
+    g_invalAt = 0;
+    Clear();
+    WHAL_ASSERT_EQ(Read(&g_hookOspi, off, &g_buf[off], len), WHAL_SUCCESS);
+    WHAL_ASSERT_MEM_EQ(&g_buf[off], &g_pattern[off], len);
+    WHAL_ASSERT_EQ(g_hookSeq, 2);
+    WHAL_ASSERT_EQ(g_cleanAt, 1);
+    WHAL_ASSERT_EQ(g_invalAt, 2);
+    WHAL_ASSERT_EQ(g_cleanBuf == buf, 1);
+    WHAL_ASSERT_EQ(g_invalBuf == buf, 1);
+    WHAL_ASSERT_EQ(g_cleanLen, dmaLen);
+    WHAL_ASSERT_EQ(g_invalLen, dmaLen);
+}
+
+static void Test_Versal2SpiMem_DmaCacheHooks(void)
+{
+    CheckHooks(0, 256, g_buf, 256);
+    /* 3 bytes by STIG first, so the DMA part starts at g_buf[4] */
+    CheckHooks(1, 200, &g_buf[4], 196);
+}
+
+/* A read with dummy cycles can't use the indirect read, which sends none,
+ * so it goes by STIG even with a DMA. READ takes no dummy: data not checked. */
+static void Test_Versal2SpiMem_DummyReadIsStig(void)
+{
+    whal_SpiMemOp op = WHAL_SPIMEM_OP_INIT_1BIT;
+
+    op.opcode = BOARD_FLASH_READ4;
+    op.addrBytes = 4;
+    op.addr = (uint32_t)T_ADDR;
+    op.dummyCycles = 8;
+    op.dir = WHAL_SPIMEM_DIR_IN;
+    op.data = g_buf;
+    op.dataSz = 64;
+    g_pieceCfg.dmaMaxLen = 0;
+    g_dmaCfgCalls = 0;
+    Clear();
+    WHAL_ASSERT_EQ(whal_SpiMem_Exec(&g_pieceOspi, &op), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(g_dmaCfgCalls, 0);
+    /* The same read with no dummy cycles does use the DMA */
+    op.dummyCycles = 0;
+    WHAL_ASSERT_EQ(whal_SpiMem_Exec(&g_pieceOspi, &op), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(g_dmaCfgCalls, 1);
+    WHAL_ASSERT_MEM_EQ(g_buf, g_pattern, 64);
+}
+
 static void MapInit(whal_SpiMemMap *map)
 {
     whal_SpiMemOp tmpl = WHAL_SPIMEM_OP_INIT_1BIT;
@@ -497,6 +602,7 @@ static void Test_Versal2SpiMem_MapErrors(void)
     WHAL_ASSERT_EQ(whal_SpiMem_MapCreate(&g_noMapOspi, &map), WHAL_ENOTSUP);
     WHAL_ASSERT_EQ(whal_SpiMem_MapRead(&g_noMapOspi, &map, 0, g_buf, 1),
                    WHAL_ENOTSUP);
+    WHAL_ASSERT_EQ(whal_SpiMem_MapDestroy(&g_noMapOspi, &map), WHAL_ENOTSUP);
     WHAL_ASSERT_EQ(whal_SpiMem_MapCreate(&g_whalOspi, NULL), WHAL_EINVAL);
 
     /* Single rate only */
@@ -506,6 +612,10 @@ static void Test_Versal2SpiMem_MapErrors(void)
     /* The window sends the controller's 4 address bytes */
     bad = map;
     bad.tmpl.addrBytes = 3;
+    WHAL_ASSERT_EQ(whal_SpiMem_MapCreate(&g_whalOspi, &bad), WHAL_EINVAL);
+    /* The dummy cycle field holds at most 31 */
+    bad = map;
+    bad.tmpl.dummyCycles = 32;
     WHAL_ASSERT_EQ(whal_SpiMem_MapCreate(&g_whalOspi, &bad), WHAL_EINVAL);
     bad = map;
     bad.length = 0;
@@ -566,6 +676,8 @@ void whal_Test_SpiMem_Platform(void)
     WHAL_TEST(Test_Versal2SpiMem_DmaSetupFails);
     WHAL_TEST(Test_Versal2SpiMem_DmaStaleDone);
     WHAL_TEST(Test_Versal2SpiMem_DmaPieces);
+    WHAL_TEST(Test_Versal2SpiMem_DmaCacheHooks);
+    WHAL_TEST(Test_Versal2SpiMem_DummyReadIsStig);
     WHAL_TEST(Test_Versal2SpiMem_MapReads);
     WHAL_TEST(Test_Versal2SpiMem_MapErrors);
     WHAL_TEST(Test_Versal2SpiMem_DeinitInit);

@@ -190,6 +190,11 @@ whal_Error whal_Versal2_OspiDma_Start(whal_Dma *dmaDev, size_t ch)
     if (cfg->xfer->len == 0) {
         return WHAL_EINVAL;
     }
+    /* A running transfer can't be started again (AM028 DST_STS BUSY). */
+    if (whal_Reg32_Read(dmaDev->base, DMA_DST_STS_REG) &
+        DMA_DST_STS_BUSY_Msk) {
+        return WHAL_ENOTREADY;
+    }
 
     /* DST_SIZE starts the DMA. It is in bytes: the AM028 SIZE field is
      * bits 28:2, so bytes there are words (AM026 p707). */
@@ -229,6 +234,10 @@ whal_Error whal_Versal2_OspiDma_Wait(whal_Dma *dmaDev, size_t ch)
     err = whal_Versal2_OspiDma_GetCfg(dmaDev, ch, &cfg);
     if (err) {
         return err;
+    }
+    /* Nothing configured: there is no transfer and no buffer to wait for. */
+    if (cfg->xfer->len == 0) {
+        return WHAL_EINVAL;
     }
 
     WHAL_TIMEOUT_START(cfg->timeout);

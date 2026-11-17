@@ -69,6 +69,14 @@ static whal_Flash g_mapFlash = {
     .cfg = &g_mapFlashCfg,
 };
 
+/* The board controller with no window, for a flash that asks for one. */
+static whal_CadenceOspi_SpiMem_Cfg g_noMapOspiCfg;
+static whal_SpiMem g_noMapOspi = {
+    .base = WHAL_VERSAL2_OSPI_BASE,
+    .driver = WHAL_VERSAL2_OSPI_DRIVER,
+    .cfg = &g_noMapOspiCfg,
+};
+
 /* The same, with no DMA: every read is STIG. */
 static whal_CadenceOspi_SpiMem_Cfg g_stigOspiCfg;
 static whal_SpiMem g_stigOspi = {
@@ -96,6 +104,8 @@ static void Setup(void)
     g_dmaOspiCfg.dma = &g_countDma;
     g_stigOspiCfg = *ospi;
     g_stigOspiCfg.dma = NULL;
+    g_noMapOspiCfg = *ospi;
+    g_noMapOspiCfg.mapBase = 0;
 
     g_dmaFlashCfg = *flash;
     g_dmaFlashCfg.spiMemDev = &g_dmaOspi;
@@ -205,6 +215,18 @@ static void Test_Versal2Flash_MapRead(void)
     WHAL_ASSERT_EQ(AxiSel() & WHAL_VERSAL2_OSPI_MUX_SEL_Msk, 0);
 }
 
+/* FLAG_MAP_READ on a controller with no window: the read fails with the
+ * controller's error, it does not fall back to Exec. */
+static void Test_Versal2Flash_MapReadNoWindow(void)
+{
+    whal_SpiMemNor_Flash_Cfg cfg = g_mapFlashCfg;
+    whal_Flash dev = { .driver = &whal_SpiMemNor_Flash_Driver, .cfg = &cfg };
+
+    cfg.spiMemDev = &g_noMapOspi;
+    WHAL_ASSERT_EQ(whal_Flash_Read(&dev, TEST_ADDR, g_readback, 16),
+                   WHAL_ENOTSUP);
+}
+
 /* A map left open routes the port to the window; closing it routes it
  * back, and DMA reads work again. */
 static void Test_Versal2Flash_DmaAfterMap(void)
@@ -260,6 +282,10 @@ static void Test_Versal2Flash_InitWrongId(void)
     WHAL_ASSERT_EQ(whal_Flash_Init(&dev), WHAL_EHARDWARE);
     cfg.flags = WHAL_SPIMEM_NOR_FLAG_RESET;
     WHAL_ASSERT_EQ(whal_Flash_Init(&dev), WHAL_EHARDWARE);
+    /* id 0 takes any flash that answers */
+    cfg.id = 0;
+    cfg.flags = 0;
+    WHAL_ASSERT_EQ(whal_Flash_Init(&dev), WHAL_SUCCESS);
     WHAL_ASSERT_EQ(whal_Flash_Init(&g_dmaFlash), WHAL_SUCCESS);
 }
 
@@ -506,6 +532,23 @@ static int g_noWel;        /* 05h never reports WEL */
 static int g_execs;        /* commands seen */
 static int g_failAt;       /* command number that fails, 0 = none */
 static int g_progSent;     /* program commands sent */
+static whal_Error g_maxSzRet; /* MaxDataSz fails with this */
+static int g_maxSzZero;    /* MaxDataSz reports 0 */
+
+static whal_Error FaultMaxDataSz(whal_SpiMem *dev, const whal_SpiMemOp *op,
+                                 size_t *maxSz)
+{
+    whal_Error err;
+
+    if (g_maxSzRet != WHAL_SUCCESS) {
+        return g_maxSzRet;
+    }
+    err = whal_CadenceOspi_SpiMem_Driver.MaxDataSz(dev, op, maxSz);
+    if (err == WHAL_SUCCESS && g_maxSzZero) {
+        *maxSz = 0;
+    }
+    return err;
+}
 
 static whal_Error FaultExec(whal_SpiMem *dev, const whal_SpiMemOp *op)
 {
@@ -554,6 +597,7 @@ static void FaultReset(void)
 {
     g_faultSpiMemDriver = whal_CadenceOspi_SpiMem_Driver;
     g_faultSpiMemDriver.Exec = FaultExec;
+    g_faultSpiMemDriver.MaxDataSz = FaultMaxDataSz;
     g_faultOspi.cfg = g_whalOspi.cfg;
     g_shortTimeout = g_whalTimeout;
     g_shortTimeout.timeoutTicks = 50;
@@ -565,6 +609,8 @@ static void FaultReset(void)
     g_execs = 0;
     g_failAt = 0;
     g_progSent = 0;
+    g_maxSzRet = WHAL_SUCCESS;
+    g_maxSzZero = 0;
 }
 
 /* A program or protection error fails the write and is cleared, so the
@@ -716,6 +762,53 @@ static void Test_Versal2Flash_FailEachCommand(void)
     WHAL_ASSERT_NEQ(FailEach(OpRead), 0);
 }
 
+/* Write asks the controller for its largest program. An error, or a size
+ * of 0, fails the write before any command is sent. */
+static void Test_Versal2Flash_WriteMaxDataSz(void)
+{
+    FaultReset();
+    g_maxSzRet = WHAL_EHARDWARE;
+    WHAL_ASSERT_EQ(whal_Flash_Write(&g_faultFlash, TEST_ADDR, g_pattern, 16),
+                   WHAL_EHARDWARE);
+    g_maxSzRet = WHAL_SUCCESS;
+    g_maxSzZero = 1;
+    WHAL_ASSERT_EQ(whal_Flash_Write(&g_faultFlash, TEST_ADDR, g_pattern, 16),
+                   WHAL_EINVAL);
+    WHAL_ASSERT_EQ(g_execs, 0);
+}
+
+/* One erase covers the whole 128 KB sector, not a 4 KB or 32 KB part of
+ * it (MT35XU02G Table 21: DCh is the 4-byte sector erase). */
+static void Test_Versal2Flash_EraseWholeSector(void)
+{
+    static const size_t offs[] = {
+        4096, 32768, BOARD_FLASH_SECTOR_SZ - 256
+    };
+    size_t i;
+    size_t j;
+
+    WHAL_ASSERT_EQ(whal_Flash_Erase(&g_dmaFlash, TEST_ADDR,
+                                    BOARD_FLASH_SECTOR_SZ), WHAL_SUCCESS);
+    for (i = 0; i < sizeof(offs) / sizeof(offs[0]); i++) {
+        WHAL_ASSERT_EQ(whal_Flash_Write(&g_dmaFlash, TEST_ADDR + offs[i],
+                                        g_pattern, 256), WHAL_SUCCESS);
+        ClearReadback();
+        WHAL_ASSERT_EQ(whal_Flash_Read(&g_dmaFlash, TEST_ADDR + offs[i],
+                                       g_readback, 256), WHAL_SUCCESS);
+        WHAL_ASSERT_MEM_EQ(g_readback, g_pattern, 256);
+    }
+    WHAL_ASSERT_EQ(whal_Flash_Erase(&g_dmaFlash, TEST_ADDR,
+                                    BOARD_FLASH_SECTOR_SZ), WHAL_SUCCESS);
+    for (i = 0; i < sizeof(offs) / sizeof(offs[0]); i++) {
+        ClearReadback();
+        WHAL_ASSERT_EQ(whal_Flash_Read(&g_dmaFlash, TEST_ADDR + offs[i],
+                                       g_readback, 256), WHAL_SUCCESS);
+        for (j = 0; j < 256; j++) {
+            WHAL_ASSERT_EQ(g_readback[j], 0xFF);
+        }
+    }
+}
+
 void whal_Test_Flash_Platform(void)
 {
     Setup();
@@ -728,6 +821,7 @@ void whal_Test_Flash_Platform(void)
     WHAL_TEST(Test_Versal2Flash_UnalignedRead);
     WHAL_TEST(Test_Versal2Flash_MisalignedRead);
     WHAL_TEST(Test_Versal2Flash_MapRead);
+    WHAL_TEST(Test_Versal2Flash_MapReadNoWindow);
     WHAL_TEST(Test_Versal2Flash_DmaAfterMap);
     WHAL_TEST(Test_Versal2Flash_Erase);
     WHAL_TEST(Test_Versal2Flash_InitWrongId);
@@ -743,6 +837,8 @@ void whal_Test_Flash_Platform(void)
     WHAL_TEST(Test_Versal2Flash_ErrorNoClearOp);
     WHAL_TEST(Test_Versal2Flash_Timeouts);
     WHAL_TEST(Test_Versal2Flash_FailEachCommand);
+    WHAL_TEST(Test_Versal2Flash_WriteMaxDataSz);
+    WHAL_TEST(Test_Versal2Flash_EraseWholeSector);
     WHAL_TEST(Test_Versal2Flash_Erase);
     WHAL_TEST_SUITE_END();
 }

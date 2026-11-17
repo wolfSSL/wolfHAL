@@ -124,15 +124,22 @@ static void Test_Versal2Dma_StartNotConfigured(void)
     WHAL_ASSERT_EQ(whal_Dma_Init(&g_dma), WHAL_SUCCESS);
     WHAL_ASSERT_EQ(whal_Dma_Start(&g_dma, WHAL_VERSAL2_OSPI_DMA_CH),
                    WHAL_EINVAL);
+    /* Wait has no transfer and no buffer to wait for either */
+    WHAL_ASSERT_EQ(whal_Dma_Wait(&g_dma, WHAL_VERSAL2_OSPI_DMA_CH),
+                   WHAL_EINVAL);
 }
 
-/* Nothing started: no DONE ever comes, so Wait times out. */
+/* Configured but not started: no DONE ever comes, so Wait times out. */
 static void Test_Versal2Dma_WaitTimeout(void)
 {
 #ifdef WHAL_CFG_NO_TIMEOUT
     WHAL_SKIP();
 #else
+    whal_DmaMemXfer x = { g_buf, sizeof(g_buf) };
+
     WHAL_ASSERT_EQ(whal_Dma_Init(&g_dma), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(whal_Dma_Configure(&g_dma, WHAL_VERSAL2_OSPI_DMA_CH, &x),
+                   WHAL_SUCCESS);
     WHAL_ASSERT_EQ(whal_Dma_Wait(&g_dma, WHAL_VERSAL2_OSPI_DMA_CH),
                    WHAL_ETIMEOUT);
 #endif
