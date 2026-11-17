@@ -576,6 +576,9 @@ static whal_Error whal_CadenceOspi_SpiMem_Read(
     size_t head;
     size_t body;
     size_t tail;
+    size_t piece;
+    size_t off;
+    size_t n;
     whal_Error err;
 
     /* The indirect read sends the DEV_SIZE_CONFIG address size (AM028
@@ -593,18 +596,30 @@ static whal_Error whal_CadenceOspi_SpiMem_Read(
         }
         body = ((len - head) / align) * align;
         tail = len - head - body;
+        /* One DMA transfer takes at most dmaMaxLen bytes (0 = any), so
+         * the body goes in aligned pieces. No piece fits: STIG only. */
+        piece = body;
+        if (cfg->dmaMaxLen != 0 && cfg->dmaMaxLen < body) {
+            piece = (cfg->dmaMaxLen / align) * align;
+        }
 
-        if (body > 0 && ((op->addr + (uint32_t)head) & 3) == 0) {
+        if (piece > 0 && ((op->addr + (uint32_t)head) & 3) == 0) {
             err = whal_CadenceOspi_SpiMem_StigRead(base, cfg->timeout, op,
                                                    op->addr, data, head);
             if (err) {
                 return err;
             }
-            err = whal_CadenceOspi_SpiMem_DmaRead(
-                base, cfg, whal_CadenceOspi_SpiMem_Opcode(op),
-                op->addr + (uint32_t)head, data + head, body);
-            if (err) {
-                return err;
+            for (off = 0; off < body; off += n) {
+                n = body - off;
+                if (n > piece) {
+                    n = piece;
+                }
+                err = whal_CadenceOspi_SpiMem_DmaRead(
+                    base, cfg, whal_CadenceOspi_SpiMem_Opcode(op),
+                    op->addr + (uint32_t)(head + off), data + head + off, n);
+                if (err) {
+                    return err;
+                }
             }
             return whal_CadenceOspi_SpiMem_StigRead(
                 base, cfg->timeout, op, op->addr + (uint32_t)(head + body),

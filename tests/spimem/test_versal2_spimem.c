@@ -41,6 +41,10 @@
 #define T_CONFIG_DUAL_OP  (1UL << 30)
 #define T_OPCODE_EXT_LOW  0xE0
 
+/* OSPI DMA status, write 1 to clear (AM028 OSPIDMA_DST_I_STS) */
+#define T_DMA_DST_I_STS   0x1814
+#define T_DMA_DONE        (1UL << 1)
+
 static uint8_t g_pattern[T_LEN];
 static uint8_t g_buf[T_LEN + 8] __attribute__((aligned(64)));
 
@@ -57,9 +61,14 @@ static whal_SpiMem g_stigOspi = {
 static whal_Error g_dmaCfgRet;
 static whal_Error g_dmaStartRet;
 static whal_Error g_dmaWaitRet;
+/* 1: Wait sees DONE but does not clear it, like a transfer that ended
+ * after an earlier Wait gave up. */
+static int g_dmaLeaveDone;
+static int g_dmaCfgCalls;
 
 static whal_Error FaultConfigure(whal_Dma *dev, size_t ch, const void *c)
 {
+    g_dmaCfgCalls++;
     if (g_dmaCfgRet != WHAL_SUCCESS) {
         return g_dmaCfgRet;
     }
@@ -76,8 +85,14 @@ static whal_Error FaultStart(whal_Dma *dev, size_t ch)
 
 static whal_Error FaultWait(whal_Dma *dev, size_t ch)
 {
-    whal_Error err = whal_Versal2_OspiDma_Driver.Wait(dev, ch);
+    const whal_Versal2_OspiDma_Cfg *cfg = dev->cfg;
+    whal_Error err;
 
+    if (g_dmaLeaveDone) {
+        return whal_Reg32_ReadPoll(dev->base, T_DMA_DST_I_STS, T_DMA_DONE,
+                                   T_DMA_DONE, cfg->timeout);
+    }
+    err = whal_Versal2_OspiDma_Driver.Wait(dev, ch);
     if (err == WHAL_SUCCESS) {
         err = g_dmaWaitRet;
     }
@@ -94,6 +109,14 @@ static whal_SpiMem g_faultOspi = {
     .base = WHAL_VERSAL2_OSPI_BASE,
     .driver = WHAL_VERSAL2_OSPI_DRIVER,
     .cfg = &g_faultCfg,
+};
+
+/* The wrapped DMA again, with a small dmaMaxLen set by the test. */
+static whal_CadenceOspi_SpiMem_Cfg g_pieceCfg;
+static whal_SpiMem g_pieceOspi = {
+    .base = WHAL_VERSAL2_OSPI_BASE,
+    .driver = WHAL_VERSAL2_OSPI_DRIVER,
+    .cfg = &g_pieceCfg,
 };
 
 /* The board controller with no window. */
@@ -119,6 +142,7 @@ static void Setup(void)
     g_faultDma.cfg = g_whalOspiDma.cfg;
     g_faultCfg = *board;
     g_faultCfg.dma = &g_faultDma;
+    g_pieceCfg = g_faultCfg;
 
     g_noMapCfg = *board;
     g_noMapCfg.mapBase = 0;
@@ -387,6 +411,50 @@ static void Test_Versal2SpiMem_DmaSetupFails(void)
     CheckReadAfterFault();
 }
 
+/* A DONE bit left by an earlier transfer must not end the next Wait:
+ * Configure clears it (AM028 OSPIDMA_DST_I_STS, write 1 to clear). */
+static void Test_Versal2SpiMem_DmaStaleDone(void)
+{
+    whal_DmaMemXfer x = { g_buf, 64 };
+    whal_Error err;
+
+    g_dmaLeaveDone = 1;
+    err = Read(&g_faultOspi, 0, g_buf, 256);
+    g_dmaLeaveDone = 0;
+    WHAL_ASSERT_EQ(err, WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(Reg(T_DMA_DST_I_STS) & T_DMA_DONE, T_DMA_DONE);
+    WHAL_ASSERT_EQ(whal_Dma_Configure(&g_whalOspiDma,
+                                      WHAL_VERSAL2_OSPI_DMA_CH, &x),
+                   WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(Reg(T_DMA_DST_I_STS) & T_DMA_DONE, 0);
+    CheckReadAfterFault();
+}
+
+/* One read of len bytes at off with dmaMaxLen max: the data is right and
+ * the DMA was set up calls times. */
+static void CheckPieces(size_t max, size_t off, size_t len, int calls)
+{
+    g_pieceCfg.dmaMaxLen = max;
+    g_dmaCfgCalls = 0;
+    Clear();
+    WHAL_ASSERT_EQ(Read(&g_pieceOspi, off, &g_buf[off], len), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(g_dmaCfgCalls, calls);
+    WHAL_ASSERT_MEM_EQ(&g_buf[off], &g_pattern[off], len);
+}
+
+/* A DMA part longer than dmaMaxLen goes as several transfers, each a
+ * multiple of the 4-byte alignment. Too small a limit: STIG reads it. */
+static void Test_Versal2SpiMem_DmaPieces(void)
+{
+    /* 256 in one; 4 x 64; 100 + 100 + 56 (101 rounds down to 100) */
+    CheckPieces(256, 0, 256, 1);
+    CheckPieces(64, 0, 256, 4);
+    CheckPieces(101, 0, 256, 3);
+    /* 3 by STIG, then 196 = 3 x 64 + 4 by DMA, then 1 by STIG */
+    CheckPieces(64, 1, 200, 4);
+    CheckPieces(2, 0, 64, 0);
+}
+
 static void MapInit(whal_SpiMemMap *map)
 {
     whal_SpiMemOp tmpl = WHAL_SPIMEM_OP_INIT_1BIT;
@@ -496,6 +564,8 @@ void whal_Test_SpiMem_Platform(void)
     WHAL_TEST(Test_Versal2SpiMem_DmaBusError);
     WHAL_TEST(Test_Versal2SpiMem_DmaWaitFails);
     WHAL_TEST(Test_Versal2SpiMem_DmaSetupFails);
+    WHAL_TEST(Test_Versal2SpiMem_DmaStaleDone);
+    WHAL_TEST(Test_Versal2SpiMem_DmaPieces);
     WHAL_TEST(Test_Versal2SpiMem_MapReads);
     WHAL_TEST(Test_Versal2SpiMem_MapErrors);
     WHAL_TEST(Test_Versal2SpiMem_DeinitInit);

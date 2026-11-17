@@ -151,6 +151,10 @@ whal_Error whal_Versal2_OspiDma_Configure(whal_Dma *dmaDev, size_t ch,
         DMA_DST_STS_BUSY_Msk) {
         return WHAL_ENOTREADY;
     }
+    /* Clear old status (W1C): a DONE left by a transfer that ended after
+     * its Wait gave up would end the next Wait at once. */
+    whal_Reg32_Write(dmaDev->base, DMA_DST_I_STS_REG,
+                     whal_Reg32_Read(dmaDev->base, DMA_DST_I_STS_REG));
 
     *cfg->xfer = *x;
     dst = (uint64_t)(uintptr_t)x->buf;

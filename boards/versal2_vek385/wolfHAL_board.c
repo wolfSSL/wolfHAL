@@ -107,6 +107,7 @@ whal_SpiMem g_whalOspi = {
         .dma = &g_whalOspiDma,
         .dmaCh = WHAL_VERSAL2_OSPI_DMA_CH,
         .dmaAlign = 4,
+        .dmaMaxLen = WHAL_VERSAL2_OSPI_DMA_MAX_LEN,
         .mapBase = WHAL_VERSAL2_OSPI_MAP_BASE,
         .mapSize = WHAL_VERSAL2_OSPI_MAP_SIZE,
         .MapSelect = whal_Versal2_Ospi_MapSelect,

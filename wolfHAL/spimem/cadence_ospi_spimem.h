@@ -43,7 +43,8 @@
  * DMA reads: per read the driver passes a whal_DmaMemXfer (buf and len,
  * dmaAlign aligned) to whal_Dma_Configure, then calls Start before the
  * indirect read starts and Wait after. An error from any of them fails the
- * read. The DMA must have Wait.
+ * read. The DMA must have Wait. A read longer than dmaMaxLen goes as
+ * several transfers.
  */
 typedef struct {
     uint32_t devSize;        /* DEV_SIZE_CONFIG value */
@@ -58,6 +59,7 @@ typedef struct {
     whal_Dma *dma;           /* polled DMA for reads; NULL = STIG only */
     size_t dmaCh;            /* channel on dma */
     size_t dmaAlign;         /* buf and len alignment for a DMA read */
+    size_t dmaMaxLen;        /* most bytes in one DMA transfer; 0 = any */
     /* Memory-mapped reads (direct access mode). mapBase 0 = none. */
     uintptr_t mapBase;       /* window start (AMD: 0xC0000000) */
     size_t mapSize;          /* window size (AMD: 512 MB) */
@@ -133,8 +135,8 @@ whal_Error whal_CadenceOspi_SpiMem_Exec(whal_SpiMem *spiMemDev,
  * @brief Get the largest data size for one operation like op.
  *
  * 8 bytes (one STIG command) for every operation except a read with an
- * address, which is limited by its 32-bit byte count (UINT32_MAX). A DMA
- * may allow less: Exec then returns the DMA's error.
+ * address, which is limited by its 32-bit byte count (UINT32_MAX). Exec
+ * splits its DMA part into transfers of at most cfg dmaMaxLen bytes.
  *
  * @param spiMemDev Device instance.
  * @param op        Operation.
