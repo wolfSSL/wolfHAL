@@ -452,7 +452,11 @@ static void Test_Pl011_Async(void)
     WHAL_ASSERT_EQ(err, WHAL_ENOTSUP);
     err = whal_Pl011_Uart_Driver.SendAsync(NULL, &b, 1);
     WHAL_ASSERT_EQ(err, WHAL_EINVAL);
+    err = whal_Pl011_Uart_Driver.SendAsync(&dev, NULL, 1);
+    WHAL_ASSERT_EQ(err, WHAL_EINVAL);
     err = whal_Pl011_Uart_Driver.RecvAsync(&dev, NULL, 1);
+    WHAL_ASSERT_EQ(err, WHAL_EINVAL);
+    err = whal_Pl011_Uart_Driver.RecvAsync(NULL, &b, 1);
     WHAL_ASSERT_EQ(err, WHAL_EINVAL);
 }
 
@@ -618,6 +622,24 @@ static void Test_Pl011_SendDrainTimeout(void)
     WHAL_ASSERT_EQ(err, WHAL_ETIMEOUT);
 }
 
+/* UART and TX on, bytes queued that never go out: Init times out before
+ * turning the UART off, and writes nothing. */
+static void Test_Pl011_InitTxDrainTimeout(void)
+{
+    whal_Error err;
+
+    Reset();
+    MAKE_DEV(dev);
+    g_regs[CR] = CR_UARTEN | CR_TXE;
+    g_regs[FR] = 0;
+
+    err = whal_Uart_Init(&dev);
+    WHAL_ASSERT_EQ(err, WHAL_ETIMEOUT);
+    WHAL_ASSERT_EQ(g_regs[CR], CR_UARTEN | CR_TXE);
+    WHAL_ASSERT_EQ(g_regs[IBRD], SENTINEL);
+    WHAL_ASSERT_EQ(g_regs[LCRH], SENTINEL);
+}
+
 static void Test_Pl011_RecvTimeout(void)
 {
     whal_Error err;
@@ -660,6 +682,7 @@ void whal_Test_Pl011_Uart(void)
     WHAL_TEST(Test_Pl011_DeinitTxFifoLeft);
     WHAL_TEST(Test_Pl011_SendTxffTimeout);
     WHAL_TEST(Test_Pl011_SendDrainTimeout);
+    WHAL_TEST(Test_Pl011_InitTxDrainTimeout);
     WHAL_TEST(Test_Pl011_RecvTimeout);
 #endif
     WHAL_TEST_SUITE_END();

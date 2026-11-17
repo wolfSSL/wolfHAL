@@ -44,6 +44,16 @@ static const uint8_t g_extentPattern[32] = {
     0x5A, 0xA5, 0x3C, 0xC3, 0x69, 0x96, 0x0F, 0xF0,
 };
 
+/* Lock and Unlock may be unsupported (WHAL_ENOTSUP): drivers that send no
+ * protect commands leave guarding the flash to the caller. */
+static int LockOk(whal_Error err)
+{
+    if (err == WHAL_SUCCESS || err == WHAL_ENOTSUP) {
+        return 1;
+    }
+    return 0;
+}
+
 static void Test_Flash_Api(void)
 {
     WHAL_ASSERT_EQ(whal_Flash_Read(g_testFlashDev, 0, NULL, 8), WHAL_EINVAL);
@@ -61,8 +71,8 @@ static void Test_Flash_WriteReadErase(void)
     uint8_t readback[32];
     whal_Error err;
 
-    WHAL_ASSERT_EQ(whal_Flash_Unlock(g_testFlashDev, g_testFlashAddr,
-                                      g_testFlashSectorSz), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(LockOk(whal_Flash_Unlock(g_testFlashDev, g_testFlashAddr,
+                                            g_testFlashSectorSz)), 1);
 
     WHAL_ASSERT_EQ(whal_Flash_Erase(g_testFlashDev, g_testFlashAddr,
                                      g_testFlashSectorSz), WHAL_SUCCESS);
@@ -89,8 +99,8 @@ static void Test_Flash_WriteReadErase(void)
                                     readback, sizeof(readback)), WHAL_SUCCESS);
     WHAL_ASSERT_MEM_NEQ(readback, pattern, sizeof(pattern));
 
-    WHAL_ASSERT_EQ(whal_Flash_Lock(g_testFlashDev, g_testFlashAddr,
-                                    g_testFlashSectorSz), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(LockOk(whal_Flash_Lock(g_testFlashDev, g_testFlashAddr,
+                                          g_testFlashSectorSz)), 1);
 }
 
 static whal_Error WriteExtentPattern(size_t addr)
@@ -146,8 +156,7 @@ static void Test_Flash_EraseExtent(void)
     if (ExtentOverlapsImage(base))
         WHAL_SKIP();
 
-    WHAL_ASSERT_EQ(whal_Flash_Unlock(g_testFlashDev, base, 3 * sz),
-                   WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(LockOk(whal_Flash_Unlock(g_testFlashDev, base, 3 * sz)), 1);
     WHAL_ASSERT_EQ(whal_Flash_Erase(g_testFlashDev, base, 3 * sz),
                    WHAL_SUCCESS);
 
@@ -171,36 +180,45 @@ static void Test_Flash_EraseExtent(void)
 
     WHAL_ASSERT_EQ(whal_Flash_Erase(g_testFlashDev, base, 3 * sz),
                    WHAL_SUCCESS);
-    WHAL_ASSERT_EQ(whal_Flash_Lock(g_testFlashDev, base, 3 * sz),
-                   WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(LockOk(whal_Flash_Lock(g_testFlashDev, base, 3 * sz)), 1);
 }
 
 static void Test_Flash_EraseOneBytePastSector(void)
 {
     const size_t sz = g_testFlashSectorSz;
     const uintptr_t base = ExtentBase();
+    whal_Error err;
 
     if (ExtentOverlapsImage(base))
         WHAL_SKIP();
 
-    WHAL_ASSERT_EQ(whal_Flash_Unlock(g_testFlashDev, base, 3 * sz),
-                   WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(LockOk(whal_Flash_Unlock(g_testFlashDev, base, 3 * sz)), 1);
     WHAL_ASSERT_EQ(whal_Flash_Erase(g_testFlashDev, base, 3 * sz),
                    WHAL_SUCCESS);
 
     WHAL_ASSERT_EQ(WriteExtentPattern(base), WHAL_SUCCESS);
     WHAL_ASSERT_EQ(WriteExtentPattern(base + sz), WHAL_SUCCESS);
     WHAL_ASSERT_EQ(WriteExtentPattern(base + 2 * sz), WHAL_SUCCESS);
-    WHAL_ASSERT_EQ(whal_Flash_Erase(g_testFlashDev, base, sz + 1),
-                   WHAL_SUCCESS);
+
+    /* Drivers that erase whole sectors only (e.g. SPI-NOR) refuse a
+     * partial size instead of rounding up. */
+    err = whal_Flash_Erase(g_testFlashDev, base, sz + 1);
+    if (err == WHAL_EINVAL) {
+        WHAL_ASSERT_EQ(HasExtentPattern(base), 1);
+        WHAL_ASSERT_EQ(whal_Flash_Erase(g_testFlashDev, base, 3 * sz),
+                       WHAL_SUCCESS);
+        WHAL_ASSERT_EQ(LockOk(whal_Flash_Lock(g_testFlashDev, base,
+                                              3 * sz)), 1);
+        WHAL_SKIP();
+    }
+    WHAL_ASSERT_EQ(err, WHAL_SUCCESS);
     WHAL_ASSERT_EQ(HasExtentPattern(base), 0);
     WHAL_ASSERT_EQ(HasExtentPattern(base + sz), 0);
     WHAL_ASSERT_EQ(HasExtentPattern(base + 2 * sz), 1);
 
     WHAL_ASSERT_EQ(whal_Flash_Erase(g_testFlashDev, base, 3 * sz),
                    WHAL_SUCCESS);
-    WHAL_ASSERT_EQ(whal_Flash_Lock(g_testFlashDev, base, 3 * sz),
-                   WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(LockOk(whal_Flash_Lock(g_testFlashDev, base, 3 * sz)), 1);
 }
 
 static void Test_Flash_CrossPageWrite(void)
@@ -228,8 +246,8 @@ static void Test_Flash_CrossPageWrite(void)
     for (i = 0; i < sizeof(pattern); i++)
         pattern[i] = (uint8_t)(i * 7 + 3);
 
-    WHAL_ASSERT_EQ(whal_Flash_Unlock(g_testFlashDev, g_testFlashAddr,
-                                     g_testFlashSectorSz), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(LockOk(whal_Flash_Unlock(g_testFlashDev, g_testFlashAddr,
+                                            g_testFlashSectorSz)), 1);
     WHAL_ASSERT_EQ(whal_Flash_Erase(g_testFlashDev, g_testFlashAddr,
                                     g_testFlashSectorSz), WHAL_SUCCESS);
 
@@ -251,8 +269,8 @@ static void Test_Flash_CrossPageWrite(void)
 
     WHAL_ASSERT_EQ(whal_Flash_Erase(g_testFlashDev, g_testFlashAddr,
                                     g_testFlashSectorSz), WHAL_SUCCESS);
-    WHAL_ASSERT_EQ(whal_Flash_Lock(g_testFlashDev, g_testFlashAddr,
-                                   g_testFlashSectorSz), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(LockOk(whal_Flash_Lock(g_testFlashDev, g_testFlashAddr,
+                                          g_testFlashSectorSz)), 1);
 }
 
 static void Test_Flash_OutOfBounds(void)

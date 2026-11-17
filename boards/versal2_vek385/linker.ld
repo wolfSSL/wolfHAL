@@ -45,6 +45,13 @@ SECTIONS
         *(.data*)
     } > DDR
 
+    /* The flash tests skip sectors below _sidata + (_edata - _sdata), the
+     * image in flash. This image runs from DDR, not from the board flash,
+     * so it is empty there (DDR addresses are not flash offsets). */
+    _sidata = 0;
+    _sdata = 0;
+    _edata = 0;
+
     .bss (NOLOAD) : {
         . = ALIGN(8);
         _sbss = .;

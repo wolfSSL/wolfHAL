@@ -169,6 +169,10 @@ void whal_Test_Uart_Platform(void);
 void whal_Test_Pl011_Uart(void);
 #endif
 
+#ifdef WHAL_TEST_ENABLE_SPIMEM_PLATFORM
+void whal_Test_SpiMem_Platform(void);
+#endif
+
 #ifdef WHAL_TEST_ENABLE_I2C
 void whal_Test_I2c(void);
 #ifdef WHAL_TEST_ENABLE_I2C_PLATFORM
@@ -373,6 +377,10 @@ void main(void)
 
 #ifdef WHAL_TEST_ENABLE_PL011_UART
     whal_Test_Pl011_Uart();
+#endif
+
+#ifdef WHAL_TEST_ENABLE_SPIMEM_PLATFORM
+    whal_Test_SpiMem_Platform();
 #endif
 
 #ifdef WHAL_TEST_ENABLE_I2C
