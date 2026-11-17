@@ -22,7 +22,7 @@
 _BOARD_DIR := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
 
 PLATFORM = versal2
-TESTS ?= uart pl011_uart
+TESTS ?= uart pl011_uart flash spimem dma
 
 GCC = $(GCC_PATH)aarch64-linux-gnu-gcc
 LD = $(GCC_PATH)aarch64-linux-gnu-gcc
@@ -35,6 +35,11 @@ CFLAGS += -Wall -Werror $(INCLUDE) -g3 -Os -ffunction-sections -fdata-sections \
 LDFLAGS = -ffreestanding -nostdlib -nostartfiles -static \
  -Wl,--gc-sections -Wl,--build-id=none -Wl,--no-warn-rwx-segments
 
+# The default link address only boots on QEMU (on the board TF-A starts
+# the image at 0x40000000, so a board build gives its own LINKER_SCRIPT).
+ifeq ($(origin LINKER_SCRIPT),undefined)
+CFLAGS += -DBOARD_QEMU
+endif
 LINKER_SCRIPT ?= $(_BOARD_DIR)/linker.ld
 
 INCLUDE += -I$(_BOARD_DIR)
@@ -45,6 +50,15 @@ BOARD_SOURCE += $(wildcard $(WHAL_DIR)/src/*.c)
 BOARD_SOURCE += $(WHAL_DIR)/src/gpio/gpio.c
 BOARD_SOURCE += $(WHAL_DIR)/src/uart/uart.c
 BOARD_SOURCE += $(WHAL_DIR)/src/uart/pl011_uart.c
+BOARD_SOURCE += $(WHAL_DIR)/src/dma/dma.c
+BOARD_SOURCE += $(WHAL_DIR)/src/spimem/spimem.c
+BOARD_SOURCE += $(WHAL_DIR)/src/spimem/cadence_ospi_spimem.c
+BOARD_SOURCE += $(WHAL_DIR)/src/dma/versal2_ospi_dma.c
+BOARD_SOURCE += $(WHAL_DIR)/src/flash/flash.c
+BOARD_SOURCE += $(WHAL_DIR)/src/flash/spimem_nor_flash.c
+
+# Peripheral devices (none on this board; the flash tests need the list)
+include $(WHAL_DIR)/boards/peripheral/board.mk
 
 # Run the tests on QEMU (10.1 or later, amd-versal2-virt machine):
 #   make BOARD=versal2_vek385 qemu
@@ -57,7 +71,8 @@ QEMU_OUT = $(BUILD_DIR)/qemu.out
 .PHONY: qemu
 qemu: $(BUILD_DIR)/test_hw.elf
 	@rm -f $(QEMU_OUT)
-	@$(QEMU) -M amd-versal2-virt -m 2G -display none -monitor none \
+	@$(QEMU) -M amd-versal2-virt,ospi-flash=mt35xu02gbba -m 2G \
+	 -display none -monitor none \
 	 -serial null -serial file:$(QEMU_OUT) \
 	 -device loader,file=$<,cpu-num=0 & pid=$$!; \
 	 i=0; \

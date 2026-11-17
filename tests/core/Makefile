@@ -32,6 +32,8 @@ WHAL_SRC = $(WHAL_DIR)/src/reg.c \
            $(WHAL_DIR)/src/flash/flash.c \
            $(WHAL_DIR)/src/timer/timer.c \
            $(WHAL_DIR)/src/spi/spi.c \
+           $(WHAL_DIR)/src/spimem/spimem.c \
+           $(WHAL_DIR)/src/dma/dma.c \
            $(WHAL_DIR)/src/rng/rng.c \
            $(WHAL_DIR)/src/block/block.c \
            $(WHAL_DIR)/src/pwm/pwm.c \

@@ -66,3 +66,14 @@ inline whal_Error whal_Dma_Stop(whal_Dma *dmaDev, size_t ch)
 
     return dmaDev->driver->Stop(dmaDev, ch);
 }
+
+inline whal_Error whal_Dma_Wait(whal_Dma *dmaDev, size_t ch)
+{
+    if (!dmaDev) {
+        return WHAL_EINVAL;
+    }
+    if (!dmaDev->driver || !dmaDev->driver->Wait) {
+        return WHAL_ENOTSUP;
+    }
+    return dmaDev->driver->Wait(dmaDev, ch);
+}

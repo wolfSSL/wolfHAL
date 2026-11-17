@@ -49,6 +49,7 @@
 #include <wolfHAL/block/block.h>
 #include <wolfHAL/rng/rng.h>
 #include <wolfHAL/spi/spi.h>
+#include <wolfHAL/spimem/spimem.h>
 #include <wolfHAL/i2c/i2c.h>
 #include <wolfHAL/timer/timer.h>
 #include <wolfHAL/ipc/ipc.h>

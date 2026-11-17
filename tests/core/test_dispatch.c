@@ -23,6 +23,7 @@
 #include <wolfHAL/wolfHAL.h>
 #include <wolfHAL/timer/timer.h>
 #include <wolfHAL/rng/rng.h>
+#include <wolfHAL/dma/dma.h>
 #include "../test.h"
 
 /*
@@ -301,6 +302,245 @@ static void Test_Spi_ValidDispatch(void)
     WHAL_ASSERT_EQ(whal_Spi_SendRecv(&dev, buf, sizeof(buf), buf, sizeof(buf)), WHAL_SUCCESS);
     WHAL_ASSERT_EQ(whal_Spi_EndCom(&dev), WHAL_SUCCESS);
     WHAL_ASSERT_EQ(whal_Spi_Deinit(&dev), WHAL_SUCCESS);
+}
+
+/* --- SPI memory dispatch tests --- */
+
+static whal_Error MockSpiMemInit(whal_SpiMem *d)
+{
+    (void)d;
+    return WHAL_SUCCESS;
+}
+
+static whal_Error MockSpiMemDeinit(whal_SpiMem *d)
+{
+    (void)d;
+    return WHAL_SUCCESS;
+}
+
+static whal_Error MockSpiMemExec(whal_SpiMem *d, const whal_SpiMemOp *op)
+{
+    (void)d;
+    (void)op;
+    return WHAL_SUCCESS;
+}
+
+static whal_Error MockSpiMemMaxDataSz(whal_SpiMem *d, const whal_SpiMemOp *op,
+                                      size_t *maxSz)
+{
+    (void)d;
+    (void)op;
+    *maxSz = 8;
+    return WHAL_SUCCESS;
+}
+
+static whal_Error MockSpiMemMapCreate(whal_SpiMem *d, const whal_SpiMemMap *m)
+{
+    (void)d;
+    (void)m;
+    return WHAL_SUCCESS;
+}
+
+static whal_Error MockSpiMemMapRead(whal_SpiMem *d, const whal_SpiMemMap *m,
+                                    size_t o, void *buf, size_t n)
+{
+    (void)d;
+    (void)m;
+    (void)o;
+    (void)buf;
+    (void)n;
+    return WHAL_SUCCESS;
+}
+
+static whal_Error MockSpiMemMapDestroy(whal_SpiMem *d, const whal_SpiMemMap *m)
+{
+    (void)d;
+    (void)m;
+    return WHAL_SUCCESS;
+}
+
+static const whal_SpiMemDriver mockSpiMemDriver = {
+    .Init = MockSpiMemInit,
+    .Deinit = MockSpiMemDeinit,
+    .Exec = MockSpiMemExec,
+    .MaxDataSz = MockSpiMemMaxDataSz,
+    .MapCreate = MockSpiMemMapCreate,
+    .MapRead = MockSpiMemMapRead,
+    .MapDestroy = MockSpiMemMapDestroy,
+};
+
+/* A driver without the optional map functions. */
+static const whal_SpiMemDriver mockSpiMemNoMapDriver = {
+    .Init = MockSpiMemInit,
+    .Deinit = MockSpiMemDeinit,
+    .Exec = MockSpiMemExec,
+    .MaxDataSz = MockSpiMemMaxDataSz,
+};
+
+static void Test_SpiMem_NullDev(void)
+{
+    whal_SpiMemOp op = {0};
+    whal_SpiMemMap map = {0};
+    uint8_t buf[4];
+    size_t maxSz;
+    WHAL_ASSERT_EQ(whal_SpiMem_Init(NULL), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_SpiMem_Deinit(NULL), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_SpiMem_Exec(NULL, &op), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_SpiMem_MaxDataSz(NULL, &op, &maxSz), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_SpiMem_MapCreate(NULL, &map), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_SpiMem_MapRead(NULL, &map, 0, buf, 4), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_SpiMem_MapDestroy(NULL, &map), WHAL_EINVAL);
+}
+
+static void Test_SpiMem_NullArgs(void)
+{
+    whal_SpiMem dev = { .driver = &mockSpiMemDriver };
+    whal_SpiMemOp op = {0};
+    whal_SpiMemMap map = {0};
+    size_t maxSz;
+    WHAL_ASSERT_EQ(whal_SpiMem_Exec(&dev, NULL), WHAL_EINVAL);
+    /* A data phase needs a buffer. */
+    op.dir = WHAL_SPIMEM_DIR_IN;
+    op.dataSz = 4;
+    WHAL_ASSERT_EQ(whal_SpiMem_Exec(&dev, &op), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_SpiMem_MaxDataSz(&dev, NULL, &maxSz), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_SpiMem_MaxDataSz(&dev, &op, NULL), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_SpiMem_MapCreate(&dev, NULL), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_SpiMem_MapRead(&dev, NULL, 0, NULL, 0), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_SpiMem_MapRead(&dev, &map, 0, NULL, 4), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_SpiMem_MapDestroy(&dev, NULL), WHAL_EINVAL);
+}
+
+static void Test_SpiMem_NullDriver(void)
+{
+    whal_SpiMem dev = { .driver = NULL };
+    whal_SpiMem noMap = { .driver = &mockSpiMemNoMapDriver };
+    whal_SpiMemOp op = {0};
+    whal_SpiMemMap map = {0};
+    uint8_t buf[4];
+    size_t maxSz;
+    WHAL_ASSERT_EQ(whal_SpiMem_Init(&dev), WHAL_ENOTSUP);
+    WHAL_ASSERT_EQ(whal_SpiMem_Deinit(&dev), WHAL_ENOTSUP);
+    WHAL_ASSERT_EQ(whal_SpiMem_Exec(&dev, &op), WHAL_ENOTSUP);
+    WHAL_ASSERT_EQ(whal_SpiMem_MaxDataSz(&dev, &op, &maxSz), WHAL_ENOTSUP);
+    WHAL_ASSERT_EQ(whal_SpiMem_MapCreate(&dev, &map), WHAL_ENOTSUP);
+    WHAL_ASSERT_EQ(whal_SpiMem_MapRead(&dev, &map, 0, buf, 4), WHAL_ENOTSUP);
+    WHAL_ASSERT_EQ(whal_SpiMem_MapDestroy(&dev, &map), WHAL_ENOTSUP);
+    /* The map functions are optional. */
+    WHAL_ASSERT_EQ(whal_SpiMem_MapCreate(&noMap, &map), WHAL_ENOTSUP);
+    WHAL_ASSERT_EQ(whal_SpiMem_MapRead(&noMap, &map, 0, buf, 4),
+                   WHAL_ENOTSUP);
+    WHAL_ASSERT_EQ(whal_SpiMem_MapDestroy(&noMap, &map), WHAL_ENOTSUP);
+}
+
+/* A driver with no functions at all: every call is not supported. */
+static void Test_SpiMem_EmptyDriver(void)
+{
+    static const whal_SpiMemDriver empty = {0};
+    whal_SpiMem dev = { .driver = &empty };
+    whal_SpiMemOp op = {0};
+    size_t maxSz;
+    WHAL_ASSERT_EQ(whal_SpiMem_Init(&dev), WHAL_ENOTSUP);
+    WHAL_ASSERT_EQ(whal_SpiMem_Deinit(&dev), WHAL_ENOTSUP);
+    WHAL_ASSERT_EQ(whal_SpiMem_Exec(&dev, &op), WHAL_ENOTSUP);
+    WHAL_ASSERT_EQ(whal_SpiMem_MaxDataSz(&dev, &op, &maxSz), WHAL_ENOTSUP);
+}
+
+static void Test_SpiMem_ValidDispatch(void)
+{
+    whal_SpiMem dev = { .driver = &mockSpiMemDriver };
+    uint8_t buf[4] = {0};
+    whal_SpiMemOp op = {
+        .opcode = 0x9F,
+        .dir = WHAL_SPIMEM_DIR_IN,
+        .data = buf,
+        .dataSz = 3,
+    };
+    whal_SpiMemMap map = {0};
+    size_t maxSz = 0;
+    WHAL_ASSERT_EQ(whal_SpiMem_Init(&dev), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(whal_SpiMem_Exec(&dev, &op), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(whal_SpiMem_MaxDataSz(&dev, &op, &maxSz), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(maxSz, 8);
+    map.tmpl = op;
+    map.length = 4;
+    WHAL_ASSERT_EQ(whal_SpiMem_MapCreate(&dev, &map), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(whal_SpiMem_MapRead(&dev, &map, 0, buf, 4), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(whal_SpiMem_MapDestroy(&dev, &map), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(whal_SpiMem_Deinit(&dev), WHAL_SUCCESS);
+}
+
+/* --- DMA Wait dispatch tests --- */
+
+static size_t g_mockDmaWaitCh;
+static whal_Error MockDmaWait(whal_Dma *d, size_t ch)
+{
+    (void)d;
+    g_mockDmaWaitCh = ch;
+    return WHAL_ETIMEOUT;
+}
+
+static const whal_DmaDriver mockDmaWaitDriver = {
+    .Wait = MockDmaWait,
+};
+
+/* An IRQ-completion driver: no Wait. */
+static const whal_DmaDriver mockDmaNoWaitDriver = {0};
+
+static void Test_Dma_Wait(void)
+{
+    whal_Dma dev = { .driver = &mockDmaWaitDriver };
+    whal_Dma noWait = { .driver = &mockDmaNoWaitDriver };
+    whal_Dma noDriver = { .driver = NULL };
+
+    WHAL_ASSERT_EQ(whal_Dma_Wait(NULL, 0), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Dma_Wait(&noDriver, 0), WHAL_ENOTSUP);
+    WHAL_ASSERT_EQ(whal_Dma_Wait(&noWait, 0), WHAL_ENOTSUP);
+    /* The driver's result and channel pass through. */
+    g_mockDmaWaitCh = 0;
+    WHAL_ASSERT_EQ(whal_Dma_Wait(&dev, 3), WHAL_ETIMEOUT);
+    WHAL_ASSERT_EQ(g_mockDmaWaitCh, 3);
+}
+
+/* The other whal_Dma calls refuse a missing device, driver or function. */
+static whal_Error MockDmaConfigure(whal_Dma *d, size_t ch, const void *c)
+{
+    (void)d;
+    (void)ch;
+    (void)c;
+    return WHAL_SUCCESS;
+}
+
+static const whal_DmaDriver mockDmaConfigureDriver = {
+    .Configure = MockDmaConfigure,
+};
+
+static void Test_Dma_NullDriver(void)
+{
+    whal_Dma noDriver = { .driver = NULL };
+    whal_Dma noFn = { .driver = &mockDmaNoWaitDriver };
+    whal_Dma cfgOnly = { .driver = &mockDmaConfigureDriver };
+    int cfg = 0;
+
+    /* No device, no driver, or no function: refused */
+    WHAL_ASSERT_EQ(whal_Dma_Init(NULL), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Dma_Init(&noDriver), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Dma_Init(&noFn), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Dma_Deinit(NULL), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Dma_Deinit(&noDriver), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Dma_Deinit(&noFn), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Dma_Configure(NULL, 0, &cfg), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Dma_Configure(&noDriver, 0, &cfg), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Dma_Configure(&noFn, 0, &cfg), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Dma_Start(NULL, 0), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Dma_Start(&noDriver, 0), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Dma_Start(&noFn, 0), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Dma_Stop(NULL, 0), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Dma_Stop(&noDriver, 0), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Dma_Stop(&noFn, 0), WHAL_EINVAL);
+    /* A channel configuration is needed */
+    WHAL_ASSERT_EQ(whal_Dma_Configure(&cfgOnly, 0, NULL), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Dma_Configure(&cfgOnly, 0, &cfg), WHAL_SUCCESS);
 }
 
 /* --- Block dispatch tests --- */
@@ -1020,6 +1260,13 @@ void whal_Test_Dispatch(void)
     WHAL_TEST(Test_Spi_NullDev);
     WHAL_TEST(Test_Spi_NullDriver);
     WHAL_TEST(Test_Spi_ValidDispatch);
+    WHAL_TEST(Test_SpiMem_NullDev);
+    WHAL_TEST(Test_SpiMem_NullArgs);
+    WHAL_TEST(Test_SpiMem_NullDriver);
+    WHAL_TEST(Test_SpiMem_ValidDispatch);
+    WHAL_TEST(Test_SpiMem_EmptyDriver);
+    WHAL_TEST(Test_Dma_Wait);
+    WHAL_TEST(Test_Dma_NullDriver);
     WHAL_TEST(Test_Block_NullDev);
     WHAL_TEST(Test_Block_NullDriver);
     WHAL_TEST(Test_Block_ValidDispatch);

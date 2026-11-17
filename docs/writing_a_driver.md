@@ -752,6 +752,78 @@ After the loop, wait for the bus to go idle before returning.
 
 ---
 
+## SPI Memory
+
+Header: `wolfHAL/spimem/spimem.h`
+
+The SPI memory driver is for flash controllers that send one complete
+command at a time: opcode, address, dummy cycles and data, with chip select
+driven by the controller. These
+controllers cannot act as a byte-stream SPI bus, so they do not use the SPI
+API above. Memory drivers such as `spimem_nor_flash` build on this API and
+implement `whal_Flash` for the application.
+
+Each operation carries its bus mode, as Linux spi-mem does: the lines for
+the opcode, the address and the data, and DTR. A memory driver can then
+mix modes, for example a 1-bit read and an octal DTR reset.
+
+### Init
+
+Configure and enable the controller from its configuration struct (clock,
+chip select, read capture), so it does not depend on what an earlier boot
+stage left. Do not set a bus mode here; Exec sets it for each operation.
+
+### Deinit
+
+Disable the controller.
+
+### Exec
+
+Run one `whal_SpiMemOp`:
+
+- `opcode` / `opBytes` — the command, 1 or 2 bytes; with 2, bits 15:8 go
+  first (octal flashes such as Macronix MX25, or a command repeated on both
+  clock edges in octal DDR). Return `WHAL_ENOTSUP` for a size the controller
+  cannot send.
+- `opLines` / `addrLines` / `dataLines` — 1, 2, 4 or 8 lines for each phase
+  (`WHAL_SPIMEM_OP_INIT_1BIT` sets all three to 1, and `opBytes` to 1)
+- `dtr` — 1 for DTR (data on both clock edges)
+- `addrBytes` / `addr` — 0, 3 or 4 address bytes
+- `dummyCycles` — clock cycles between the address and the data
+- `dir` / `data` / `dataSz` — no data, data in (read) or data out (write)
+
+Wait until the controller is done before returning. A read with an address
+may be split into several commands at increasing addresses, so a memory
+driver can read any length in one call. Every other operation must run as
+one command: return `WHAL_EINVAL` if it does not fit. Return `WHAL_EINVAL` for
+a line count that is not 1, 2, 4 or 8, and `WHAL_ENOTSUP` for a bus mode
+the controller cannot run.
+
+### MaxDataSz
+
+Report the largest `dataSz` the controller can run in one command for an
+operation like the given one. Memory drivers use it to split writes, for
+example a page program into several smaller programs.
+
+### MapCreate / MapRead / MapDestroy (optional)
+
+Memory-mapped reads, like Linux spi-mem dirmap. A `whal_SpiMemMap` holds a
+read operation template (`tmpl`: opcode, lines, dummy cycles, address size)
+and the memory range it shows (`offset`, `length`).
+
+- `MapCreate` sets the controller up so CPU reads of its window run the
+  template read, and checks the range fits the window. Return
+  `WHAL_ENOTSUP` if the controller has no memory-mapped mode or cannot use
+  the template.
+- `MapRead` copies `dataSz` bytes from `offset` inside the map. Set the
+  template again first if `Exec` may have changed the shared read setup.
+- `MapDestroy` undoes anything `MapCreate` changed that would break `Exec`.
+
+Leave all three NULL if the controller has no window; the dispatch layer
+then returns `WHAL_ENOTSUP`.
+
+---
+
 ## I2C
 
 Header: `wolfHAL/i2c/i2c.h`
@@ -1805,6 +1877,11 @@ platform-specific struct containing:
 - Burst size (if supported)
 - Peripheral request mapping (e.g., DMAMUX request ID)
 
+A peripheral driver that must not depend on one DMA driver (for example
+the Cadence OSPI driver, an IP used on more than one SoC) takes a board
+callback that calls `whal_Dma_Configure` with that DMA's own `chCfg`
+(`SetDmaReadBuf` in `whal_CadenceOspi_SpiMem_Cfg`).
+
 The DMA driver does not store callbacks. Instead, the board defines ISR
 entries in the vector table and calls the driver's IRQ handler (e.g.,
 `whal_Stm32wb_Dma_IRQHandler()`), passing a callback and context pointer.
@@ -1827,6 +1904,14 @@ before calling Start.
 Stop a DMA channel. This aborts any in-progress transfer and disables the
 channel. The peripheral driver should call Stop in its cleanup path or when
 a transfer needs to be cancelled.
+
+### Wait (optional)
+
+For DMA controllers used without interrupts: block until the started
+transfer on the channel finishes, then return its result (`WHAL_SUCCESS`,
+`WHAL_EHARDWARE` for a DMA error, `WHAL_ETIMEOUT` when the driver's
+timeout runs out). Do any cache invalidation of the destination here. IRQ
+drivers leave Wait NULL; `whal_Dma_Wait()` then returns `WHAL_ENOTSUP`.
 
 ---
 
