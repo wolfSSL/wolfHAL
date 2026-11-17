@@ -78,7 +78,7 @@ static whal_Timeout g_whalFlashTimeout = {
 };
 
 /* OSPI DMA reads. The MMU and caches are off, so no cache upkeep. */
-static whal_DmaMemXfer g_whalOspiDmaXfer;
+static whal_Versal2_OspiDma_ChCfg g_whalOspiDmaXfer;
 
 whal_Dma g_whalOspiDma = {
     .base = WHAL_VERSAL2_OSPI_BASE,
@@ -90,6 +90,15 @@ whal_Dma g_whalOspiDma = {
         .xfer = &g_whalOspiDmaXfer,
     },
 };
+
+/* Point the OSPI DMA at a read buffer, for the OSPI controller. */
+static whal_Error Board_OspiSetDmaReadBuf(whal_Dma *dma, size_t ch,
+                                          void *buf, size_t len)
+{
+    whal_Versal2_OspiDma_ChCfg x = { .buf = buf, .len = len };
+
+    return whal_Dma_Configure(dma, ch, &x);
+}
 
 /* OSPI controller */
 whal_SpiMem g_whalOspi = {
@@ -108,6 +117,7 @@ whal_SpiMem g_whalOspi = {
         .dmaCh = WHAL_VERSAL2_OSPI_DMA_CH,
         .dmaAlign = 4,
         .dmaMaxLen = WHAL_VERSAL2_OSPI_DMA_MAX_LEN,
+        .SetDmaReadBuf = Board_OspiSetDmaReadBuf,
         .mapBase = WHAL_VERSAL2_OSPI_MAP_BASE,
         .mapSize = WHAL_VERSAL2_OSPI_MAP_SIZE,
         .MapSelect = whal_Versal2_Ospi_MapSelect,

@@ -50,15 +50,6 @@
 typedef struct whal_Dma whal_Dma;
 
 /*
- * @brief A peripheral-to-memory transfer: the chCfg for DMA drivers that
- * only need the memory side (the peripheral side is fixed in their cfg).
- */
-typedef struct {
-    void *buf;   /* memory address */
-    size_t len;  /* bytes */
-} whal_DmaMemXfer;
-
-/*
  * @brief Driver vtable for DMA controllers.
  */
 typedef struct {

@@ -35,7 +35,7 @@
  * The destination DMA that moves OSPI indirect read data to memory (AM026
  * p706-709). One channel (0). The whal_Dma base is the OSPI base (DMA
  * blocks at +0x1000 / +0x1800). chCfg for Configure is a
- * whal_DmaMemXfer: buffer and length, 4-byte aligned.
+ * whal_Versal2_OspiDma_ChCfg: buffer and length, 4-byte aligned.
  */
 
 /* Source read address = IND_AHB_ADDR_TRIG (AM026 p707 step 2b), the flash
@@ -54,6 +54,14 @@
 #define WHAL_VERSAL2_OSPI_DMA_MAX_LEN 0x1FFFFFFCUL
 
 /*
+ * @brief Channel config for Configure: where one transfer puts its data.
+ */
+typedef struct {
+    void *buf;   /* destination in memory, 4-byte aligned */
+    size_t len;  /* bytes, a multiple of 4 */
+} whal_Versal2_OspiDma_ChCfg;
+
+/*
  * @brief OSPI DMA configuration (the whal_Dma cfg).
  */
 typedef struct {
@@ -63,7 +71,7 @@ typedef struct {
     void (*CacheInval)(void *buf, size_t len);        /* after (optional) */
     whal_Timeout *timeout;   /* bound for Wait; NULL = wait forever */
     /* State: the transfer Configure set, used by Start and Wait. */
-    whal_DmaMemXfer *xfer;
+    whal_Versal2_OspiDma_ChCfg *xfer;
 } whal_Versal2_OspiDma_Cfg;
 
 #ifndef WHAL_CFG_VERSAL2_OSPI_DMA_DIRECT_API_MAPPING
@@ -100,8 +108,9 @@ whal_Error whal_Versal2_OspiDma_Deinit(whal_Dma *dmaDev);
  *
  * @param dmaDev DMA instance.
  * @param ch     WHAL_VERSAL2_OSPI_DMA_CH.
- * @param chCfg  A whal_DmaMemXfer: buf 4-byte aligned, len not 0, a
- *               multiple of 4, at most WHAL_VERSAL2_OSPI_DMA_MAX_LEN.
+ * @param chCfg  A whal_Versal2_OspiDma_ChCfg: buf 4-byte aligned, len
+ *               not 0, a multiple of 4, at most
+ *               WHAL_VERSAL2_OSPI_DMA_MAX_LEN.
  *
  * @retval WHAL_SUCCESS Configured.
  * @retval WHAL_EINVAL  Null pointer, bad channel, NULL buf, len 0, buf or

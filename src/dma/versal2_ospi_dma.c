@@ -127,7 +127,7 @@ whal_Error whal_Versal2_OspiDma_Configure(whal_Dma *dmaDev, size_t ch,
                                           const void *chCfg)
 {
     const whal_Versal2_OspiDma_Cfg *cfg;
-    const whal_DmaMemXfer *x = chCfg;
+    const whal_Versal2_OspiDma_ChCfg *x = chCfg;
     uint64_t dst;
     whal_Error err;
 

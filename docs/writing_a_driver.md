@@ -1877,10 +1877,10 @@ platform-specific struct containing:
 - Burst size (if supported)
 - Peripheral request mapping (e.g., DMAMUX request ID)
 
-A DMA driver whose peripheral side is fixed in its own cfg (for example
-the Versal Gen 2 OSPI DMA) can take the generic `whal_DmaMemXfer`
-(`buf`, `len`) from `wolfHAL/dma/dma.h` instead, so the driver using it
-needs no platform-specific type.
+A peripheral driver that must not depend on one DMA driver (for example
+the Cadence OSPI driver, an IP used on more than one SoC) takes a board
+callback that calls `whal_Dma_Configure` with that DMA's own `chCfg`
+(`SetDmaReadBuf` in `whal_CadenceOspi_SpiMem_Cfg`).
 
 The DMA driver does not store callbacks. Instead, the board defines ISR
 entries in the vector table and calls the driver's IRQ handler (e.g.,

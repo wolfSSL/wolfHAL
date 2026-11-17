@@ -469,7 +469,7 @@ static void Test_Versal2SpiMem_DmaSetupFails(void)
  * Configure clears it (AM028 OSPIDMA_DST_I_STS, write 1 to clear). */
 static void Test_Versal2SpiMem_DmaStaleDone(void)
 {
-    whal_DmaMemXfer x = { g_buf, 64 };
+    whal_Versal2_OspiDma_ChCfg x = { g_buf, 64 };
     whal_Error err;
 
     g_dmaLeaveDone = 1;
@@ -533,6 +533,67 @@ static void Test_Versal2SpiMem_DmaCacheHooks(void)
     CheckHooks(0, 256, g_buf, 256);
     /* 3 bytes by STIG first, so the DMA part starts at g_buf[4] */
     CheckHooks(1, 200, &g_buf[4], 196);
+}
+
+/* The board's SetDmaReadBuf, recording its arguments; it can also fail. */
+static int g_cbCalls;
+static whal_Dma *g_cbDma;
+static size_t g_cbCh;
+static void *g_cbBuf;
+static size_t g_cbLen;
+static whal_Error g_cbRet;
+
+static whal_Error RecSetDmaReadBuf(whal_Dma *dma, size_t ch, void *buf,
+                                   size_t len)
+{
+    const whal_CadenceOspi_SpiMem_Cfg *board = g_whalOspi.cfg;
+
+    g_cbCalls++;
+    g_cbDma = dma;
+    g_cbCh = ch;
+    g_cbBuf = buf;
+    g_cbLen = len;
+    if (g_cbRet != WHAL_SUCCESS) {
+        return g_cbRet;
+    }
+    return board->SetDmaReadBuf(dma, ch, buf, len);
+}
+
+/* The driver hands the DMA part of a read to SetDmaReadBuf with its own
+ * dma and channel. Its error fails the read; without it reads are STIG. */
+static void Test_Versal2SpiMem_SetDmaReadBuf(void)
+{
+    whal_CadenceOspi_SpiMem_Cfg cfg = g_faultCfg;
+    whal_SpiMem dev = {
+        .base = WHAL_VERSAL2_OSPI_BASE,
+        .driver = WHAL_VERSAL2_OSPI_DRIVER,
+        .cfg = &cfg,
+    };
+
+    /* 3 bytes by STIG first, so the DMA part is 196 bytes at g_buf[4] */
+    cfg.SetDmaReadBuf = RecSetDmaReadBuf;
+    g_cbCalls = 0;
+    g_cbRet = WHAL_SUCCESS;
+    Clear();
+    WHAL_ASSERT_EQ(Read(&dev, 1, &g_buf[1], 200), WHAL_SUCCESS);
+    WHAL_ASSERT_MEM_EQ(&g_buf[1], &g_pattern[1], 200);
+    WHAL_ASSERT_EQ(g_cbCalls, 1);
+    WHAL_ASSERT_EQ(g_cbDma == &g_faultDma, 1);
+    WHAL_ASSERT_EQ(g_cbCh, WHAL_VERSAL2_OSPI_DMA_CH);
+    WHAL_ASSERT_EQ(g_cbBuf == &g_buf[4], 1);
+    WHAL_ASSERT_EQ(g_cbLen, 196);
+
+    g_cbRet = WHAL_EHARDWARE;
+    WHAL_ASSERT_EQ(Read(&dev, 0, g_buf, 256), WHAL_EHARDWARE);
+    g_cbRet = WHAL_SUCCESS;
+    CheckReadAfterFault();
+
+    cfg.SetDmaReadBuf = NULL;
+    g_dmaCfgCalls = 0;
+    Clear();
+    WHAL_ASSERT_EQ(Read(&dev, 0, g_buf, 256), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(g_dmaCfgCalls, 0);
+    WHAL_ASSERT_MEM_EQ(g_buf, g_pattern, 256);
 }
 
 /* A read with dummy cycles can't use the indirect read, which sends none,
@@ -677,6 +738,7 @@ void whal_Test_SpiMem_Platform(void)
     WHAL_TEST(Test_Versal2SpiMem_DmaStaleDone);
     WHAL_TEST(Test_Versal2SpiMem_DmaPieces);
     WHAL_TEST(Test_Versal2SpiMem_DmaCacheHooks);
+    WHAL_TEST(Test_Versal2SpiMem_SetDmaReadBuf);
     WHAL_TEST(Test_Versal2SpiMem_DummyReadIsStig);
     WHAL_TEST(Test_Versal2SpiMem_MapReads);
     WHAL_TEST(Test_Versal2SpiMem_MapErrors);

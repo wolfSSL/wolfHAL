@@ -39,7 +39,7 @@ static uint8_t g_buf[64] __attribute__((aligned(64)));
 
 /* The board DMA with a short timeout for the Wait test */
 static whal_Timeout g_shortTimeout;
-static whal_DmaMemXfer g_xfer;
+static whal_Versal2_OspiDma_ChCfg g_xfer;
 static whal_Versal2_OspiDma_Cfg g_cfg;
 static whal_Dma g_dma = {
     .base = WHAL_VERSAL2_OSPI_BASE,
@@ -75,8 +75,10 @@ static void Test_Versal2Dma_Init(void)
  * value (AM028 DST_ADDR; SRC_RD_ADDR measured on the VEK385). */
 static void Test_Versal2Dma_Configure(void)
 {
-    whal_DmaMemXfer x = { g_buf, sizeof(g_buf) };
-    whal_DmaMemXfer max = { g_buf, WHAL_VERSAL2_OSPI_DMA_MAX_LEN };
+    whal_Versal2_OspiDma_ChCfg x = { g_buf, sizeof(g_buf) };
+    whal_Versal2_OspiDma_ChCfg max = {
+        g_buf, WHAL_VERSAL2_OSPI_DMA_MAX_LEN
+    };
     void (*clean)(void *buf, size_t len) = g_cfg.CacheCleanInval;
     whal_Error err;
 
@@ -96,12 +98,14 @@ static void Test_Versal2Dma_Configure(void)
 
 static void Test_Versal2Dma_BadArgs(void)
 {
-    whal_DmaMemXfer x = { g_buf, sizeof(g_buf) };
-    whal_DmaMemXfer noBuf = { NULL, 4 };
-    whal_DmaMemXfer noLen = { g_buf, 0 };
-    whal_DmaMemXfer oddBuf = { &g_buf[1], 4 };
-    whal_DmaMemXfer oddLen = { g_buf, 6 };
-    whal_DmaMemXfer bigLen = { g_buf, WHAL_VERSAL2_OSPI_DMA_MAX_LEN + 4 };
+    whal_Versal2_OspiDma_ChCfg x = { g_buf, sizeof(g_buf) };
+    whal_Versal2_OspiDma_ChCfg noBuf = { NULL, 4 };
+    whal_Versal2_OspiDma_ChCfg noLen = { g_buf, 0 };
+    whal_Versal2_OspiDma_ChCfg oddBuf = { &g_buf[1], 4 };
+    whal_Versal2_OspiDma_ChCfg oddLen = { g_buf, 6 };
+    whal_Versal2_OspiDma_ChCfg bigLen = {
+        g_buf, WHAL_VERSAL2_OSPI_DMA_MAX_LEN + 4
+    };
     size_t ch = WHAL_VERSAL2_OSPI_DMA_CH;
 
     WHAL_ASSERT_EQ(whal_Dma_Configure(&g_dma, ch, NULL), WHAL_EINVAL);
@@ -135,7 +139,7 @@ static void Test_Versal2Dma_WaitTimeout(void)
 #ifdef WHAL_CFG_NO_TIMEOUT
     WHAL_SKIP();
 #else
-    whal_DmaMemXfer x = { g_buf, sizeof(g_buf) };
+    whal_Versal2_OspiDma_ChCfg x = { g_buf, sizeof(g_buf) };
 
     WHAL_ASSERT_EQ(whal_Dma_Init(&g_dma), WHAL_SUCCESS);
     WHAL_ASSERT_EQ(whal_Dma_Configure(&g_dma, WHAL_VERSAL2_OSPI_DMA_CH, &x),

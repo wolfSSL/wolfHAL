@@ -40,11 +40,11 @@
 /*
  * @brief Controller configuration.
  *
- * DMA reads: per read the driver passes a whal_DmaMemXfer (buf and len,
- * dmaAlign aligned) to whal_Dma_Configure, then calls Start before the
- * indirect read starts and Wait after. An error from any of them fails the
+ * DMA reads: per read the driver calls SetDmaReadBuf with the buffer and
+ * length (dmaAlign aligned), then whal_Dma_Start before the indirect read
+ * starts and whal_Dma_Wait after. An error from any of them fails the
  * read. The DMA must have Wait. A read longer than dmaMaxLen goes as
- * several transfers.
+ * several transfers. Without dma or SetDmaReadBuf every read is STIG.
  */
 typedef struct {
     uint32_t devSize;        /* DEV_SIZE_CONFIG value */
@@ -60,6 +60,10 @@ typedef struct {
     size_t dmaCh;            /* channel on dma */
     size_t dmaAlign;         /* buf and len alignment for a DMA read */
     size_t dmaMaxLen;        /* most bytes in one DMA transfer; 0 = any */
+    /* Point the DMA channel at a read buffer: the board calls
+     * whal_Dma_Configure with the DMA driver's own chCfg. */
+    whal_Error (*SetDmaReadBuf)(whal_Dma *dma, size_t ch, void *buf,
+                                size_t len);
     /* Memory-mapped reads (direct access mode). mapBase 0 = none. */
     uintptr_t mapBase;       /* window start (AMD: 0xC0000000) */
     size_t mapSize;          /* window size (AMD: 512 MB) */

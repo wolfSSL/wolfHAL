@@ -492,7 +492,6 @@ static whal_Error whal_CadenceOspi_SpiMem_DmaRead(
     uintptr_t base, const whal_CadenceOspi_SpiMem_Cfg *cfg, uint8_t opcode,
     uint32_t addr, uint8_t *buf, size_t len)
 {
-    whal_DmaMemXfer xfer;
     whal_Error err;
 
     /* The indirect read sends the opcode in DEV_INSTR_RD_CONFIG, with the
@@ -518,10 +517,8 @@ static whal_Error whal_CadenceOspi_SpiMem_DmaRead(
     whal_Reg32_Write(base, OSPI_IND_RD_XFER_NUM_BYTES_REG, len);
 
     /* Set up and start the DMA first, then the indirect read (AM026
-     * p709). */
-    xfer.buf = buf;
-    xfer.len = len;
-    err = whal_Dma_Configure(cfg->dma, cfg->dmaCh, &xfer);
+     * p709). The board points the DMA at the buffer. */
+    err = cfg->SetDmaReadBuf(cfg->dma, cfg->dmaCh, buf, len);
     if (err) {
         return err;
     }
@@ -583,7 +580,7 @@ static whal_Error whal_CadenceOspi_SpiMem_Read(
 
     /* The indirect read sends the DEV_SIZE_CONFIG address size (AM028
      * dev_size_config_reg num_addr_bytes_fld, 0 = 1 byte). */
-    if (cfg->dma && op->dummyCycles == 0 && !op->dtr &&
+    if (cfg->dma && cfg->SetDmaReadBuf && op->dummyCycles == 0 && !op->dtr &&
         op->addrBytes ==
             (cfg->devSize & OSPI_DEV_SIZE_ADDR_BYTES_Msk) + 1) {
         align = cfg->dmaAlign;
