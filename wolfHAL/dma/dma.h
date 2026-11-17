@@ -39,13 +39,24 @@
  *   2. whal_Dma_Configure()  — set up a channel (direction, width, src/dst,
  *                              buffer, length, etc.)
  *   3. whal_Dma_Start()      — kick off the transfer
- *   4. whal_Dma_Stop()       — abort or clean up after completion
+ *   4. whal_Dma_Wait()       - (polled drivers) block until it is done
+ *   5. whal_Dma_Stop()       - abort or clean up after completion
  *
  * Completion callbacks are passed by the board's IRQ handler to the platform
- * DMA IRQ handler and run in ISR context.
+ * DMA IRQ handler and run in ISR context. Drivers that are polled instead
+ * implement Wait; IRQ drivers leave it NULL.
  */
 
 typedef struct whal_Dma whal_Dma;
+
+/*
+ * @brief A peripheral-to-memory transfer: the chCfg for DMA drivers that
+ * only need the memory side (the peripheral side is fixed in their cfg).
+ */
+typedef struct {
+    void *buf;   /* memory address */
+    size_t len;  /* bytes */
+} whal_DmaMemXfer;
 
 /*
  * @brief Driver vtable for DMA controllers.
@@ -61,6 +72,8 @@ typedef struct {
     whal_Error (*Start)(whal_Dma *dmaDev, size_t ch);
     /* Stop a DMA channel. */
     whal_Error (*Stop)(whal_Dma *dmaDev, size_t ch);
+    /* Wait for a started transfer to finish (optional, polled drivers). */
+    whal_Error (*Wait)(whal_Dma *dmaDev, size_t ch);
 } whal_DmaDriver;
 
 /*
@@ -122,5 +135,19 @@ whal_Error whal_Dma_Start(whal_Dma *dmaDev, size_t ch);
  * @retval WHAL_ETIMEOUT The channel did not stop within the timeout.
  */
 whal_Error whal_Dma_Stop(whal_Dma *dmaDev, size_t ch);
+
+/*
+ * @brief Wait for a started transfer to finish (polled drivers).
+ *
+ * @param dmaDev DMA controller instance.
+ * @param ch     Channel index.
+ *
+ * @retval WHAL_SUCCESS   Transfer done.
+ * @retval WHAL_EINVAL    Null pointer or bad channel.
+ * @retval WHAL_ENOTSUP   The driver has no Wait (IRQ completion only).
+ * @retval WHAL_EHARDWARE The DMA reported an error.
+ * @retval WHAL_ETIMEOUT  The transfer did not finish in time.
+ */
+whal_Error whal_Dma_Wait(whal_Dma *dmaDev, size_t ch);
 
 #endif /* WHAL_DMA_H */
