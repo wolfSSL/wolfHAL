@@ -80,11 +80,11 @@ whal_Error whal_Esp32c6_TimgWdt_Init(whal_Watchdog *wdgDev)
 #ifdef WHAL_CFG_ESP32C6_TIMG_WDT_SINGLE_INSTANCE
     const whal_Esp32c6_TimgWdt_Cfg *cfg =
         (const whal_Esp32c6_TimgWdt_Cfg *)whal_Esp32c6_TimgWdt_Dev.cfg;
-    size_t base = whal_Esp32c6_TimgWdt_Dev.base;
+    uintptr_t base = whal_Esp32c6_TimgWdt_Dev.base;
     (void)wdgDev;
 #else
     const whal_Esp32c6_TimgWdt_Cfg *cfg;
-    size_t base;
+    uintptr_t base;
 
     if (!wdgDev || !wdgDev->cfg) {
         return WHAL_EINVAL;
@@ -98,31 +98,31 @@ whal_Error whal_Esp32c6_TimgWdt_Init(whal_Watchdog *wdgDev)
         return WHAL_ENOTSUP;
     }
 
-    whal_Reg_Write(base, TIMG_WDTWPROTECT_REG, TIMG_WDT_WKEY);
+    whal_Reg32_Write(base, TIMG_WDTWPROTECT_REG, TIMG_WDT_WKEY);
 
-    whal_Reg_Write(base, TIMG_WDTCONFIG1_REG,
-                   whal_SetBits(TIMG_WDT_CLK_PRESCALE_Msk,
-                                TIMG_WDT_CLK_PRESCALE_Pos, cfg->prescale) |
-                   TIMG_WDT_DIVCNT_RST_Msk);
-    whal_Reg_Write(base, TIMG_WDTCONFIG2_REG, cfg->stg0Hold);
-    whal_Reg_Update(base, TIMG_WDTCONFIG0_REG,
-                    TIMG_WDT_EN_Msk | TIMG_WDT_STG0_Msk | TIMG_WDT_STG1_Msk |
-                    TIMG_WDT_STG2_Msk | TIMG_WDT_STG3_Msk |
-                    TIMG_WDT_FLASHBOOT_MOD_EN_Msk,
-                    TIMG_WDT_EN_Msk |
-                    whal_SetBits(TIMG_WDT_STG0_Msk, TIMG_WDT_STG0_Pos,
-                                 TIMG_WDT_STG_SYS_RESET) |
-                    whal_SetBits(TIMG_WDT_STG1_Msk, TIMG_WDT_STG1_Pos,
-                                 TIMG_WDT_STG_OFF) |
-                    whal_SetBits(TIMG_WDT_STG2_Msk, TIMG_WDT_STG2_Pos,
-                                 TIMG_WDT_STG_OFF) |
-                    whal_SetBits(TIMG_WDT_STG3_Msk, TIMG_WDT_STG3_Pos,
-                                 TIMG_WDT_STG_OFF));
-    whal_Reg_Update(base, TIMG_WDTCONFIG0_REG, TIMG_WDT_CONF_UPDATE_EN_Msk,
-                    TIMG_WDT_CONF_UPDATE_EN_Msk);
-    whal_Reg_Write(base, TIMG_WDTFEED_REG, 1);
+    whal_Reg32_Write(base, TIMG_WDTCONFIG1_REG,
+                     whal_SetBits(TIMG_WDT_CLK_PRESCALE_Msk,
+                                  TIMG_WDT_CLK_PRESCALE_Pos, cfg->prescale) |
+                     TIMG_WDT_DIVCNT_RST_Msk);
+    whal_Reg32_Write(base, TIMG_WDTCONFIG2_REG, cfg->stg0Hold);
+    whal_Reg32_Update(base, TIMG_WDTCONFIG0_REG,
+                      TIMG_WDT_EN_Msk | TIMG_WDT_STG0_Msk | TIMG_WDT_STG1_Msk |
+                      TIMG_WDT_STG2_Msk | TIMG_WDT_STG3_Msk |
+                      TIMG_WDT_FLASHBOOT_MOD_EN_Msk,
+                      TIMG_WDT_EN_Msk |
+                      whal_SetBits(TIMG_WDT_STG0_Msk, TIMG_WDT_STG0_Pos,
+                                   TIMG_WDT_STG_SYS_RESET) |
+                      whal_SetBits(TIMG_WDT_STG1_Msk, TIMG_WDT_STG1_Pos,
+                                   TIMG_WDT_STG_OFF) |
+                      whal_SetBits(TIMG_WDT_STG2_Msk, TIMG_WDT_STG2_Pos,
+                                   TIMG_WDT_STG_OFF) |
+                      whal_SetBits(TIMG_WDT_STG3_Msk, TIMG_WDT_STG3_Pos,
+                                   TIMG_WDT_STG_OFF));
+    whal_Reg32_Update(base, TIMG_WDTCONFIG0_REG, TIMG_WDT_CONF_UPDATE_EN_Msk,
+                      TIMG_WDT_CONF_UPDATE_EN_Msk);
+    whal_Reg32_Write(base, TIMG_WDTFEED_REG, 1);
 
-    whal_Reg_Write(base, TIMG_WDTWPROTECT_REG, 0);
+    whal_Reg32_Write(base, TIMG_WDTWPROTECT_REG, 0);
 
     return WHAL_SUCCESS;
 }
@@ -130,10 +130,10 @@ whal_Error whal_Esp32c6_TimgWdt_Init(whal_Watchdog *wdgDev)
 whal_Error whal_Esp32c6_TimgWdt_Deinit(whal_Watchdog *wdgDev)
 {
 #ifdef WHAL_CFG_ESP32C6_TIMG_WDT_SINGLE_INSTANCE
-    size_t base = whal_Esp32c6_TimgWdt_Dev.base;
+    uintptr_t base = whal_Esp32c6_TimgWdt_Dev.base;
     (void)wdgDev;
 #else
-    size_t base;
+    uintptr_t base;
 
     if (!wdgDev) {
         return WHAL_EINVAL;
@@ -142,12 +142,12 @@ whal_Error whal_Esp32c6_TimgWdt_Deinit(whal_Watchdog *wdgDev)
     base = wdgDev->base;
 #endif
 
-    whal_Reg_Write(base, TIMG_WDTWPROTECT_REG, TIMG_WDT_WKEY);
-    whal_Reg_Update(base, TIMG_WDTCONFIG0_REG,
-                    TIMG_WDT_EN_Msk | TIMG_WDT_FLASHBOOT_MOD_EN_Msk, 0);
-    whal_Reg_Update(base, TIMG_WDTCONFIG0_REG, TIMG_WDT_CONF_UPDATE_EN_Msk,
-                    TIMG_WDT_CONF_UPDATE_EN_Msk);
-    whal_Reg_Write(base, TIMG_WDTWPROTECT_REG, 0);
+    whal_Reg32_Write(base, TIMG_WDTWPROTECT_REG, TIMG_WDT_WKEY);
+    whal_Reg32_Update(base, TIMG_WDTCONFIG0_REG,
+                      TIMG_WDT_EN_Msk | TIMG_WDT_FLASHBOOT_MOD_EN_Msk, 0);
+    whal_Reg32_Update(base, TIMG_WDTCONFIG0_REG, TIMG_WDT_CONF_UPDATE_EN_Msk,
+                      TIMG_WDT_CONF_UPDATE_EN_Msk);
+    whal_Reg32_Write(base, TIMG_WDTWPROTECT_REG, 0);
 
     return WHAL_SUCCESS;
 }
@@ -155,10 +155,10 @@ whal_Error whal_Esp32c6_TimgWdt_Deinit(whal_Watchdog *wdgDev)
 whal_Error whal_Esp32c6_TimgWdt_Refresh(whal_Watchdog *wdgDev)
 {
 #ifdef WHAL_CFG_ESP32C6_TIMG_WDT_SINGLE_INSTANCE
-    size_t base = whal_Esp32c6_TimgWdt_Dev.base;
+    uintptr_t base = whal_Esp32c6_TimgWdt_Dev.base;
     (void)wdgDev;
 #else
-    size_t base;
+    uintptr_t base;
 
     if (!wdgDev) {
         return WHAL_EINVAL;
@@ -167,9 +167,9 @@ whal_Error whal_Esp32c6_TimgWdt_Refresh(whal_Watchdog *wdgDev)
     base = wdgDev->base;
 #endif
 
-    whal_Reg_Write(base, TIMG_WDTWPROTECT_REG, TIMG_WDT_WKEY);
-    whal_Reg_Write(base, TIMG_WDTFEED_REG, 1);
-    whal_Reg_Write(base, TIMG_WDTWPROTECT_REG, 0);
+    whal_Reg32_Write(base, TIMG_WDTWPROTECT_REG, TIMG_WDT_WKEY);
+    whal_Reg32_Write(base, TIMG_WDTFEED_REG, 1);
+    whal_Reg32_Write(base, TIMG_WDTWPROTECT_REG, 0);
 
     return WHAL_SUCCESS;
 }

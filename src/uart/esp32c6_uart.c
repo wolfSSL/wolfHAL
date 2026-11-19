@@ -117,11 +117,11 @@ whal_Error whal_Esp32c6_Uart_Init(whal_Uart *uartDev)
 #ifdef WHAL_CFG_ESP32C6_UART_SINGLE_INSTANCE
     const whal_Esp32c6_Uart_Cfg *cfg =
         (const whal_Esp32c6_Uart_Cfg *)whal_Esp32c6_Uart_Dev.cfg;
-    size_t base = whal_Esp32c6_Uart_Dev.base;
+    uintptr_t base = whal_Esp32c6_Uart_Dev.base;
     (void)uartDev;
 #else
     const whal_Esp32c6_Uart_Cfg *cfg;
-    size_t base;
+    uintptr_t base;
 
     if (!uartDev || !uartDev->cfg) {
         return WHAL_EINVAL;
@@ -131,56 +131,56 @@ whal_Error whal_Esp32c6_Uart_Init(whal_Uart *uartDev)
     cfg = (const whal_Esp32c6_Uart_Cfg *)uartDev->cfg;
 #endif
 
-    whal_Reg_Update(base, UART_CLK_CONF_REG,
-                    UART_TX_SCLK_EN_Msk | UART_RX_SCLK_EN_Msk,
-                    UART_TX_SCLK_EN_Msk | UART_RX_SCLK_EN_Msk);
+    whal_Reg32_Update(base, UART_CLK_CONF_REG,
+                      UART_TX_SCLK_EN_Msk | UART_RX_SCLK_EN_Msk,
+                      UART_TX_SCLK_EN_Msk | UART_RX_SCLK_EN_Msk);
 
     /* Drain pending output before changing the baud rate. */
-    err = whal_Reg_ReadPoll(base, UART_STATUS_REG, UART_TXFIFO_CNT_Msk, 0,
-                            cfg->timeout);
+    err = whal_Reg32_ReadPoll(base, UART_STATUS_REG, UART_TXFIFO_CNT_Msk, 0,
+                              cfg->timeout);
     if (err) {
         return err;
     }
-    err = whal_Reg_ReadPoll(base, UART_FSM_STATUS_REG, UART_ST_UTX_OUT_Msk, 0,
-                            cfg->timeout);
+    err = whal_Reg32_ReadPoll(base, UART_FSM_STATUS_REG, UART_ST_UTX_OUT_Msk, 0,
+                              cfg->timeout);
     if (err) {
         return err;
     }
-    err = whal_Reg_ReadPoll(base, UART_REG_UPDATE_REG, UART_REG_UPDATE_Msk, 0,
-                            cfg->timeout);
-    if (err) {
-        return err;
-    }
-
-    whal_Reg_Update(base, UART_CLKDIV_SYNC_REG,
-                    UART_CLKDIV_Msk | UART_CLKDIV_FRAG_Msk, cfg->clkDiv);
-    whal_Reg_Update(base, UART_CONF0_SYNC_REG,
-                    UART_PARITY_EN_Msk | UART_BIT_NUM_Msk |
-                    UART_STOP_BIT_NUM_Msk | UART_RXFIFO_RST_Msk |
-                    UART_TXFIFO_RST_Msk,
-                    whal_SetBits(UART_BIT_NUM_Msk, UART_BIT_NUM_Pos,
-                                 UART_BIT_NUM_8) |
-                    whal_SetBits(UART_STOP_BIT_NUM_Msk, UART_STOP_BIT_NUM_Pos,
-                                 UART_STOP_BIT_NUM_1) |
-                    UART_RXFIFO_RST_Msk | UART_TXFIFO_RST_Msk);
-    whal_Reg_Write(base, UART_REG_UPDATE_REG, UART_REG_UPDATE_Msk);
-    err = whal_Reg_ReadPoll(base, UART_REG_UPDATE_REG, UART_REG_UPDATE_Msk, 0,
-                            cfg->timeout);
+    err = whal_Reg32_ReadPoll(base, UART_REG_UPDATE_REG, UART_REG_UPDATE_Msk, 0,
+                              cfg->timeout);
     if (err) {
         return err;
     }
 
-    whal_Reg_Update(base, UART_CONF0_SYNC_REG,
-                    UART_RXFIFO_RST_Msk | UART_TXFIFO_RST_Msk, 0);
-    whal_Reg_Write(base, UART_REG_UPDATE_REG, UART_REG_UPDATE_Msk);
-    err = whal_Reg_ReadPoll(base, UART_REG_UPDATE_REG, UART_REG_UPDATE_Msk, 0,
-                            cfg->timeout);
+    whal_Reg32_Update(base, UART_CLKDIV_SYNC_REG,
+                      UART_CLKDIV_Msk | UART_CLKDIV_FRAG_Msk, cfg->clkDiv);
+    whal_Reg32_Update(base, UART_CONF0_SYNC_REG,
+                      UART_PARITY_EN_Msk | UART_BIT_NUM_Msk |
+                      UART_STOP_BIT_NUM_Msk | UART_RXFIFO_RST_Msk |
+                      UART_TXFIFO_RST_Msk,
+                      whal_SetBits(UART_BIT_NUM_Msk, UART_BIT_NUM_Pos,
+                                   UART_BIT_NUM_8) |
+                      whal_SetBits(UART_STOP_BIT_NUM_Msk, UART_STOP_BIT_NUM_Pos,
+                                   UART_STOP_BIT_NUM_1) |
+                      UART_RXFIFO_RST_Msk | UART_TXFIFO_RST_Msk);
+    whal_Reg32_Write(base, UART_REG_UPDATE_REG, UART_REG_UPDATE_Msk);
+    err = whal_Reg32_ReadPoll(base, UART_REG_UPDATE_REG, UART_REG_UPDATE_Msk, 0,
+                              cfg->timeout);
     if (err) {
         return err;
     }
 
-    whal_Reg_Write(base, UART_INT_CLR_REG,
-                   UART_INT_ERR_Msk | UART_TX_DONE_INT_Msk);
+    whal_Reg32_Update(base, UART_CONF0_SYNC_REG,
+                      UART_RXFIFO_RST_Msk | UART_TXFIFO_RST_Msk, 0);
+    whal_Reg32_Write(base, UART_REG_UPDATE_REG, UART_REG_UPDATE_Msk);
+    err = whal_Reg32_ReadPoll(base, UART_REG_UPDATE_REG, UART_REG_UPDATE_Msk, 0,
+                              cfg->timeout);
+    if (err) {
+        return err;
+    }
+
+    whal_Reg32_Write(base, UART_INT_CLR_REG,
+                     UART_INT_ERR_Msk | UART_TX_DONE_INT_Msk);
 
     return WHAL_SUCCESS;
 }
@@ -188,10 +188,10 @@ whal_Error whal_Esp32c6_Uart_Init(whal_Uart *uartDev)
 whal_Error whal_Esp32c6_Uart_Deinit(whal_Uart *uartDev)
 {
 #ifdef WHAL_CFG_ESP32C6_UART_SINGLE_INSTANCE
-    size_t base = whal_Esp32c6_Uart_Dev.base;
+    uintptr_t base = whal_Esp32c6_Uart_Dev.base;
     (void)uartDev;
 #else
-    size_t base;
+    uintptr_t base;
 
     if (!uartDev) {
         return WHAL_EINVAL;
@@ -200,8 +200,8 @@ whal_Error whal_Esp32c6_Uart_Deinit(whal_Uart *uartDev)
     base = uartDev->base;
 #endif
 
-    whal_Reg_Update(base, UART_CLK_CONF_REG,
-                    UART_TX_SCLK_EN_Msk | UART_RX_SCLK_EN_Msk, 0);
+    whal_Reg32_Update(base, UART_CLK_CONF_REG,
+                      UART_TX_SCLK_EN_Msk | UART_RX_SCLK_EN_Msk, 0);
 
     return WHAL_SUCCESS;
 }
@@ -213,7 +213,7 @@ whal_Error whal_Esp32c6_Uart_Send(whal_Uart *uartDev, const void *data, size_t d
 #ifdef WHAL_CFG_ESP32C6_UART_SINGLE_INSTANCE
     const whal_Esp32c6_Uart_Cfg *cfg =
         (const whal_Esp32c6_Uart_Cfg *)whal_Esp32c6_Uart_Dev.cfg;
-    size_t base = whal_Esp32c6_Uart_Dev.base;
+    uintptr_t base = whal_Esp32c6_Uart_Dev.base;
     (void)uartDev;
 
     if (!data) {
@@ -221,7 +221,7 @@ whal_Error whal_Esp32c6_Uart_Send(whal_Uart *uartDev, const void *data, size_t d
     }
 #else
     const whal_Esp32c6_Uart_Cfg *cfg;
-    size_t base;
+    uintptr_t base;
 
     if (!uartDev || !uartDev->cfg || !data) {
         return WHAL_EINVAL;
@@ -235,39 +235,39 @@ whal_Error whal_Esp32c6_Uart_Send(whal_Uart *uartDev, const void *data, size_t d
         return WHAL_SUCCESS;
     }
 
-    whal_Reg_Write(base, UART_INT_CLR_REG, UART_TX_DONE_INT_Msk);
+    whal_Reg32_Write(base, UART_INT_CLR_REG, UART_TX_DONE_INT_Msk);
 
     for (size_t i = 0; i < dataSz; ++i) {
-        size_t cnt;
+        uint32_t cnt;
 
         WHAL_TIMEOUT_START(cfg->timeout);
-        whal_Reg_Get(base, UART_STATUS_REG, UART_TXFIFO_CNT_Msk,
-                     UART_TXFIFO_CNT_Pos, &cnt);
+        whal_Reg32_Get(base, UART_STATUS_REG, UART_TXFIFO_CNT_Msk,
+                       UART_TXFIFO_CNT_Pos, &cnt);
         while (cnt >= UART_FIFO_SZ) {
             if (WHAL_TIMEOUT_EXPIRED(cfg->timeout)) {
                 return WHAL_ETIMEOUT;
             }
-            whal_Reg_Get(base, UART_STATUS_REG, UART_TXFIFO_CNT_Msk,
-                         UART_TXFIFO_CNT_Pos, &cnt);
+            whal_Reg32_Get(base, UART_STATUS_REG, UART_TXFIFO_CNT_Msk,
+                           UART_TXFIFO_CNT_Pos, &cnt);
         }
 
-        whal_Reg_Write(base, UART_FIFO_REG, buf[i]);
+        whal_Reg32_Write(base, UART_FIFO_REG, buf[i]);
     }
 
     /* TX_DONE alone can fire early if the FIFO drained mid-buffer. */
-    err = whal_Reg_ReadPoll(base, UART_INT_RAW_REG, UART_TX_DONE_INT_Msk,
-                            UART_TX_DONE_INT_Msk, cfg->timeout);
+    err = whal_Reg32_ReadPoll(base, UART_INT_RAW_REG, UART_TX_DONE_INT_Msk,
+                              UART_TX_DONE_INT_Msk, cfg->timeout);
     if (err) {
         return err;
     }
-    err = whal_Reg_ReadPoll(base, UART_STATUS_REG, UART_TXFIFO_CNT_Msk, 0,
-                            cfg->timeout);
+    err = whal_Reg32_ReadPoll(base, UART_STATUS_REG, UART_TXFIFO_CNT_Msk, 0,
+                              cfg->timeout);
     if (err) {
         return err;
     }
 
-    return whal_Reg_ReadPoll(base, UART_FSM_STATUS_REG, UART_ST_UTX_OUT_Msk, 0,
-                             cfg->timeout);
+    return whal_Reg32_ReadPoll(base, UART_FSM_STATUS_REG, UART_ST_UTX_OUT_Msk, 0,
+                               cfg->timeout);
 }
 
 whal_Error whal_Esp32c6_Uart_Recv(whal_Uart *uartDev, void *data, size_t dataSz)
@@ -276,7 +276,7 @@ whal_Error whal_Esp32c6_Uart_Recv(whal_Uart *uartDev, void *data, size_t dataSz)
 #ifdef WHAL_CFG_ESP32C6_UART_SINGLE_INSTANCE
     const whal_Esp32c6_Uart_Cfg *cfg =
         (const whal_Esp32c6_Uart_Cfg *)whal_Esp32c6_Uart_Dev.cfg;
-    size_t base = whal_Esp32c6_Uart_Dev.base;
+    uintptr_t base = whal_Esp32c6_Uart_Dev.base;
     (void)uartDev;
 
     if (!data) {
@@ -284,7 +284,7 @@ whal_Error whal_Esp32c6_Uart_Recv(whal_Uart *uartDev, void *data, size_t dataSz)
     }
 #else
     const whal_Esp32c6_Uart_Cfg *cfg;
-    size_t base;
+    uintptr_t base;
 
     if (!uartDev || !uartDev->cfg || !data) {
         return WHAL_EINVAL;
@@ -298,28 +298,28 @@ whal_Error whal_Esp32c6_Uart_Recv(whal_Uart *uartDev, void *data, size_t dataSz)
 #endif
 
     for (size_t i = 0; i < dataSz; ++i) {
-        size_t cnt;
-        size_t d;
+        uint32_t cnt;
+        uint32_t d;
         size_t errBits;
 
         WHAL_TIMEOUT_START(cfg->timeout);
-        whal_Reg_Get(base, UART_STATUS_REG, UART_RXFIFO_CNT_Msk,
-                     UART_RXFIFO_CNT_Pos, &cnt);
+        whal_Reg32_Get(base, UART_STATUS_REG, UART_RXFIFO_CNT_Msk,
+                       UART_RXFIFO_CNT_Pos, &cnt);
         while (cnt == 0) {
             if (WHAL_TIMEOUT_EXPIRED(cfg->timeout)) {
                 return WHAL_ETIMEOUT;
             }
-            whal_Reg_Get(base, UART_STATUS_REG, UART_RXFIFO_CNT_Msk,
-                         UART_RXFIFO_CNT_Pos, &cnt);
+            whal_Reg32_Get(base, UART_STATUS_REG, UART_RXFIFO_CNT_Msk,
+                           UART_RXFIFO_CNT_Pos, &cnt);
         }
 
-        whal_Reg_Get(base, UART_FIFO_REG, UART_RXFIFO_RD_BYTE_Msk,
-                     UART_RXFIFO_RD_BYTE_Pos, &d);
+        whal_Reg32_Get(base, UART_FIFO_REG, UART_RXFIFO_RD_BYTE_Msk,
+                       UART_RXFIFO_RD_BYTE_Pos, &d);
         buf[i] = d;
 
-        errBits = whal_Reg_Read(base, UART_INT_RAW_REG) & UART_INT_ERR_Msk;
+        errBits = whal_Reg32_Read(base, UART_INT_RAW_REG) & UART_INT_ERR_Msk;
         if (errBits) {
-            whal_Reg_Write(base, UART_INT_CLR_REG, errBits);
+            whal_Reg32_Write(base, UART_INT_CLR_REG, errBits);
             return WHAL_EHARDWARE;
         }
     }

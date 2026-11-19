@@ -50,7 +50,7 @@
 #define TICK_SPIN_MAX                   10000000UL
 #define VALID_SPIN_MAX                  100000UL
 
-static size_t SystimerBase(void)
+static uintptr_t SystimerBase(void)
 {
     return g_whalTimer.base;
 }
@@ -62,19 +62,19 @@ static const whal_Esp32c6_Systimer_Cfg *SystimerCfg(void)
 
 static uint64_t ReadCount(size_t unit)
 {
-    size_t base = SystimerBase();
+    uintptr_t base = SystimerBase();
     uint32_t hi;
     uint32_t lo;
 
-    whal_Reg_Write(base, SYSTIMER_UNIT_OP_REG(unit), SYSTIMER_UNIT_UPDATE_Msk);
+    whal_Reg32_Write(base, SYSTIMER_UNIT_OP_REG(unit), SYSTIMER_UNIT_UPDATE_Msk);
     for (volatile size_t i = 0; i < VALID_SPIN_MAX; i++) {
-        if (whal_Reg_Read(base, SYSTIMER_UNIT_OP_REG(unit)) &
+        if (whal_Reg32_Read(base, SYSTIMER_UNIT_OP_REG(unit)) &
             SYSTIMER_UNIT_VALUE_VALID_Msk)
             break;
     }
 
-    hi = whal_Reg_Read(base, SYSTIMER_UNIT_VALUE_HI_REG(unit));
-    lo = whal_Reg_Read(base, SYSTIMER_UNIT_VALUE_LO_REG(unit));
+    hi = whal_Reg32_Read(base, SYSTIMER_UNIT_VALUE_HI_REG(unit));
+    lo = whal_Reg32_Read(base, SYSTIMER_UNIT_VALUE_LO_REG(unit));
 
     return ((uint64_t)hi << 32) | lo;
 }
@@ -107,19 +107,19 @@ static void RestoreTick(void)
 static void CheckConfig(void)
 {
     const whal_Esp32c6_Systimer_Cfg *cfg = SystimerCfg();
-    size_t base = SystimerBase();
-    size_t conf = whal_Reg_Read(base, SYSTIMER_TARGET_CONF_REG(cfg->comp));
+    uintptr_t base = SystimerBase();
+    size_t conf = whal_Reg32_Read(base, SYSTIMER_TARGET_CONF_REG(cfg->comp));
 
     WHAL_ASSERT_EQ(conf & SYSTIMER_TARGET_PERIOD_Msk, cfg->period);
     WHAL_ASSERT_EQ(conf & SYSTIMER_TARGET_PERIOD_MODE_Msk,
                    SYSTIMER_TARGET_PERIOD_MODE_Msk);
     WHAL_ASSERT_EQ((conf & SYSTIMER_TARGET_UNIT_SEL_Msk) != 0, cfg->unit);
-    WHAL_ASSERT_EQ(whal_Reg_Read(base, SYSTIMER_CONF_REG) &
+    WHAL_ASSERT_EQ(whal_Reg32_Read(base, SYSTIMER_CONF_REG) &
                    (SYSTIMER_UNIT_WORK_EN_Msk(cfg->unit) |
                     SYSTIMER_TARGET_WORK_EN_Msk(cfg->comp)),
                    SYSTIMER_UNIT_WORK_EN_Msk(cfg->unit) |
                    SYSTIMER_TARGET_WORK_EN_Msk(cfg->comp));
-    WHAL_ASSERT_EQ(whal_Reg_Read(base, SYSTIMER_INT_ENA_REG) &
+    WHAL_ASSERT_EQ(whal_Reg32_Read(base, SYSTIMER_INT_ENA_REG) &
                    SYSTIMER_INT_Msk(cfg->comp),
                    SYSTIMER_INT_Msk(cfg->comp));
 }
@@ -140,7 +140,7 @@ static void Test_Systimer_StopStart(void)
     int advanced;
 
     stopErr = whal_Timer_Stop(&g_whalTimer);
-    conf = whal_Reg_Read(SystimerBase(), SYSTIMER_CONF_REG);
+    conf = whal_Reg32_Read(SystimerBase(), SYSTIMER_CONF_REG);
 
     tickBefore = g_tick;
     SpinCounts(cfg->unit, 5 * SYSTIMER_TICKS_PER_MS);
@@ -168,8 +168,8 @@ static void Test_Systimer_Deinit(void)
     size_t intEna;
 
     deinitErr = whal_Timer_Deinit(&g_whalTimer);
-    conf = whal_Reg_Read(SystimerBase(), SYSTIMER_CONF_REG);
-    intEna = whal_Reg_Read(SystimerBase(), SYSTIMER_INT_ENA_REG);
+    conf = whal_Reg32_Read(SystimerBase(), SYSTIMER_CONF_REG);
+    intEna = whal_Reg32_Read(SystimerBase(), SYSTIMER_INT_ENA_REG);
 
     WHAL_ASSERT_EQ(whal_Timer_Init(&g_whalTimer), WHAL_SUCCESS);
     WHAL_ASSERT_EQ(whal_Timer_Start(&g_whalTimer), WHAL_SUCCESS);
@@ -232,7 +232,7 @@ static void Test_Systimer_OneShot(void)
         .driver = WHAL_ESP32C6_SYSTIMER_DRIVER,
         .cfg = &cfg,
     };
-    size_t base = SystimerBase();
+    uintptr_t base = SystimerBase();
     size_t intMsk = SYSTIMER_INT_Msk(WHAL_ESP32C6_SYSTIMER_COMP1);
     whal_Error initErr;
     whal_Error startErr;
@@ -247,26 +247,26 @@ static void Test_Systimer_OneShot(void)
     cfg.compValue = ReadCount(cfg.unit) + 10 * SYSTIMER_TICKS_PER_MS;
 
     initErr = whal_Timer_Init(&dev);
-    whal_Reg_Write(base, SYSTIMER_INT_CLR_REG, intMsk);
+    whal_Reg32_Write(base, SYSTIMER_INT_CLR_REG, intMsk);
     startErr = whal_Timer_Start(&dev);
 
     start = g_tick;
     while (g_tick - start < 100) {
-        if (whal_Reg_Read(base, SYSTIMER_INT_RAW_REG) & intMsk) {
+        if (whal_Reg32_Read(base, SYSTIMER_INT_RAW_REG) & intMsk) {
             fired = 1;
             break;
         }
     }
     elapsed = g_tick - start;
 
-    whal_Reg_Write(base, SYSTIMER_INT_CLR_REG, intMsk);
+    whal_Reg32_Write(base, SYSTIMER_INT_CLR_REG, intMsk);
     Board_WaitMs(30);
-    refired = (whal_Reg_Read(base, SYSTIMER_INT_RAW_REG) & intMsk) != 0;
+    refired = (whal_Reg32_Read(base, SYSTIMER_INT_RAW_REG) & intMsk) != 0;
 
     deinitErr = whal_Timer_Deinit(&dev);
-    whal_Reg_Write(base, SYSTIMER_INT_CLR_REG, intMsk);
-    conf = whal_Reg_Read(base, SYSTIMER_CONF_REG);
-    intEna = whal_Reg_Read(base, SYSTIMER_INT_ENA_REG);
+    whal_Reg32_Write(base, SYSTIMER_INT_CLR_REG, intMsk);
+    conf = whal_Reg32_Read(base, SYSTIMER_CONF_REG);
+    intEna = whal_Reg32_Read(base, SYSTIMER_INT_ENA_REG);
 
     WHAL_ASSERT_EQ(initErr, WHAL_SUCCESS);
     WHAL_ASSERT_EQ(startErr, WHAL_SUCCESS);
@@ -291,7 +291,7 @@ static void Test_Systimer_Reset(void)
         .driver = WHAL_ESP32C6_SYSTIMER_DRIVER,
         .cfg = &cfg,
     };
-    size_t base = SystimerBase();
+    uintptr_t base = SystimerBase();
     whal_Error initErr;
     whal_Error startErr;
     whal_Error resetErr;
@@ -308,9 +308,9 @@ static void Test_Systimer_Reset(void)
     after = ReadCount(cfg.unit);
 
     deinitErr = whal_Timer_Deinit(&dev);
-    whal_Reg_Update(base, SYSTIMER_CONF_REG,
-                    SYSTIMER_UNIT_WORK_EN_Msk(cfg.unit), 0);
-    whal_Reg_Write(base, SYSTIMER_INT_CLR_REG, SYSTIMER_INT_Msk(cfg.comp));
+    whal_Reg32_Update(base, SYSTIMER_CONF_REG,
+                      SYSTIMER_UNIT_WORK_EN_Msk(cfg.unit), 0);
+    whal_Reg32_Write(base, SYSTIMER_INT_CLR_REG, SYSTIMER_INT_Msk(cfg.comp));
 
     WHAL_ASSERT_EQ(initErr, WHAL_SUCCESS);
     WHAL_ASSERT_EQ(startErr, WHAL_SUCCESS);

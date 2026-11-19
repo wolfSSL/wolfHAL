@@ -48,7 +48,7 @@ static size_t PlicMxBase(void)
 
 static size_t SourceMap(size_t src)
 {
-    return whal_Reg_Read(IntmtxBase(), INTMTX_SOURCE_MAP_REG(src)) &
+    return whal_Reg32_Read(IntmtxBase(), INTMTX_SOURCE_MAP_REG(src)) &
            INTMTX_SOURCE_MAP_Msk;
 }
 
@@ -65,7 +65,7 @@ static void Test_Intc_TickRouted(void)
 {
     WHAL_ASSERT_EQ(SourceMap(WHAL_ESP32C6_INTSRC_SYSTIMER_TARGET0),
                    BOARD_SYSTIMER_CPU_INT);
-    WHAL_ASSERT_EQ(whal_Reg_Read(PlicMxBase(), PLIC_MXINT_ENABLE_REG) &
+    WHAL_ASSERT_EQ(whal_Reg32_Read(PlicMxBase(), PLIC_MXINT_ENABLE_REG) &
                    (1UL << BOARD_SYSTIMER_CPU_INT),
                    1UL << BOARD_SYSTIMER_CPU_INT);
 }
@@ -108,9 +108,9 @@ static void Test_Intc_EnableDisable(void)
 
     enableErr = EnableTestIrq(TEST_IRQ_SRC, TEST_IRQ_LINE, TEST_IRQ_PRIORITY);
     mapEnabled = SourceMap(TEST_IRQ_SRC);
-    priority = whal_Reg_Read(PlicMxBase(), PLIC_MXINT_PRI_REG(TEST_IRQ_LINE)) &
+    priority = whal_Reg32_Read(PlicMxBase(), PLIC_MXINT_PRI_REG(TEST_IRQ_LINE)) &
                PLIC_MXINT_PRI_Msk;
-    lineEnabled = whal_Reg_Read(PlicMxBase(), PLIC_MXINT_ENABLE_REG) &
+    lineEnabled = whal_Reg32_Read(PlicMxBase(), PLIC_MXINT_ENABLE_REG) &
                   (1UL << TEST_IRQ_LINE);
 
     disableErr = whal_Irq_Disable(WHAL_INTERNAL_DEV, TEST_IRQ_SRC);

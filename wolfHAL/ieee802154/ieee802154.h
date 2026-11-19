@@ -190,7 +190,7 @@ typedef struct {
  * platform-specific cfg.
  */
 struct whal_Ieee802154 {
-    const size_t base;
+    const uintptr_t base;
     const whal_Ieee802154Driver *driver;
     void *cfg;
 };

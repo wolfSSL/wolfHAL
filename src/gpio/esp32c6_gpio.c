@@ -58,40 +58,40 @@
 
 const whal_Gpio whal_Esp32c6_Gpio_Dev = WHAL_CFG_ESP32C6_GPIO_DEV;
 
-static inline whal_Error whal_Esp32c6_Gpio_ConfigurePin(const size_t base, const whal_Esp32c6_Gpio_PinCfg *pinCfg)
+static inline whal_Error whal_Esp32c6_Gpio_ConfigurePin(const uintptr_t base, const whal_Esp32c6_Gpio_PinCfg *pinCfg)
 {
     if (!pinCfg || pinCfg->pin > 30) {
         return WHAL_EINVAL;
     }
 
-    whal_Reg_Write(base, GPIO_PIN_REG(pinCfg->pin), pinCfg->gpioCfg);
-    whal_Reg_Write(WHAL_ESP32C6_IOMUX_BASE, IO_MUX_GPIO_REG(pinCfg->pin), pinCfg->ioMuxCfg);
+    whal_Reg32_Write(base, GPIO_PIN_REG(pinCfg->pin), pinCfg->gpioCfg);
+    whal_Reg32_Write(WHAL_ESP32C6_IOMUX_BASE, IO_MUX_GPIO_REG(pinCfg->pin), pinCfg->ioMuxCfg);
 
     if (pinCfg->outputEnable) {
-        whal_Reg_Write(base, GPIO_ENABLE_W1TS_REG, 1UL << pinCfg->pin);
+        whal_Reg32_Write(base, GPIO_ENABLE_W1TS_REG, 1UL << pinCfg->pin);
     }
 
     return WHAL_SUCCESS;
 }
 
-static inline whal_Error whal_Esp32c6_Gpio_ConfigureInput(const size_t base, const whal_Esp32c6_Gpio_InputCfg *inputCfg)
+static inline whal_Error whal_Esp32c6_Gpio_ConfigureInput(const uintptr_t base, const whal_Esp32c6_Gpio_InputCfg *inputCfg)
 {
     if (!inputCfg || inputCfg->signalNum > 127) {
         return WHAL_EINVAL;
     }
 
-    whal_Reg_Write(base, GPIO_FUNC_IN_SEL_CFG_REG(inputCfg->signalNum), inputCfg->cfg);
+    whal_Reg32_Write(base, GPIO_FUNC_IN_SEL_CFG_REG(inputCfg->signalNum), inputCfg->cfg);
 
     return WHAL_SUCCESS;
 }
 
-static whal_Error whal_Esp32c6_Gpio_ConfigureOutput(const size_t base, const whal_Esp32c6_Gpio_OutputCfg *outputCfg)
+static whal_Error whal_Esp32c6_Gpio_ConfigureOutput(const uintptr_t base, const whal_Esp32c6_Gpio_OutputCfg *outputCfg)
 {
     if (!outputCfg || outputCfg->gpioNum > 30) {
         return WHAL_EINVAL;
     }
 
-    whal_Reg_Write(base, GPIO_FUNC_OUT_SEL_CFG_REG(outputCfg->gpioNum), outputCfg->cfg);
+    whal_Reg32_Write(base, GPIO_FUNC_OUT_SEL_CFG_REG(outputCfg->gpioNum), outputCfg->cfg);
 
     return WHAL_SUCCESS;
 }
@@ -101,7 +101,7 @@ whal_Error whal_Esp32c6_Gpio_Init(whal_Gpio *gpioDev)
     whal_Error err;
     const whal_Esp32c6_Gpio_Cfg *cfg =
         (const whal_Esp32c6_Gpio_Cfg *)whal_Esp32c6_Gpio_Dev.cfg;
-    size_t base = whal_Esp32c6_Gpio_Dev.base;
+    uintptr_t base = whal_Esp32c6_Gpio_Dev.base;
     (void)gpioDev;
 
     for (size_t i = 0; i < cfg->pinCount; ++i) {
@@ -139,7 +139,8 @@ whal_Error whal_Esp32c6_Gpio_Get(whal_Gpio *gpioDev, size_t pin, size_t *value)
     const whal_Esp32c6_Gpio_PinCfg *pinCfg;
     const whal_Esp32c6_Gpio_Cfg *cfg =
         (const whal_Esp32c6_Gpio_Cfg *)whal_Esp32c6_Gpio_Dev.cfg;
-    size_t base = whal_Esp32c6_Gpio_Dev.base;
+    uintptr_t base = whal_Esp32c6_Gpio_Dev.base;
+    uint32_t bit;
     (void)gpioDev;
 
     if (!value || pin >= cfg->pinCount) {
@@ -147,11 +148,12 @@ whal_Error whal_Esp32c6_Gpio_Get(whal_Gpio *gpioDev, size_t pin, size_t *value)
     }
 
     pinCfg = &cfg->pinCfg[pin];
-    whal_Reg_Get(base,
-                 (pinCfg->outputEnable &&
-                  !(pinCfg->ioMuxCfg & IO_MUX_FUN_IE_Msk)) ?
-                     GPIO_OUT_REG : GPIO_IN_REG,
-                 1UL << pinCfg->pin, pinCfg->pin, value);
+    whal_Reg32_Get(base,
+                   (pinCfg->outputEnable &&
+                    !(pinCfg->ioMuxCfg & IO_MUX_FUN_IE_Msk)) ?
+                       GPIO_OUT_REG : GPIO_IN_REG,
+                   1UL << pinCfg->pin, pinCfg->pin, &bit);
+    *value = bit;
 
     return WHAL_SUCCESS;
 }
@@ -161,7 +163,7 @@ whal_Error whal_Esp32c6_Gpio_Set(whal_Gpio *gpioDev, size_t pin, size_t value)
     const whal_Esp32c6_Gpio_PinCfg *pinCfg;
     const whal_Esp32c6_Gpio_Cfg *cfg =
         (const whal_Esp32c6_Gpio_Cfg *)whal_Esp32c6_Gpio_Dev.cfg;
-    size_t base = whal_Esp32c6_Gpio_Dev.base;
+    uintptr_t base = whal_Esp32c6_Gpio_Dev.base;
     (void)gpioDev;
 
     if (pin >= cfg->pinCount) {
@@ -171,9 +173,9 @@ whal_Error whal_Esp32c6_Gpio_Set(whal_Gpio *gpioDev, size_t pin, size_t value)
     pinCfg = &cfg->pinCfg[pin];
 
     if (value) {
-        whal_Reg_Write(base, GPIO_OUT_W1TS_REG, 1UL << pinCfg->pin);
+        whal_Reg32_Write(base, GPIO_OUT_W1TS_REG, 1UL << pinCfg->pin);
     } else {
-        whal_Reg_Write(base, GPIO_OUT_W1TC_REG, 1UL << pinCfg->pin);
+        whal_Reg32_Write(base, GPIO_OUT_W1TC_REG, 1UL << pinCfg->pin);
     }
 
     return WHAL_SUCCESS;

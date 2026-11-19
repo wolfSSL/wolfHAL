@@ -65,10 +65,10 @@ whal_Error whal_Esp32c6_Intc_Init(whal_Irq *irqDev)
         (const whal_Esp32c6_Intc_DevCfg *)whal_Esp32c6_Intc_Dev.cfg;
     (void)irqDev;
 
-    whal_Reg_Update(devCfg->plicMxBase, PLIC_MXINT_THRESH_REG,
-                    PLIC_MXINT_THRESH_Msk,
-                    whal_SetBits(PLIC_MXINT_THRESH_Msk,
-                                 PLIC_MXINT_THRESH_Pos, 1));
+    whal_Reg32_Update(devCfg->plicMxBase, PLIC_MXINT_THRESH_REG,
+                      PLIC_MXINT_THRESH_Msk,
+                      whal_SetBits(PLIC_MXINT_THRESH_Msk,
+                                   PLIC_MXINT_THRESH_Pos, 1));
     __asm__ volatile("fence" ::: "memory");
     __asm__ volatile("csrs mstatus, %0" :: "r"(MSTATUS_MIE_Msk) : "memory");
 
@@ -89,7 +89,7 @@ whal_Error whal_Esp32c6_Intc_Enable(whal_Irq *irqDev, size_t irq,
 {
     const whal_Esp32c6_Intc_DevCfg *devCfg =
         (const whal_Esp32c6_Intc_DevCfg *)whal_Esp32c6_Intc_Dev.cfg;
-    size_t base = whal_Esp32c6_Intc_Dev.base;
+    uintptr_t base = whal_Esp32c6_Intc_Dev.base;
     const whal_Esp32c6_Intc_Cfg *cfg = (const whal_Esp32c6_Intc_Cfg *)irqCfg;
     size_t lineMsk;
     size_t mstatus;
@@ -110,16 +110,16 @@ whal_Error whal_Esp32c6_Intc_Enable(whal_Irq *irqDev, size_t irq,
     __asm__ volatile("csrrc %0, mstatus, %1"
                      : "=r"(mstatus) : "r"(MSTATUS_MIE_Msk) : "memory");
 
-    whal_Reg_Update(devCfg->plicMxBase, PLIC_MXINT_TYPE_REG, lineMsk, 0);
-    whal_Reg_Update(devCfg->plicMxBase, PLIC_MXINT_PRI_REG(cfg->cpuLine),
-                    PLIC_MXINT_PRI_Msk,
-                    whal_SetBits(PLIC_MXINT_PRI_Msk, PLIC_MXINT_PRI_Pos,
-                                 cfg->priority));
-    whal_Reg_Update(devCfg->plicMxBase, PLIC_MXINT_ENABLE_REG,
-                    lineMsk, lineMsk);
-    whal_Reg_Update(base, INTMTX_SOURCE_MAP_REG(irq), INTMTX_SOURCE_MAP_Msk,
-                    whal_SetBits(INTMTX_SOURCE_MAP_Msk, INTMTX_SOURCE_MAP_Pos,
-                                 cfg->cpuLine));
+    whal_Reg32_Update(devCfg->plicMxBase, PLIC_MXINT_TYPE_REG, lineMsk, 0);
+    whal_Reg32_Update(devCfg->plicMxBase, PLIC_MXINT_PRI_REG(cfg->cpuLine),
+                      PLIC_MXINT_PRI_Msk,
+                      whal_SetBits(PLIC_MXINT_PRI_Msk, PLIC_MXINT_PRI_Pos,
+                                   cfg->priority));
+    whal_Reg32_Update(devCfg->plicMxBase, PLIC_MXINT_ENABLE_REG,
+                      lineMsk, lineMsk);
+    whal_Reg32_Update(base, INTMTX_SOURCE_MAP_REG(irq), INTMTX_SOURCE_MAP_Msk,
+                      whal_SetBits(INTMTX_SOURCE_MAP_Msk, INTMTX_SOURCE_MAP_Pos,
+                                   cfg->cpuLine));
     __asm__ volatile("csrs mie, %0" :: "r"(lineMsk) : "memory");
     __asm__ volatile("fence" ::: "memory");
 
@@ -131,7 +131,7 @@ whal_Error whal_Esp32c6_Intc_Enable(whal_Irq *irqDev, size_t irq,
 
 whal_Error whal_Esp32c6_Intc_Disable(whal_Irq *irqDev, size_t irq)
 {
-    size_t base = whal_Esp32c6_Intc_Dev.base;
+    uintptr_t base = whal_Esp32c6_Intc_Dev.base;
     size_t mstatus;
     (void)irqDev;
 
@@ -142,7 +142,7 @@ whal_Error whal_Esp32c6_Intc_Disable(whal_Irq *irqDev, size_t irq)
     __asm__ volatile("csrrc %0, mstatus, %1"
                      : "=r"(mstatus) : "r"(MSTATUS_MIE_Msk) : "memory");
 
-    whal_Reg_Update(base, INTMTX_SOURCE_MAP_REG(irq), INTMTX_SOURCE_MAP_Msk, 0);
+    whal_Reg32_Update(base, INTMTX_SOURCE_MAP_REG(irq), INTMTX_SOURCE_MAP_Msk, 0);
     __asm__ volatile("fence" ::: "memory");
 
     __asm__ volatile("csrs mstatus, %0"

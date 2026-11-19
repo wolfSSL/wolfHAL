@@ -89,10 +89,10 @@ void Board_Ieee802154SetCallbacks(const whal_Ieee802154_Callbacks *cb,
 /* Factory EUI-64: MAC[0..2], MAC_EXT, MAC[3..5], most significant first. */
 static void Board_ReadEui64(void)
 {
-    uint32_t mac0 = whal_Reg_Read(WHAL_ESP32C6_EFUSE_BASE,
-                                  WHAL_ESP32C6_EFUSE_RD_MAC_SYS_0_REG);
-    uint32_t mac1 = whal_Reg_Read(WHAL_ESP32C6_EFUSE_BASE,
-                                  WHAL_ESP32C6_EFUSE_RD_MAC_SYS_1_REG);
+    uint32_t mac0 = whal_Reg32_Read(WHAL_ESP32C6_EFUSE_BASE,
+                                    WHAL_ESP32C6_EFUSE_RD_MAC_SYS_0_REG);
+    uint32_t mac1 = whal_Reg32_Read(WHAL_ESP32C6_EFUSE_BASE,
+                                    WHAL_ESP32C6_EFUSE_RD_MAC_SYS_1_REG);
 
     g_whalEui64[0] = (uint8_t)(mac1 >> 8);
     g_whalEui64[1] = (uint8_t)mac1;
@@ -122,9 +122,9 @@ whal_Error Board_Init(void)
     whal_Error err;
 
     /* Let bus masters other than the CPU, such as peripheral DMA, reach memory */
-    whal_Reg_Write(WHAL_ESP32C6_HP_APM_BASE, WHAL_ESP32C6_APM_FUNC_CTRL_REG, 0);
-    whal_Reg_Write(WHAL_ESP32C6_LP_APM0_BASE, WHAL_ESP32C6_APM_FUNC_CTRL_REG, 0);
-    whal_Reg_Write(WHAL_ESP32C6_LP_APM_BASE, WHAL_ESP32C6_APM_FUNC_CTRL_REG, 0);
+    whal_Reg32_Write(WHAL_ESP32C6_HP_APM_BASE, WHAL_ESP32C6_APM_FUNC_CTRL_REG, 0);
+    whal_Reg32_Write(WHAL_ESP32C6_LP_APM0_BASE, WHAL_ESP32C6_APM_FUNC_CTRL_REG, 0);
+    whal_Reg32_Write(WHAL_ESP32C6_LP_APM_BASE, WHAL_ESP32C6_APM_FUNC_CTRL_REG, 0);
 
     /* Direct Boot leaves the ROM's boot watchdogs armed */
     err = whal_Watchdog_Deinit(&g_whalTimg0Wdt);

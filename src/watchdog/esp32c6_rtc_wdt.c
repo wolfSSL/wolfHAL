@@ -76,66 +76,66 @@ whal_Error whal_Esp32c6_RtcWdt_Init(whal_Watchdog *wdgDev)
 {
     const whal_Esp32c6_RtcWdt_Cfg *cfg =
         (const whal_Esp32c6_RtcWdt_Cfg *)whal_Esp32c6_RtcWdt_Dev.cfg;
-    size_t base = whal_Esp32c6_RtcWdt_Dev.base;
+    uintptr_t base = whal_Esp32c6_RtcWdt_Dev.base;
     (void)wdgDev;
 
-    whal_Reg_Write(base, RTC_WDT_WPROTECT_REG, RTC_WDT_WKEY);
+    whal_Reg32_Write(base, RTC_WDT_WPROTECT_REG, RTC_WDT_WKEY);
 
-    whal_Reg_Write(base, RTC_WDT_CONFIG1_REG, cfg->stg0Hold);
-    whal_Reg_Update(base, RTC_WDT_CONFIG0_REG,
-                    RTC_WDT_EN_Msk | RTC_WDT_STG0_Msk | RTC_WDT_STG1_Msk |
-                    RTC_WDT_STG2_Msk | RTC_WDT_STG3_Msk |
-                    RTC_WDT_FLASHBOOT_MOD_EN_Msk,
-                    RTC_WDT_EN_Msk |
-                    whal_SetBits(RTC_WDT_STG0_Msk, RTC_WDT_STG0_Pos,
-                                 RTC_WDT_STG_SYS_RESET) |
-                    whal_SetBits(RTC_WDT_STG1_Msk, RTC_WDT_STG1_Pos,
-                                 RTC_WDT_STG_OFF) |
-                    whal_SetBits(RTC_WDT_STG2_Msk, RTC_WDT_STG2_Pos,
-                                 RTC_WDT_STG_OFF) |
-                    whal_SetBits(RTC_WDT_STG3_Msk, RTC_WDT_STG3_Pos,
-                                 RTC_WDT_STG_OFF));
-    whal_Reg_Write(base, RTC_WDT_FEED_REG, RTC_WDT_FEED_Msk);
+    whal_Reg32_Write(base, RTC_WDT_CONFIG1_REG, cfg->stg0Hold);
+    whal_Reg32_Update(base, RTC_WDT_CONFIG0_REG,
+                      RTC_WDT_EN_Msk | RTC_WDT_STG0_Msk | RTC_WDT_STG1_Msk |
+                      RTC_WDT_STG2_Msk | RTC_WDT_STG3_Msk |
+                      RTC_WDT_FLASHBOOT_MOD_EN_Msk,
+                      RTC_WDT_EN_Msk |
+                      whal_SetBits(RTC_WDT_STG0_Msk, RTC_WDT_STG0_Pos,
+                                   RTC_WDT_STG_SYS_RESET) |
+                      whal_SetBits(RTC_WDT_STG1_Msk, RTC_WDT_STG1_Pos,
+                                   RTC_WDT_STG_OFF) |
+                      whal_SetBits(RTC_WDT_STG2_Msk, RTC_WDT_STG2_Pos,
+                                   RTC_WDT_STG_OFF) |
+                      whal_SetBits(RTC_WDT_STG3_Msk, RTC_WDT_STG3_Pos,
+                                   RTC_WDT_STG_OFF));
+    whal_Reg32_Write(base, RTC_WDT_FEED_REG, RTC_WDT_FEED_Msk);
 
-    whal_Reg_Write(base, RTC_WDT_WPROTECT_REG, 0);
+    whal_Reg32_Write(base, RTC_WDT_WPROTECT_REG, 0);
 
     return WHAL_SUCCESS;
 }
 
 whal_Error whal_Esp32c6_RtcWdt_Deinit(whal_Watchdog *wdgDev)
 {
-    size_t base = whal_Esp32c6_RtcWdt_Dev.base;
+    uintptr_t base = whal_Esp32c6_RtcWdt_Dev.base;
     (void)wdgDev;
 
-    whal_Reg_Write(base, RTC_WDT_WPROTECT_REG, RTC_WDT_WKEY);
-    whal_Reg_Update(base, RTC_WDT_CONFIG0_REG,
-                    RTC_WDT_EN_Msk | RTC_WDT_FLASHBOOT_MOD_EN_Msk, 0);
-    whal_Reg_Write(base, RTC_WDT_WPROTECT_REG, 0);
+    whal_Reg32_Write(base, RTC_WDT_WPROTECT_REG, RTC_WDT_WKEY);
+    whal_Reg32_Update(base, RTC_WDT_CONFIG0_REG,
+                      RTC_WDT_EN_Msk | RTC_WDT_FLASHBOOT_MOD_EN_Msk, 0);
+    whal_Reg32_Write(base, RTC_WDT_WPROTECT_REG, 0);
 
     return WHAL_SUCCESS;
 }
 
 whal_Error whal_Esp32c6_RtcWdt_Refresh(whal_Watchdog *wdgDev)
 {
-    size_t base = whal_Esp32c6_RtcWdt_Dev.base;
+    uintptr_t base = whal_Esp32c6_RtcWdt_Dev.base;
     (void)wdgDev;
 
-    whal_Reg_Write(base, RTC_WDT_WPROTECT_REG, RTC_WDT_WKEY);
-    whal_Reg_Write(base, RTC_WDT_FEED_REG, RTC_WDT_FEED_Msk);
-    whal_Reg_Write(base, RTC_WDT_WPROTECT_REG, 0);
+    whal_Reg32_Write(base, RTC_WDT_WPROTECT_REG, RTC_WDT_WKEY);
+    whal_Reg32_Write(base, RTC_WDT_FEED_REG, RTC_WDT_FEED_Msk);
+    whal_Reg32_Write(base, RTC_WDT_WPROTECT_REG, 0);
 
     return WHAL_SUCCESS;
 }
 
 whal_Error whal_Esp32c6_RtcWdt_Ext_DisableSwd(whal_Watchdog *wdgDev)
 {
-    size_t base = whal_Esp32c6_RtcWdt_Dev.base;
+    uintptr_t base = whal_Esp32c6_RtcWdt_Dev.base;
     (void)wdgDev;
 
-    whal_Reg_Write(base, RTC_WDT_SWD_WPROTECT_REG, RTC_WDT_WKEY);
-    whal_Reg_Update(base, RTC_WDT_SWD_CONFIG_REG, RTC_WDT_SWD_DISABLE_Msk,
-                    RTC_WDT_SWD_DISABLE_Msk);
-    whal_Reg_Write(base, RTC_WDT_SWD_WPROTECT_REG, 0);
+    whal_Reg32_Write(base, RTC_WDT_SWD_WPROTECT_REG, RTC_WDT_WKEY);
+    whal_Reg32_Update(base, RTC_WDT_SWD_CONFIG_REG, RTC_WDT_SWD_DISABLE_Msk,
+                      RTC_WDT_SWD_DISABLE_Msk);
+    whal_Reg32_Write(base, RTC_WDT_SWD_WPROTECT_REG, 0);
 
     return WHAL_SUCCESS;
 }

@@ -66,7 +66,7 @@ whal_Error whal_Esp32c6_UsbSerialJtag_Send(whal_Uart *uartDev, const void *data,
 {
     const whal_Esp32c6_UsbSerialJtag_Cfg *cfg =
         (const whal_Esp32c6_UsbSerialJtag_Cfg *)whal_Esp32c6_UsbSerialJtag_Dev.cfg;
-    size_t base = whal_Esp32c6_UsbSerialJtag_Dev.base;
+    uintptr_t base = whal_Esp32c6_UsbSerialJtag_Dev.base;
     const uint8_t *buf = data;
     (void)uartDev;
 #ifdef WHAL_CFG_NO_TIMEOUT
@@ -83,21 +83,21 @@ whal_Error whal_Esp32c6_UsbSerialJtag_Send(whal_Uart *uartDev, const void *data,
 
     for (size_t i = 0; i < dataSz; ++i) {
         WHAL_TIMEOUT_START(cfg->timeout);
-        while (!(whal_Reg_Read(base, USJ_EP1_CONF_REG) &
+        while (!(whal_Reg32_Read(base, USJ_EP1_CONF_REG) &
                  USJ_IN_EP_DATA_FREE_Msk)) {
             if (WHAL_TIMEOUT_EXPIRED(cfg->timeout)) {
                 return WHAL_ETIMEOUT;
             }
         }
 
-        whal_Reg_Write(base, USJ_EP1_REG, buf[i]);
+        whal_Reg32_Write(base, USJ_EP1_REG, buf[i]);
     }
 
     /* A full last packet was already flushed by hardware; flushing the empty
      * FIFO sends the zero-length packet that ends the host's transfer. */
     if (dataSz % USJ_PACKET_SZ == 0) {
         WHAL_TIMEOUT_START(cfg->timeout);
-        while (!(whal_Reg_Read(base, USJ_EP1_CONF_REG) &
+        while (!(whal_Reg32_Read(base, USJ_EP1_CONF_REG) &
                  USJ_IN_EP_DATA_FREE_Msk)) {
             if (WHAL_TIMEOUT_EXPIRED(cfg->timeout)) {
                 return WHAL_ETIMEOUT;
@@ -105,7 +105,7 @@ whal_Error whal_Esp32c6_UsbSerialJtag_Send(whal_Uart *uartDev, const void *data,
         }
     }
 
-    whal_Reg_Write(base, USJ_EP1_CONF_REG, USJ_WR_DONE_Msk);
+    whal_Reg32_Write(base, USJ_EP1_CONF_REG, USJ_WR_DONE_Msk);
 
     return WHAL_SUCCESS;
 }
@@ -115,7 +115,7 @@ whal_Error whal_Esp32c6_UsbSerialJtag_Recv(whal_Uart *uartDev, void *data,
 {
     const whal_Esp32c6_UsbSerialJtag_Cfg *cfg =
         (const whal_Esp32c6_UsbSerialJtag_Cfg *)whal_Esp32c6_UsbSerialJtag_Dev.cfg;
-    size_t base = whal_Esp32c6_UsbSerialJtag_Dev.base;
+    uintptr_t base = whal_Esp32c6_UsbSerialJtag_Dev.base;
     uint8_t *buf = data;
     (void)uartDev;
 #ifdef WHAL_CFG_NO_TIMEOUT
@@ -127,18 +127,18 @@ whal_Error whal_Esp32c6_UsbSerialJtag_Recv(whal_Uart *uartDev, void *data,
     }
 
     for (size_t i = 0; i < dataSz; ++i) {
-        size_t d;
+        uint32_t d;
 
         WHAL_TIMEOUT_START(cfg->timeout);
-        while (!(whal_Reg_Read(base, USJ_EP1_CONF_REG) &
+        while (!(whal_Reg32_Read(base, USJ_EP1_CONF_REG) &
                  USJ_OUT_EP_DATA_AVAIL_Msk)) {
             if (WHAL_TIMEOUT_EXPIRED(cfg->timeout)) {
                 return WHAL_ETIMEOUT;
             }
         }
 
-        whal_Reg_Get(base, USJ_EP1_REG, USJ_RDWR_BYTE_Msk, USJ_RDWR_BYTE_Pos,
-                     &d);
+        whal_Reg32_Get(base, USJ_EP1_REG, USJ_RDWR_BYTE_Msk, USJ_RDWR_BYTE_Pos,
+                       &d);
         buf[i] = (uint8_t)d;
     }
 

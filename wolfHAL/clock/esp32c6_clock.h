@@ -126,7 +126,7 @@ typedef struct {
  * run; 0 means none.
  */
 typedef struct {
-    size_t base;
+    uintptr_t base;
     size_t clkReg;
     size_t clkEnMsk;
     size_t rstMsk;
@@ -139,9 +139,9 @@ typedef struct {
  */
 static inline void whal_Esp32c6_Clock_SetSysClk(const whal_Esp32c6_Clock_HpSysClk sysClk)
 {
-    whal_Reg_Update(WHAL_ESP32C6_CLOCK_BASE, WHAL_PCR_SYSCLK_CONF_REG,
-                    WHAL_PCR_SOC_CLK_SEL_Msk,
-                    whal_SetBits(WHAL_PCR_SOC_CLK_SEL_Msk, WHAL_PCR_SOC_CLK_SEL_Pos, sysClk));
+    whal_Reg32_Update(WHAL_ESP32C6_CLOCK_BASE, WHAL_PCR_SYSCLK_CONF_REG,
+                      WHAL_PCR_SOC_CLK_SEL_Msk,
+                      whal_SetBits(WHAL_PCR_SOC_CLK_SEL_Msk, WHAL_PCR_SOC_CLK_SEL_Pos, sysClk));
 }
 
 /*
@@ -155,11 +155,11 @@ static inline void whal_Esp32c6_Clock_ConfigureCpuFreq(const whal_Esp32c6_Clock_
                                                        const whal_Esp32c6_Clock_CpuHsDiv cpuHsDiv,
                                                        const whal_Esp32c6_Clock_Hs120MForce hs120MForce)
 {
-    whal_Reg_Update(WHAL_ESP32C6_CLOCK_BASE, WHAL_PCR_CPU_FREQ_CONF_REG,
-                    WHAL_PCR_LS_DIV_Msk | WHAL_PCR_HS_DIV_Msk | WHAL_PCR_HS_120M_FORCE_Msk,
-                    whal_SetBits(WHAL_PCR_LS_DIV_Msk, WHAL_PCR_LS_DIV_Pos, cpuLsDiv) |
-                    whal_SetBits(WHAL_PCR_HS_DIV_Msk, WHAL_PCR_HS_DIV_Pos, cpuHsDiv) |
-                    whal_SetBits(WHAL_PCR_HS_120M_FORCE_Msk, WHAL_PCR_HS_120M_FORCE_Pos, hs120MForce));
+    whal_Reg32_Update(WHAL_ESP32C6_CLOCK_BASE, WHAL_PCR_CPU_FREQ_CONF_REG,
+                      WHAL_PCR_LS_DIV_Msk | WHAL_PCR_HS_DIV_Msk | WHAL_PCR_HS_120M_FORCE_Msk,
+                      whal_SetBits(WHAL_PCR_LS_DIV_Msk, WHAL_PCR_LS_DIV_Pos, cpuLsDiv) |
+                      whal_SetBits(WHAL_PCR_HS_DIV_Msk, WHAL_PCR_HS_DIV_Pos, cpuHsDiv) |
+                      whal_SetBits(WHAL_PCR_HS_120M_FORCE_Msk, WHAL_PCR_HS_120M_FORCE_Pos, hs120MForce));
 }
 
 /*
@@ -173,11 +173,11 @@ static inline void whal_Esp32c6_Clock_ConfigureCpuFreq(const whal_Esp32c6_Clock_
 static inline whal_Error whal_Esp32c6_Clock_EnablePeriphClk(
     const whal_Esp32c6_Clock_PeriphClk *clk)
 {
-    whal_Reg_Update(WHAL_ESP32C6_CLOCK_BASE, clk->confReg,
-                    clk->clkEnMsk | clk->rstEnMsk, clk->clkEnMsk);
+    whal_Reg32_Update(WHAL_ESP32C6_CLOCK_BASE, clk->confReg,
+                      clk->clkEnMsk | clk->rstEnMsk, clk->clkEnMsk);
     if (clk->funcClkEnMsk) {
-        whal_Reg_Update(WHAL_ESP32C6_CLOCK_BASE, clk->funcClkReg,
-                        clk->funcClkEnMsk, clk->funcClkEnMsk);
+        whal_Reg32_Update(WHAL_ESP32C6_CLOCK_BASE, clk->funcClkReg,
+                          clk->funcClkEnMsk, clk->funcClkEnMsk);
     }
     return WHAL_SUCCESS;
 }
@@ -193,10 +193,10 @@ static inline whal_Error whal_Esp32c6_Clock_DisablePeriphClk(
     const whal_Esp32c6_Clock_PeriphClk *clk)
 {
     if (clk->funcClkEnMsk) {
-        whal_Reg_Update(WHAL_ESP32C6_CLOCK_BASE, clk->funcClkReg,
-                        clk->funcClkEnMsk, 0);
+        whal_Reg32_Update(WHAL_ESP32C6_CLOCK_BASE, clk->funcClkReg,
+                          clk->funcClkEnMsk, 0);
     }
-    whal_Reg_Update(WHAL_ESP32C6_CLOCK_BASE, clk->confReg, clk->clkEnMsk, 0);
+    whal_Reg32_Update(WHAL_ESP32C6_CLOCK_BASE, clk->confReg, clk->clkEnMsk, 0);
     return WHAL_SUCCESS;
 }
 
@@ -210,13 +210,13 @@ static inline whal_Error whal_Esp32c6_Clock_DisablePeriphClk(
 static inline whal_Error whal_Esp32c6_Clock_EnableModemClk(
     const whal_Esp32c6_Clock_ModemClk *clk)
 {
-    whal_Reg_Update(clk->base, clk->clkReg, clk->clkEnMsk, clk->clkEnMsk);
+    whal_Reg32_Update(clk->base, clk->clkReg, clk->clkEnMsk, clk->clkEnMsk);
     if (clk->rstMsk) {
-        whal_Reg_Update(WHAL_ESP32C6_MODEM_SYSCON_BASE,
-                        WHAL_MODEM_SYSCON_RST_CONF_REG,
-                        clk->rstMsk, clk->rstMsk);
-        whal_Reg_Update(WHAL_ESP32C6_MODEM_SYSCON_BASE,
-                        WHAL_MODEM_SYSCON_RST_CONF_REG, clk->rstMsk, 0);
+        whal_Reg32_Update(WHAL_ESP32C6_MODEM_SYSCON_BASE,
+                          WHAL_MODEM_SYSCON_RST_CONF_REG,
+                          clk->rstMsk, clk->rstMsk);
+        whal_Reg32_Update(WHAL_ESP32C6_MODEM_SYSCON_BASE,
+                          WHAL_MODEM_SYSCON_RST_CONF_REG, clk->rstMsk, 0);
     }
     return WHAL_SUCCESS;
 }
@@ -231,7 +231,7 @@ static inline whal_Error whal_Esp32c6_Clock_EnableModemClk(
 static inline whal_Error whal_Esp32c6_Clock_DisableModemClk(
     const whal_Esp32c6_Clock_ModemClk *clk)
 {
-    whal_Reg_Update(clk->base, clk->clkReg, clk->clkEnMsk, 0);
+    whal_Reg32_Update(clk->base, clk->clkReg, clk->clkEnMsk, 0);
     return WHAL_SUCCESS;
 }
 

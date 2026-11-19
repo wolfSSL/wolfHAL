@@ -288,9 +288,9 @@ static uint32_t Esp32c6_Ieee802154_Random(void)
     return x;
 }
 
-static void Esp32c6_Ieee802154_Cmd(size_t base, uint32_t cmd)
+static void Esp32c6_Ieee802154_Cmd(uintptr_t base, uint32_t cmd)
 {
-    whal_Reg_Write(base, ZB_COMMAND_REG, cmd);
+    whal_Reg32_Write(base, ZB_COMMAND_REG, cmd);
 }
 
 static uint8_t Esp32c6_Ieee802154_PowerIndex(int8_t dbm)
@@ -304,7 +304,7 @@ static uint8_t Esp32c6_Ieee802154_PowerIndex(int8_t dbm)
     return (uint8_t)((dbm - ZB_TX_POWER_DBM_MIN) / 3 + ZB_TX_POWER_IDX_MIN);
 }
 
-static void Esp32c6_Ieee802154_ApplyPib(size_t base)
+static void Esp32c6_Ieee802154_ApplyPib(uintptr_t base)
 {
     static const uint8_t ccaModeMap[] = {
         [WHAL_IEEE802154_CCA_MODE_ED] = ZB_CCA_ED,
@@ -314,55 +314,55 @@ static void Esp32c6_Ieee802154_ApplyPib(size_t base)
     };
     const uint8_t *ext = s_pib.extAddr;
 
-    whal_Reg_Update(base, ZB_CHANNEL_REG, ZB_HOP_Msk,
-                    whal_SetBits(ZB_HOP_Msk, ZB_HOP_Pos,
-                                 ZB_CHANNEL_TO_HOP(s_pib.channel)));
-    whal_Reg_Update(base, ZB_TX_POWER_REG, ZB_TX_POWER_Msk,
-                    whal_SetBits(ZB_TX_POWER_Msk, ZB_TX_POWER_Pos,
-                                 Esp32c6_Ieee802154_PowerIndex(s_pib.txPower)));
-    whal_Reg_Update(base, ZB_ED_CFG_REG,
-                    ZB_CCA_MODE_Msk | ZB_CCA_THRESHOLD_Msk,
-                    whal_SetBits(ZB_CCA_MODE_Msk, ZB_CCA_MODE_Pos,
-                                 ccaModeMap[s_pib.ccaMode]) |
-                    whal_SetBits(ZB_CCA_THRESHOLD_Msk, ZB_CCA_THRESHOLD_Pos,
-                                 (uint8_t)s_pib.ccaThreshold));
+    whal_Reg32_Update(base, ZB_CHANNEL_REG, ZB_HOP_Msk,
+                      whal_SetBits(ZB_HOP_Msk, ZB_HOP_Pos,
+                                   ZB_CHANNEL_TO_HOP(s_pib.channel)));
+    whal_Reg32_Update(base, ZB_TX_POWER_REG, ZB_TX_POWER_Msk,
+                      whal_SetBits(ZB_TX_POWER_Msk, ZB_TX_POWER_Pos,
+                                   Esp32c6_Ieee802154_PowerIndex(s_pib.txPower)));
+    whal_Reg32_Update(base, ZB_ED_CFG_REG,
+                      ZB_CCA_MODE_Msk | ZB_CCA_THRESHOLD_Msk,
+                      whal_SetBits(ZB_CCA_MODE_Msk, ZB_CCA_MODE_Pos,
+                                   ccaModeMap[s_pib.ccaMode]) |
+                      whal_SetBits(ZB_CCA_THRESHOLD_Msk, ZB_CCA_THRESHOLD_Pos,
+                                   (uint8_t)s_pib.ccaThreshold));
 
-    whal_Reg_Write(base, ZB_INF0_PAN_ID_REG, s_pib.panId);
-    whal_Reg_Write(base, ZB_INF0_SHORT_ADDR_REG, s_pib.shortAddr);
-    whal_Reg_Write(base, ZB_INF0_EXT_ADDR0_REG,
-                   (uint32_t)ext[0] | ((uint32_t)ext[1] << 8) |
-                   ((uint32_t)ext[2] << 16) | ((uint32_t)ext[3] << 24));
-    whal_Reg_Write(base, ZB_INF0_EXT_ADDR1_REG,
-                   (uint32_t)ext[4] | ((uint32_t)ext[5] << 8) |
-                   ((uint32_t)ext[6] << 16) | ((uint32_t)ext[7] << 24));
+    whal_Reg32_Write(base, ZB_INF0_PAN_ID_REG, s_pib.panId);
+    whal_Reg32_Write(base, ZB_INF0_SHORT_ADDR_REG, s_pib.shortAddr);
+    whal_Reg32_Write(base, ZB_INF0_EXT_ADDR0_REG,
+                     (uint32_t)ext[0] | ((uint32_t)ext[1] << 8) |
+                     ((uint32_t)ext[2] << 16) | ((uint32_t)ext[3] << 24));
+    whal_Reg32_Write(base, ZB_INF0_EXT_ADDR1_REG,
+                     (uint32_t)ext[4] | ((uint32_t)ext[5] << 8) |
+                     ((uint32_t)ext[6] << 16) | ((uint32_t)ext[7] << 24));
 
-    whal_Reg_Update(base, ZB_CTRL_CFG_REG,
-                    ZB_AUTO_ACK_TX_Msk | ZB_AUTO_ACK_RX_Msk |
-                    ZB_COORDINATOR_Msk | ZB_PROMISCUOUS_Msk |
-                    ZB_PENDING_ENHANCE_Msk | ZB_MULTIPAN_Msk,
-                    ZB_AUTO_ACK_TX_Msk | ZB_AUTO_ACK_RX_Msk |
-                    (s_pib.promiscuous ? ZB_PROMISCUOUS_Msk : 0) |
-                    whal_SetBits(ZB_MULTIPAN_Msk, ZB_MULTIPAN_Pos, 1));
+    whal_Reg32_Update(base, ZB_CTRL_CFG_REG,
+                      ZB_AUTO_ACK_TX_Msk | ZB_AUTO_ACK_RX_Msk |
+                      ZB_COORDINATOR_Msk | ZB_PROMISCUOUS_Msk |
+                      ZB_PENDING_ENHANCE_Msk | ZB_MULTIPAN_Msk,
+                      ZB_AUTO_ACK_TX_Msk | ZB_AUTO_ACK_RX_Msk |
+                      (s_pib.promiscuous ? ZB_PROMISCUOUS_Msk : 0) |
+                      whal_SetBits(ZB_MULTIPAN_Msk, ZB_MULTIPAN_Pos, 1));
 }
 
-static void Esp32c6_Ieee802154_StartRx(size_t base)
+static void Esp32c6_Ieee802154_StartRx(uintptr_t base)
 {
-    whal_Reg_Write(base, ZB_RXDMA_ADDR_REG, (uint32_t)(size_t)s_rxBuf);
+    whal_Reg32_Write(base, ZB_RXDMA_ADDR_REG, (uint32_t)(size_t)s_rxBuf);
     Esp32c6_Ieee802154_Cmd(base, ZB_CMD_RX_START);
     s_state = ZB_STATE_RX;
 }
 
-static void Esp32c6_Ieee802154_Stop(size_t base)
+static void Esp32c6_Ieee802154_Stop(uintptr_t base)
 {
     Esp32c6_Ieee802154_Cmd(base, ZB_CMD_STOP);
     Esp32c6_Ieee802154_Cmd(base, ZB_CMD_TIMER0_STOP);
     Esp32c6_Ieee802154_Cmd(base, ZB_CMD_TIMER1_STOP);
-    whal_Reg_Update(base, ZB_EVENT_EN_REG, ZB_EVT_TIMER0, 0);
-    whal_Reg_Write(base, ZB_EVENT_STATUS_REG, ZB_EVT_ALL);
+    whal_Reg32_Update(base, ZB_EVENT_EN_REG, ZB_EVT_TIMER0, 0);
+    whal_Reg32_Write(base, ZB_EVENT_STATUS_REG, ZB_EVT_ALL);
     s_state = ZB_STATE_IDLE;
 }
 
-static void Esp32c6_Ieee802154_Idle(size_t base)
+static void Esp32c6_Ieee802154_Idle(uintptr_t base)
 {
     Esp32c6_Ieee802154_ApplyPib(base);
     if (s_pib.rxOnWhenIdle) {
@@ -374,38 +374,38 @@ static void Esp32c6_Ieee802154_Idle(size_t base)
 
 /* Return to the idle state after a callback, unless it started an
  * operation. */
-static void Esp32c6_Ieee802154_Resume(size_t base)
+static void Esp32c6_Ieee802154_Resume(uintptr_t base)
 {
     if (s_state == ZB_STATE_IDLE) {
         Esp32c6_Ieee802154_Idle(base);
     }
 }
 
-static void Esp32c6_Ieee802154_StartTimer(size_t base, size_t thresholdReg,
+static void Esp32c6_Ieee802154_StartTimer(uintptr_t base, size_t thresholdReg,
                                           uint32_t startCmd, uint32_t us)
 {
-    whal_Reg_Write(base, thresholdReg, us);
+    whal_Reg32_Write(base, thresholdReg, us);
     Esp32c6_Ieee802154_Cmd(base, startCmd);
 }
 
-static void Esp32c6_Ieee802154_EdStep(size_t base)
+static void Esp32c6_Ieee802154_EdStep(uintptr_t base)
 {
     uint32_t symbols = s_ed.symbolsLeft < ZB_ED_SYMBOLS ?
                        s_ed.symbolsLeft : ZB_ED_SYMBOLS;
 
     s_ed.symbolsLeft -= symbols;
-    whal_Reg_Update(base, ZB_ED_DURATION_REG, ZB_ED_DURATION_Msk, symbols);
+    whal_Reg32_Update(base, ZB_ED_DURATION_REG, ZB_ED_DURATION_Msk, symbols);
     Esp32c6_Ieee802154_Cmd(base, ZB_CMD_ED_START);
     s_state = ZB_STATE_ED;
 }
 
-static void Esp32c6_Ieee802154_TxAttempt(size_t base)
+static void Esp32c6_Ieee802154_TxAttempt(uintptr_t base)
 {
     uint32_t slots;
 
-    whal_Reg_Write(base, ZB_TXDMA_ADDR_REG, (uint32_t)(size_t)s_txBuf);
+    whal_Reg32_Write(base, ZB_TXDMA_ADDR_REG, (uint32_t)(size_t)s_txBuf);
     if (s_tx.ackRequested) {
-        whal_Reg_Write(base, ZB_RXDMA_ADDR_REG, (uint32_t)(size_t)s_rxBuf);
+        whal_Reg32_Write(base, ZB_RXDMA_ADDR_REG, (uint32_t)(size_t)s_rxBuf);
     }
 
     if (!s_tx.cfg.csmaCa) {
@@ -416,8 +416,8 @@ static void Esp32c6_Ieee802154_TxAttempt(size_t base)
 
     slots = Esp32c6_Ieee802154_Random() & WHAL_BITMASK(s_tx.be);
     if (slots == 0) {
-        whal_Reg_Update(base, ZB_ED_DURATION_REG, ZB_ED_DURATION_Msk,
-                        ZB_CCA_SYMBOLS);
+        whal_Reg32_Update(base, ZB_ED_DURATION_REG, ZB_ED_DURATION_Msk,
+                          ZB_CCA_SYMBOLS);
         Esp32c6_Ieee802154_Cmd(base, ZB_CMD_CCA_TX_START);
         s_state = ZB_STATE_TX_CCA;
     } else {
@@ -428,7 +428,7 @@ static void Esp32c6_Ieee802154_TxAttempt(size_t base)
     }
 }
 
-static void Esp32c6_Ieee802154_TxConfirm(size_t base,
+static void Esp32c6_Ieee802154_TxConfirm(uintptr_t base,
                                          whal_Ieee802154_TxStatus status,
                                          const uint8_t *ack, size_t ackLen,
                                          const whal_Ieee802154_Callbacks *cb,
@@ -441,7 +441,7 @@ static void Esp32c6_Ieee802154_TxConfirm(size_t base,
     Esp32c6_Ieee802154_Resume(base);
 }
 
-static void Esp32c6_Ieee802154_TxChannelBusy(size_t base,
+static void Esp32c6_Ieee802154_TxChannelBusy(uintptr_t base,
                                              const whal_Ieee802154_Callbacks *cb,
                                              void *ctx)
 {
@@ -456,12 +456,12 @@ static void Esp32c6_Ieee802154_TxChannelBusy(size_t base,
     Esp32c6_Ieee802154_TxAttempt(base);
 }
 
-static void Esp32c6_Ieee802154_TxNoAck(size_t base,
+static void Esp32c6_Ieee802154_TxNoAck(uintptr_t base,
                                        const whal_Ieee802154_Callbacks *cb,
                                        void *ctx)
 {
     Esp32c6_Ieee802154_Cmd(base, ZB_CMD_TIMER0_STOP);
-    whal_Reg_Update(base, ZB_EVENT_EN_REG, ZB_EVT_TIMER0, 0);
+    whal_Reg32_Update(base, ZB_EVENT_EN_REG, ZB_EVT_TIMER0, 0);
 
     if (s_tx.retries < s_tx.cfg.maxFrameRetries) {
         s_tx.retries++;
@@ -553,7 +553,7 @@ static bool Esp32c6_Ieee802154_PendingLookup(const uint8_t *frame, size_t len)
     return false;
 }
 
-static void Esp32c6_Ieee802154_RxDeliver(size_t base,
+static void Esp32c6_Ieee802154_RxDeliver(uintptr_t base,
                                          const whal_Ieee802154_Callbacks *cb,
                                          void *ctx, bool ackFramePending)
 {
@@ -576,7 +576,7 @@ whal_Error whal_Esp32c6_Ieee802154_Init(whal_Ieee802154 *radioDev)
 {
     const whal_Esp32c6_Ieee802154_Cfg *cfg =
         (const whal_Esp32c6_Ieee802154_Cfg *)whal_Esp32c6_Ieee802154_Dev.cfg;
-    size_t base = whal_Esp32c6_Ieee802154_Dev.base;
+    uintptr_t base = whal_Esp32c6_Ieee802154_Dev.base;
     size_t i;
     (void)radioDev;
 
@@ -611,20 +611,20 @@ whal_Error whal_Esp32c6_Ieee802154_Init(whal_Ieee802154 *radioDev)
         }
     }
 
-    whal_Reg_Write(base, ZB_EVENT_EN_REG, ZB_EVT_ALL & ~ZB_EVT_TIMER0);
-    whal_Reg_Write(base, ZB_TX_ABORT_EN_REG,
-                   ZB_ABORT_BIT(ZB_TX_ABORT_RX_ACK_TIMEOUT) |
-                   ZB_ABORT_BIT(ZB_TX_ABORT_TX_COEX_BREAK) |
-                   ZB_ABORT_BIT(ZB_TX_ABORT_TX_SECURITY_ERROR) |
-                   ZB_ABORT_BIT(ZB_TX_ABORT_CCA_FAILED) |
-                   ZB_ABORT_BIT(ZB_TX_ABORT_CCA_BUSY));
-    whal_Reg_Write(base, ZB_RX_ABORT_EN_REG,
-                   ZB_ABORT_BIT(ZB_RX_ABORT_TX_ACK_TIMEOUT) |
-                   ZB_ABORT_BIT(ZB_RX_ABORT_TX_ACK_COEX_BREAK));
-    whal_Reg_Update(base, ZB_ED_CFG_REG, ZB_ED_PWR_SEL_AVG_Msk,
-                    ZB_ED_PWR_SEL_AVG_Msk);
-    whal_Reg_Write(base, ZB_COEX_PTI_REG, ZB_COEX_PTI_DISABLED);
-    whal_Reg_Update(base, ZB_SEC_CTRL_REG, ZB_SEC_EN_Msk, 0);
+    whal_Reg32_Write(base, ZB_EVENT_EN_REG, ZB_EVT_ALL & ~ZB_EVT_TIMER0);
+    whal_Reg32_Write(base, ZB_TX_ABORT_EN_REG,
+                     ZB_ABORT_BIT(ZB_TX_ABORT_RX_ACK_TIMEOUT) |
+                     ZB_ABORT_BIT(ZB_TX_ABORT_TX_COEX_BREAK) |
+                     ZB_ABORT_BIT(ZB_TX_ABORT_TX_SECURITY_ERROR) |
+                     ZB_ABORT_BIT(ZB_TX_ABORT_CCA_FAILED) |
+                     ZB_ABORT_BIT(ZB_TX_ABORT_CCA_BUSY));
+    whal_Reg32_Write(base, ZB_RX_ABORT_EN_REG,
+                     ZB_ABORT_BIT(ZB_RX_ABORT_TX_ACK_TIMEOUT) |
+                     ZB_ABORT_BIT(ZB_RX_ABORT_TX_ACK_COEX_BREAK));
+    whal_Reg32_Update(base, ZB_ED_CFG_REG, ZB_ED_PWR_SEL_AVG_Msk,
+                      ZB_ED_PWR_SEL_AVG_Msk);
+    whal_Reg32_Write(base, ZB_COEX_PTI_REG, ZB_COEX_PTI_DISABLED);
+    whal_Reg32_Update(base, ZB_SEC_CTRL_REG, ZB_SEC_EN_Msk, 0);
     ieee802154_txon_delay_set();
 
     Esp32c6_Ieee802154_Stop(base);
@@ -635,13 +635,13 @@ whal_Error whal_Esp32c6_Ieee802154_Init(whal_Ieee802154 *radioDev)
 
 whal_Error whal_Esp32c6_Ieee802154_Deinit(whal_Ieee802154 *radioDev)
 {
-    size_t base = whal_Esp32c6_Ieee802154_Dev.base;
+    uintptr_t base = whal_Esp32c6_Ieee802154_Dev.base;
     size_t irq;
     (void)radioDev;
 
     irq = Esp32c6_Ieee802154_IrqSave();
     Esp32c6_Ieee802154_Stop(base);
-    whal_Reg_Write(base, ZB_EVENT_EN_REG, 0);
+    whal_Reg32_Write(base, ZB_EVENT_EN_REG, 0);
     Esp32c6_Ieee802154_IrqRestore(irq);
 
     phy_close_rf();
@@ -669,7 +669,7 @@ whal_Error whal_Esp32c6_Ieee802154_SetAttr(whal_Ieee802154 *radioDev,
                                            whal_Ieee802154_Attr attr,
                                            const whal_Ieee802154_AttrVal *val)
 {
-    size_t base = whal_Esp32c6_Ieee802154_Dev.base;
+    uintptr_t base = whal_Esp32c6_Ieee802154_Dev.base;
     size_t irq;
     size_t i;
     (void)radioDev;
@@ -795,7 +795,7 @@ whal_Error whal_Esp32c6_Ieee802154_Transmit(whal_Ieee802154 *radioDev,
                                             const uint8_t *frame, size_t len,
                                             const whal_Ieee802154_TxCfg *txCfg)
 {
-    size_t base = whal_Esp32c6_Ieee802154_Dev.base;
+    uintptr_t base = whal_Esp32c6_Ieee802154_Dev.base;
     size_t irq;
     size_t i;
     (void)radioDev;
@@ -862,7 +862,7 @@ whal_Error whal_Esp32c6_Ieee802154_Cca(whal_Ieee802154 *radioDev, bool *busy)
 whal_Error whal_Esp32c6_Ieee802154_EnergyDetect(whal_Ieee802154 *radioDev,
                                                 uint32_t durationUs)
 {
-    size_t base = whal_Esp32c6_Ieee802154_Dev.base;
+    uintptr_t base = whal_Esp32c6_Ieee802154_Dev.base;
     uint32_t symbols = durationUs / ZB_SYMBOL_US;
     size_t irq;
     (void)radioDev;
@@ -1043,22 +1043,22 @@ void whal_Esp32c6_Ieee802154_IrqHandler(whal_Ieee802154 *radioDev,
                                         const whal_Ieee802154_Callbacks *cb,
                                         void *ctx)
 {
-    size_t base = whal_Esp32c6_Ieee802154_Dev.base;
+    uintptr_t base = whal_Esp32c6_Ieee802154_Dev.base;
     uint32_t events;
     uint32_t rxAbort;
     uint32_t txAbort;
     (void)radioDev;
 
-    events = whal_Reg_Read(base, ZB_EVENT_STATUS_REG) & ZB_EVT_ALL;
+    events = whal_Reg32_Read(base, ZB_EVENT_STATUS_REG) & ZB_EVT_ALL;
     rxAbort = whal_GetBits(ZB_RX_ABORT_Msk, ZB_RX_ABORT_Pos,
-                           whal_Reg_Read(base, ZB_RX_STATUS_REG));
+                           whal_Reg32_Read(base, ZB_RX_STATUS_REG));
     txAbort = whal_GetBits(ZB_TX_ABORT_Msk, ZB_TX_ABORT_Pos,
-                           whal_Reg_Read(base, ZB_TX_STATUS_REG));
-    whal_Reg_Write(base, ZB_EVENT_STATUS_REG, events);
+                           whal_Reg32_Read(base, ZB_TX_STATUS_REG));
+    whal_Reg32_Write(base, ZB_EVENT_STATUS_REG, events);
 
     if ((events & ZB_EVT_TIMER1) && s_state == ZB_STATE_TX_BACKOFF) {
-        whal_Reg_Update(base, ZB_ED_DURATION_REG, ZB_ED_DURATION_Msk,
-                        ZB_CCA_SYMBOLS);
+        whal_Reg32_Update(base, ZB_ED_DURATION_REG, ZB_ED_DURATION_Msk,
+                          ZB_CCA_SYMBOLS);
         Esp32c6_Ieee802154_Cmd(base, ZB_CMD_CCA_TX_START);
         s_state = ZB_STATE_TX_CCA;
     }
@@ -1066,8 +1066,8 @@ void whal_Esp32c6_Ieee802154_IrqHandler(whal_Ieee802154 *radioDev,
     if ((events & ZB_EVT_TX_DONE) &&
         (s_state == ZB_STATE_TX || s_state == ZB_STATE_TX_CCA)) {
         if (s_tx.ackRequested) {
-            whal_Reg_Update(base, ZB_EVENT_EN_REG, ZB_EVT_TIMER0,
-                            ZB_EVT_TIMER0);
+            whal_Reg32_Update(base, ZB_EVENT_EN_REG, ZB_EVT_TIMER0,
+                              ZB_EVT_TIMER0);
             Esp32c6_Ieee802154_StartTimer(base, ZB_TIME0_THRESHOLD_REG,
                                           ZB_CMD_TIMER0_START,
                                           ZB_ACK_WAIT_LIMIT_US);
@@ -1082,7 +1082,7 @@ void whal_Esp32c6_Ieee802154_IrqHandler(whal_Ieee802154 *radioDev,
         uint8_t phr = s_rxBuf[0] & 0x7F;
 
         Esp32c6_Ieee802154_Cmd(base, ZB_CMD_TIMER0_STOP);
-        whal_Reg_Update(base, ZB_EVENT_EN_REG, ZB_EVT_TIMER0, 0);
+        whal_Reg32_Update(base, ZB_EVENT_EN_REG, ZB_EVT_TIMER0, 0);
         Esp32c6_Ieee802154_TxConfirm(base, WHAL_IEEE802154_TX_SUCCESS,
                                      &s_rxBuf[1], phr >= 2 ? phr - 2 : 0,
                                      cb, ctx);
@@ -1096,9 +1096,9 @@ void whal_Esp32c6_Ieee802154_IrqHandler(whal_Ieee802154 *radioDev,
         if ((fcf & FCF_ACK_REQUEST_Msk) &&
             ((fcf >> FCF_VERSION_Pos) & 0x3) <= FCF_VERSION_2006 &&
             (fcf & FCF_FRAME_TYPE_Msk) != FCF_FRAME_TYPE_ACK) {
-            whal_Reg_Update(base, ZB_ACK_PENDING_REG, ZB_ACK_PENDING_Msk,
-                            Esp32c6_Ieee802154_PendingLookup(frame, phr - 2) ?
-                            ZB_ACK_PENDING_Msk : 0);
+            whal_Reg32_Update(base, ZB_ACK_PENDING_REG, ZB_ACK_PENDING_Msk,
+                              Esp32c6_Ieee802154_PendingLookup(frame, phr - 2) ?
+                              ZB_ACK_PENDING_Msk : 0);
             s_state = ZB_STATE_TX_ACK;
         } else {
             Esp32c6_Ieee802154_RxDeliver(base, cb, ctx, false);
@@ -1107,7 +1107,7 @@ void whal_Esp32c6_Ieee802154_IrqHandler(whal_Ieee802154 *radioDev,
 
     if ((events & ZB_EVT_ACK_TX_DONE) && s_state == ZB_STATE_TX_ACK) {
         Esp32c6_Ieee802154_RxDeliver(base, cb, ctx,
-                                     whal_Reg_Read(base, ZB_ACK_PENDING_REG) &
+                                     whal_Reg32_Read(base, ZB_ACK_PENDING_REG) &
                                      ZB_ACK_PENDING_Msk);
     }
 
@@ -1147,7 +1147,7 @@ void whal_Esp32c6_Ieee802154_IrqHandler(whal_Ieee802154 *radioDev,
 
     if ((events & ZB_EVT_ED_DONE) && s_state == ZB_STATE_ED) {
         int8_t rss = (int8_t)whal_GetBits(ZB_ED_RSS_Msk, ZB_ED_RSS_Pos,
-                                          whal_Reg_Read(base, ZB_ED_CFG_REG));
+                                          whal_Reg32_Read(base, ZB_ED_CFG_REG));
 
         if (rss > s_ed.maxRss) {
             s_ed.maxRss = rss;

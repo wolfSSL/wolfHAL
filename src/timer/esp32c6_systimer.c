@@ -148,11 +148,11 @@ whal_Error whal_Esp32c6_Systimer_Init(whal_Timer *timerDev)
 #ifdef WHAL_CFG_ESP32C6_SYSTIMER_SINGLE_INSTANCE
     const whal_Esp32c6_Systimer_Cfg *cfg =
         (const whal_Esp32c6_Systimer_Cfg *)whal_Esp32c6_Systimer_Dev.cfg;
-    size_t base = whal_Esp32c6_Systimer_Dev.base;
+    uintptr_t base = whal_Esp32c6_Systimer_Dev.base;
     (void)timerDev;
 #else
     const whal_Esp32c6_Systimer_Cfg *cfg;
-    size_t base;
+    uintptr_t base;
 
     if (!timerDev || !timerDev->cfg) {
         return WHAL_EINVAL;
@@ -169,33 +169,33 @@ whal_Error whal_Esp32c6_Systimer_Init(whal_Timer *timerDev)
 
     if (cfg->mode == WHAL_ESP32C6_SYSTIMER_PERIODIC) {
         /* Period mode (TRM 13.5.3): select unit + period, load, then set mode. */
-        whal_Reg_Write(base, SYSTIMER_TARGET_CONF_REG(cfg->comp),
+        whal_Reg32_Write(base, SYSTIMER_TARGET_CONF_REG(cfg->comp),
             whal_SetBits(SYSTIMER_TARGET_TIMER_UNIT_SEL_Msk,
-                         SYSTIMER_TARGET_TIMER_UNIT_SEL_Pos, cfg->unit) |
+                           SYSTIMER_TARGET_TIMER_UNIT_SEL_Pos, cfg->unit) |
             whal_SetBits(SYSTIMER_TARGET_PERIOD_Msk,
-                         SYSTIMER_TARGET_PERIOD_Pos, cfg->period));
-        whal_Reg_Write(base, SYSTIMER_COMP_LOAD_REG(cfg->comp),
-                       SYSTIMER_TIMER_COMP_LOAD_Msk);
-        whal_Reg_Update(base, SYSTIMER_TARGET_CONF_REG(cfg->comp),
-                        SYSTIMER_TARGET_PERIOD_MODE_Msk,
-                        SYSTIMER_TARGET_PERIOD_MODE_Msk);
+                           SYSTIMER_TARGET_PERIOD_Pos, cfg->period));
+        whal_Reg32_Write(base, SYSTIMER_COMP_LOAD_REG(cfg->comp),
+                         SYSTIMER_TIMER_COMP_LOAD_Msk);
+        whal_Reg32_Update(base, SYSTIMER_TARGET_CONF_REG(cfg->comp),
+                          SYSTIMER_TARGET_PERIOD_MODE_Msk,
+                          SYSTIMER_TARGET_PERIOD_MODE_Msk);
     } else {
         /* Target mode (TRM 13.5.2): unit select (period mode cleared), then the
          * absolute 52-bit alarm value across HI/LO, then load. */
-        whal_Reg_Write(base, SYSTIMER_TARGET_CONF_REG(cfg->comp),
+        whal_Reg32_Write(base, SYSTIMER_TARGET_CONF_REG(cfg->comp),
             whal_SetBits(SYSTIMER_TARGET_TIMER_UNIT_SEL_Msk,
-                         SYSTIMER_TARGET_TIMER_UNIT_SEL_Pos, cfg->unit));
-        whal_Reg_Write(base, SYSTIMER_TARGET_HI_REG(cfg->comp),
+                           SYSTIMER_TARGET_TIMER_UNIT_SEL_Pos, cfg->unit));
+        whal_Reg32_Write(base, SYSTIMER_TARGET_HI_REG(cfg->comp),
             (uint32_t)(cfg->compValue >> 32) & SYSTIMER_TIMER_TARGET_HI_Msk);
-        whal_Reg_Write(base, SYSTIMER_TARGET_LO_REG(cfg->comp),
+        whal_Reg32_Write(base, SYSTIMER_TARGET_LO_REG(cfg->comp),
             (uint32_t)cfg->compValue);
-        whal_Reg_Write(base, SYSTIMER_COMP_LOAD_REG(cfg->comp),
-                       SYSTIMER_TIMER_COMP_LOAD_Msk);
+        whal_Reg32_Write(base, SYSTIMER_COMP_LOAD_REG(cfg->comp),
+                         SYSTIMER_TIMER_COMP_LOAD_Msk);
     }
 
     /* Enable this comparator's alarm interrupt. */
-    whal_Reg_Update(base, SYSTIMER_INT_ENA_REG,
-                    compIntMsk[cfg->comp], compIntMsk[cfg->comp]);
+    whal_Reg32_Update(base, SYSTIMER_INT_ENA_REG,
+                      compIntMsk[cfg->comp], compIntMsk[cfg->comp]);
 
     return WHAL_SUCCESS;
 }
@@ -205,11 +205,11 @@ whal_Error whal_Esp32c6_Systimer_Deinit(whal_Timer *timerDev)
 #ifdef WHAL_CFG_ESP32C6_SYSTIMER_SINGLE_INSTANCE
     const whal_Esp32c6_Systimer_Cfg *cfg =
         (const whal_Esp32c6_Systimer_Cfg *)whal_Esp32c6_Systimer_Dev.cfg;
-    size_t base = whal_Esp32c6_Systimer_Dev.base;
+    uintptr_t base = whal_Esp32c6_Systimer_Dev.base;
     (void)timerDev;
 #else
     const whal_Esp32c6_Systimer_Cfg *cfg;
-    size_t base;
+    uintptr_t base;
 
     if (!timerDev || !timerDev->cfg) {
         return WHAL_EINVAL;
@@ -224,8 +224,8 @@ whal_Error whal_Esp32c6_Systimer_Deinit(whal_Timer *timerDev)
     }
 
     /* Disable this comparator and its interrupt (leave the shared counter). */
-    whal_Reg_Update(base, SYSTIMER_CONF_REG, compWorkEnMsk[cfg->comp], 0);
-    whal_Reg_Update(base, SYSTIMER_INT_ENA_REG, compIntMsk[cfg->comp], 0);
+    whal_Reg32_Update(base, SYSTIMER_CONF_REG, compWorkEnMsk[cfg->comp], 0);
+    whal_Reg32_Update(base, SYSTIMER_INT_ENA_REG, compIntMsk[cfg->comp], 0);
 
     return WHAL_SUCCESS;
 }
@@ -235,12 +235,12 @@ whal_Error whal_Esp32c6_Systimer_Start(whal_Timer *timerDev)
 #ifdef WHAL_CFG_ESP32C6_SYSTIMER_SINGLE_INSTANCE
     const whal_Esp32c6_Systimer_Cfg *cfg =
         (const whal_Esp32c6_Systimer_Cfg *)whal_Esp32c6_Systimer_Dev.cfg;
-    size_t base = whal_Esp32c6_Systimer_Dev.base;
+    uintptr_t base = whal_Esp32c6_Systimer_Dev.base;
     uint32_t enMsk;
     (void)timerDev;
 #else
     const whal_Esp32c6_Systimer_Cfg *cfg;
-    size_t base;
+    uintptr_t base;
     uint32_t enMsk;
 
     if (!timerDev || !timerDev->cfg) {
@@ -258,7 +258,7 @@ whal_Error whal_Esp32c6_Systimer_Start(whal_Timer *timerDev)
 
     /* Run the shared counter and enable this comparator. */
     enMsk = unitWorkEnMsk[cfg->unit] | compWorkEnMsk[cfg->comp];
-    whal_Reg_Update(base, SYSTIMER_CONF_REG, enMsk, enMsk);
+    whal_Reg32_Update(base, SYSTIMER_CONF_REG, enMsk, enMsk);
 
     return WHAL_SUCCESS;
 }
@@ -268,11 +268,11 @@ whal_Error whal_Esp32c6_Systimer_Stop(whal_Timer *timerDev)
 #ifdef WHAL_CFG_ESP32C6_SYSTIMER_SINGLE_INSTANCE
     const whal_Esp32c6_Systimer_Cfg *cfg =
         (const whal_Esp32c6_Systimer_Cfg *)whal_Esp32c6_Systimer_Dev.cfg;
-    size_t base = whal_Esp32c6_Systimer_Dev.base;
+    uintptr_t base = whal_Esp32c6_Systimer_Dev.base;
     (void)timerDev;
 #else
     const whal_Esp32c6_Systimer_Cfg *cfg;
-    size_t base;
+    uintptr_t base;
 
     if (!timerDev || !timerDev->cfg) {
         return WHAL_EINVAL;
@@ -288,7 +288,7 @@ whal_Error whal_Esp32c6_Systimer_Stop(whal_Timer *timerDev)
 
     /* Disable only this comparator; the shared counter keeps running for any
      * other comparators riding it. */
-    whal_Reg_Update(base, SYSTIMER_CONF_REG, compWorkEnMsk[cfg->comp], 0);
+    whal_Reg32_Update(base, SYSTIMER_CONF_REG, compWorkEnMsk[cfg->comp], 0);
 
     return WHAL_SUCCESS;
 }
@@ -298,11 +298,11 @@ whal_Error whal_Esp32c6_Systimer_Reset(whal_Timer *timerDev)
 #ifdef WHAL_CFG_ESP32C6_SYSTIMER_SINGLE_INSTANCE
     const whal_Esp32c6_Systimer_Cfg *cfg =
         (const whal_Esp32c6_Systimer_Cfg *)whal_Esp32c6_Systimer_Dev.cfg;
-    size_t base = whal_Esp32c6_Systimer_Dev.base;
+    uintptr_t base = whal_Esp32c6_Systimer_Dev.base;
     (void)timerDev;
 #else
     const whal_Esp32c6_Systimer_Cfg *cfg;
-    size_t base;
+    uintptr_t base;
 
     if (!timerDev || !timerDev->cfg) {
         return WHAL_EINVAL;
@@ -318,10 +318,10 @@ whal_Error whal_Esp32c6_Systimer_Reset(whal_Timer *timerDev)
 
     /* Reload the shared counter to 0. This affects every comparator on this
      * unit, since they share the one time base. */
-    whal_Reg_Write(base, SYSTIMER_UNIT_LOAD_HI_REG(cfg->unit), 0);
-    whal_Reg_Write(base, SYSTIMER_UNIT_LOAD_LO_REG(cfg->unit), 0);
-    whal_Reg_Write(base, SYSTIMER_UNIT_LOAD_REG(cfg->unit),
-                   SYSTIMER_TIMER_UNIT_LOAD_Msk);
+    whal_Reg32_Write(base, SYSTIMER_UNIT_LOAD_HI_REG(cfg->unit), 0);
+    whal_Reg32_Write(base, SYSTIMER_UNIT_LOAD_LO_REG(cfg->unit), 0);
+    whal_Reg32_Write(base, SYSTIMER_UNIT_LOAD_REG(cfg->unit),
+                     SYSTIMER_TIMER_UNIT_LOAD_Msk);
 
     return WHAL_SUCCESS;
 }
@@ -331,11 +331,11 @@ void whal_Esp32c6_Systimer_IrqHandler(whal_Timer *timerDev)
 #ifdef WHAL_CFG_ESP32C6_SYSTIMER_SINGLE_INSTANCE
     const whal_Esp32c6_Systimer_Cfg *cfg =
         (const whal_Esp32c6_Systimer_Cfg *)whal_Esp32c6_Systimer_Dev.cfg;
-    size_t base = whal_Esp32c6_Systimer_Dev.base;
+    uintptr_t base = whal_Esp32c6_Systimer_Dev.base;
     (void)timerDev;
 #else
     const whal_Esp32c6_Systimer_Cfg *cfg;
-    size_t base;
+    uintptr_t base;
 
     if (!timerDev || !timerDev->cfg) {
         return;
@@ -349,7 +349,7 @@ void whal_Esp32c6_Systimer_IrqHandler(whal_Timer *timerDev)
         return;
     }
 
-    whal_Reg_Write(base, SYSTIMER_INT_CLR_REG, compIntMsk[cfg->comp]);
+    whal_Reg32_Write(base, SYSTIMER_INT_CLR_REG, compIntMsk[cfg->comp]);
 }
 
 #ifndef WHAL_CFG_ESP32C6_SYSTIMER_DIRECT_API_MAPPING

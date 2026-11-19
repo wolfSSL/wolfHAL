@@ -66,7 +66,7 @@ const whal_Flash whal_Esp32c6_Flash_Dev = WHAL_CFG_ESP32C6_FLASH_DEV;
 #endif /* WHAL_CFG_ESP32C6_FLASH_DIRECT_API_MAPPING */
 
 /* Read up to FLASH_BUF_SZ bytes at flash offset off. */
-static RAMFUNC void Esp32c6_Flash_RamRead(size_t base, size_t off,
+static RAMFUNC void Esp32c6_Flash_RamRead(uintptr_t base, size_t off,
                                           uint8_t *dst, size_t len)
 {
     size_t mstatus;
@@ -74,12 +74,12 @@ static RAMFUNC void Esp32c6_Flash_RamRead(size_t base, size_t off,
     __asm__ volatile("csrrc %0, mstatus, %1"
                      : "=r"(mstatus) : "r"(MSTATUS_MIE_Msk) : "memory");
 
-    whal_Reg_Write(base, SPI_MEM_ADDR_REG, off | (len << SPI_MEM_ADDR_LEN_Pos));
-    whal_Reg_Write(base, SPI_MEM_CMD_REG, SPI_MEM_FLASH_READ_Msk);
-    while (whal_Reg_Read(base, SPI_MEM_CMD_REG));
+    whal_Reg32_Write(base, SPI_MEM_ADDR_REG, off | (len << SPI_MEM_ADDR_LEN_Pos));
+    whal_Reg32_Write(base, SPI_MEM_CMD_REG, SPI_MEM_FLASH_READ_Msk);
+    while (whal_Reg32_Read(base, SPI_MEM_CMD_REG));
 
     for (size_t i = 0; i < len; i++) {
-        size_t word = whal_Reg_Read(base, SPI_MEM_W0_REG + (i & ~3UL));
+        size_t word = whal_Reg32_Read(base, SPI_MEM_W0_REG + (i & ~3UL));
         dst[i] = (uint8_t)(word >> (8 * (i & 3)));
     }
 
@@ -88,7 +88,7 @@ static RAMFUNC void Esp32c6_Flash_RamRead(size_t base, size_t off,
 }
 
 /* Program up to FLASH_BUF_SZ bytes at flash offset off, within one page. */
-static RAMFUNC void Esp32c6_Flash_RamProgram(size_t base, size_t off,
+static RAMFUNC void Esp32c6_Flash_RamProgram(uintptr_t base, size_t off,
                                              const uint8_t *src, size_t len)
 {
     size_t mstatus;
@@ -101,44 +101,44 @@ static RAMFUNC void Esp32c6_Flash_RamProgram(size_t base, size_t off,
         for (size_t j = 0; j < 4 && i + j < len; j++) {
             word |= (size_t)src[i + j] << (8 * j);
         }
-        whal_Reg_Write(base, SPI_MEM_W0_REG + i, word);
+        whal_Reg32_Write(base, SPI_MEM_W0_REG + i, word);
     }
 
-    whal_Reg_Write(base, SPI_MEM_CMD_REG, SPI_MEM_FLASH_WREN_Msk);
-    while (whal_Reg_Read(base, SPI_MEM_CMD_REG));
+    whal_Reg32_Write(base, SPI_MEM_CMD_REG, SPI_MEM_FLASH_WREN_Msk);
+    while (whal_Reg32_Read(base, SPI_MEM_CMD_REG));
 
-    whal_Reg_Write(base, SPI_MEM_ADDR_REG, off | (len << SPI_MEM_ADDR_LEN_Pos));
-    whal_Reg_Write(base, SPI_MEM_CMD_REG, SPI_MEM_FLASH_PP_Msk);
-    while (whal_Reg_Read(base, SPI_MEM_CMD_REG));
+    whal_Reg32_Write(base, SPI_MEM_ADDR_REG, off | (len << SPI_MEM_ADDR_LEN_Pos));
+    whal_Reg32_Write(base, SPI_MEM_CMD_REG, SPI_MEM_FLASH_PP_Msk);
+    while (whal_Reg32_Read(base, SPI_MEM_CMD_REG));
 
     do {
-        whal_Reg_Write(base, SPI_MEM_CMD_REG, SPI_MEM_FLASH_RDSR_Msk);
-        while (whal_Reg_Read(base, SPI_MEM_CMD_REG));
-    } while (whal_Reg_Read(base, SPI_MEM_RD_STATUS_REG) & FLASH_SR_WIP_Msk);
+        whal_Reg32_Write(base, SPI_MEM_CMD_REG, SPI_MEM_FLASH_RDSR_Msk);
+        while (whal_Reg32_Read(base, SPI_MEM_CMD_REG));
+    } while (whal_Reg32_Read(base, SPI_MEM_RD_STATUS_REG) & FLASH_SR_WIP_Msk);
 
     __asm__ volatile("csrs mstatus, %0"
                      :: "r"(mstatus & MSTATUS_MIE_Msk) : "memory");
 }
 
 /* Erase the 4 KB sector at flash offset off. */
-static RAMFUNC void Esp32c6_Flash_RamEraseSector(size_t base, size_t off)
+static RAMFUNC void Esp32c6_Flash_RamEraseSector(uintptr_t base, size_t off)
 {
     size_t mstatus;
 
     __asm__ volatile("csrrc %0, mstatus, %1"
                      : "=r"(mstatus) : "r"(MSTATUS_MIE_Msk) : "memory");
 
-    whal_Reg_Write(base, SPI_MEM_CMD_REG, SPI_MEM_FLASH_WREN_Msk);
-    while (whal_Reg_Read(base, SPI_MEM_CMD_REG));
+    whal_Reg32_Write(base, SPI_MEM_CMD_REG, SPI_MEM_FLASH_WREN_Msk);
+    while (whal_Reg32_Read(base, SPI_MEM_CMD_REG));
 
-    whal_Reg_Write(base, SPI_MEM_ADDR_REG, off);
-    whal_Reg_Write(base, SPI_MEM_CMD_REG, SPI_MEM_FLASH_SE_Msk);
-    while (whal_Reg_Read(base, SPI_MEM_CMD_REG));
+    whal_Reg32_Write(base, SPI_MEM_ADDR_REG, off);
+    whal_Reg32_Write(base, SPI_MEM_CMD_REG, SPI_MEM_FLASH_SE_Msk);
+    while (whal_Reg32_Read(base, SPI_MEM_CMD_REG));
 
     do {
-        whal_Reg_Write(base, SPI_MEM_CMD_REG, SPI_MEM_FLASH_RDSR_Msk);
-        while (whal_Reg_Read(base, SPI_MEM_CMD_REG));
-    } while (whal_Reg_Read(base, SPI_MEM_RD_STATUS_REG) & FLASH_SR_WIP_Msk);
+        whal_Reg32_Write(base, SPI_MEM_CMD_REG, SPI_MEM_FLASH_RDSR_Msk);
+        while (whal_Reg32_Read(base, SPI_MEM_CMD_REG));
+    } while (whal_Reg32_Read(base, SPI_MEM_RD_STATUS_REG) & FLASH_SR_WIP_Msk);
 
     __asm__ volatile("csrs mstatus, %0"
                      :: "r"(mstatus & MSTATUS_MIE_Msk) : "memory");
@@ -177,7 +177,7 @@ whal_Error whal_Esp32c6_Flash_Read(whal_Flash *flashDev, size_t addr, void *data
 {
     const whal_Esp32c6_Flash_Cfg *cfg =
         (const whal_Esp32c6_Flash_Cfg *)whal_Esp32c6_Flash_Dev.cfg;
-    size_t base = whal_Esp32c6_Flash_Dev.base;
+    uintptr_t base = whal_Esp32c6_Flash_Dev.base;
     uint8_t *buf = data;
     size_t off;
     (void)flashDev;
@@ -213,7 +213,7 @@ whal_Error whal_Esp32c6_Flash_Write(whal_Flash *flashDev, size_t addr,
 {
     const whal_Esp32c6_Flash_Cfg *cfg =
         (const whal_Esp32c6_Flash_Cfg *)whal_Esp32c6_Flash_Dev.cfg;
-    size_t base = whal_Esp32c6_Flash_Dev.base;
+    uintptr_t base = whal_Esp32c6_Flash_Dev.base;
     const uint8_t *buf = data;
     size_t off;
     (void)flashDev;
@@ -253,7 +253,7 @@ whal_Error whal_Esp32c6_Flash_Erase(whal_Flash *flashDev, size_t addr, size_t da
 {
     const whal_Esp32c6_Flash_Cfg *cfg =
         (const whal_Esp32c6_Flash_Cfg *)whal_Esp32c6_Flash_Dev.cfg;
-    size_t base = whal_Esp32c6_Flash_Dev.base;
+    uintptr_t base = whal_Esp32c6_Flash_Dev.base;
     size_t first;
     size_t last;
     (void)flashDev;
