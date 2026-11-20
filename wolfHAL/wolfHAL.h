@@ -27,6 +27,7 @@
  * @brief Convenience umbrella header that pulls in all core wolfHAL modules.
  */
 
+#include <wolfHAL/version.h>
 #include <wolfHAL/error.h>
 #include <wolfHAL/reg.h>
 
