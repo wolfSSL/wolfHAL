@@ -46,7 +46,7 @@ $(BUILD_DIR)/%.o: %.c Makefile
 .SECONDARY:
 $(BUILD_DIR)/%.elf: $(OBJECTS) $(LINKER_SCRIPT)
 	@mkdir -p $(dir $@)
-	$(LD) $(LDFLAGS) -T $(LINKER_SCRIPT) -o $@ $(OBJECTS)
+	$(LD) $(LDFLAGS) -T $(LINKER_SCRIPT) -o $@ $(OBJECTS) $(LDLIBS)
 
 $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf
 	$(OBJCOPY) $^ -O binary $@

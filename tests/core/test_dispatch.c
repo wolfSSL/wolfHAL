@@ -259,6 +259,94 @@ static void Test_Rng_ValidDispatch(void)
     WHAL_ASSERT_EQ(whal_Rng_Deinit(&dev), WHAL_SUCCESS);
 }
 
+/* --- IEEE 802.15.4 dispatch tests --- */
+
+static whal_Error MockRadioInit(whal_Ieee802154 *d) { (void)d; return WHAL_SUCCESS; }
+static whal_Error MockRadioDeinit(whal_Ieee802154 *d) { (void)d; return WHAL_SUCCESS; }
+static whal_Error MockRadioTransmit(whal_Ieee802154 *d, const uint8_t *f, size_t len, const whal_Ieee802154_TxCfg *c) { (void)d; (void)f; (void)len; (void)c; return WHAL_SUCCESS; }
+
+static const whal_Ieee802154Driver mockRadioDriver = {
+    .Init = MockRadioInit,
+    .Deinit = MockRadioDeinit,
+    .Transmit = MockRadioTransmit,
+};
+
+static const whal_Ieee802154Driver emptyRadioDriver = {0};
+
+static void CheckRadioAllReturn(whal_Ieee802154 *dev, whal_Error expected)
+{
+    uint8_t frame[1] = {0};
+    uint8_t ext[WHAL_IEEE802154_EXT_ADDR_SZ] = {0};
+    whal_Ieee802154_TxCfg txCfg = {0};
+    whal_Ieee802154_AttrVal val = {0};
+    uint32_t caps;
+    int8_t rssi;
+    bool busy;
+
+    WHAL_ASSERT_EQ(whal_Ieee802154_Init(dev), expected);
+    WHAL_ASSERT_EQ(whal_Ieee802154_Deinit(dev), expected);
+    WHAL_ASSERT_EQ(whal_Ieee802154_GetCaps(dev, &caps), expected);
+    WHAL_ASSERT_EQ(whal_Ieee802154_SetAttr(dev, WHAL_IEEE802154_ATTR_CHANNEL, &val), expected);
+    WHAL_ASSERT_EQ(whal_Ieee802154_GetAttr(dev, WHAL_IEEE802154_ATTR_CHANNEL, &val), expected);
+    WHAL_ASSERT_EQ(whal_Ieee802154_Transmit(dev, frame, sizeof(frame), &txCfg), expected);
+    WHAL_ASSERT_EQ(whal_Ieee802154_GetRssi(dev, &rssi), expected);
+    WHAL_ASSERT_EQ(whal_Ieee802154_Cca(dev, &busy), expected);
+    WHAL_ASSERT_EQ(whal_Ieee802154_EnergyDetect(dev, 128), expected);
+    WHAL_ASSERT_EQ(whal_Ieee802154_PendingTableEnable(dev, true), expected);
+    WHAL_ASSERT_EQ(whal_Ieee802154_PendingTableAddShort(dev, 0x1234), expected);
+    WHAL_ASSERT_EQ(whal_Ieee802154_PendingTableAddExtended(dev, ext), expected);
+    WHAL_ASSERT_EQ(whal_Ieee802154_PendingTableRemoveShort(dev, 0x1234), expected);
+    WHAL_ASSERT_EQ(whal_Ieee802154_PendingTableRemoveExtended(dev, ext), expected);
+    WHAL_ASSERT_EQ(whal_Ieee802154_PendingTableClear(dev), expected);
+}
+
+static void Test_Ieee802154_NullDev(void)
+{
+    CheckRadioAllReturn(NULL, WHAL_EINVAL);
+}
+
+static void Test_Ieee802154_NullDriver(void)
+{
+    whal_Ieee802154 dev = { .driver = NULL };
+    CheckRadioAllReturn(&dev, WHAL_ENOTSUP);
+}
+
+static void Test_Ieee802154_MissingEntry(void)
+{
+    whal_Ieee802154 dev = { .driver = &emptyRadioDriver };
+    CheckRadioAllReturn(&dev, WHAL_ENOTSUP);
+}
+
+static void Test_Ieee802154_BadArgs(void)
+{
+    whal_Ieee802154 dev = { .driver = &emptyRadioDriver };
+    uint8_t frame[WHAL_IEEE802154_FRAME_MAX + 1] = {0};
+    whal_Ieee802154_TxCfg txCfg = {0};
+
+    WHAL_ASSERT_EQ(whal_Ieee802154_GetCaps(&dev, NULL), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Ieee802154_SetAttr(&dev, WHAL_IEEE802154_ATTR_CHANNEL, NULL), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Ieee802154_GetAttr(&dev, WHAL_IEEE802154_ATTR_CHANNEL, NULL), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Ieee802154_Transmit(&dev, NULL, 1, &txCfg), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Ieee802154_Transmit(&dev, frame, 1, NULL), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Ieee802154_Transmit(&dev, frame, 0, &txCfg), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Ieee802154_Transmit(&dev, frame, sizeof(frame), &txCfg), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Ieee802154_GetRssi(&dev, NULL), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Ieee802154_Cca(&dev, NULL), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Ieee802154_PendingTableAddExtended(&dev, NULL), WHAL_EINVAL);
+    WHAL_ASSERT_EQ(whal_Ieee802154_PendingTableRemoveExtended(&dev, NULL), WHAL_EINVAL);
+}
+
+static void Test_Ieee802154_ValidDispatch(void)
+{
+    whal_Ieee802154 dev = { .driver = &mockRadioDriver };
+    uint8_t frame[WHAL_IEEE802154_FRAME_MAX] = {0};
+    whal_Ieee802154_TxCfg txCfg = {0};
+
+    WHAL_ASSERT_EQ(whal_Ieee802154_Init(&dev), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(whal_Ieee802154_Transmit(&dev, frame, sizeof(frame), &txCfg), WHAL_SUCCESS);
+    WHAL_ASSERT_EQ(whal_Ieee802154_Deinit(&dev), WHAL_SUCCESS);
+}
+
 /* --- SPI dispatch tests --- */
 
 static whal_Error MockSpiInit(whal_Spi *d) { (void)d; return WHAL_SUCCESS; }
@@ -1257,6 +1345,11 @@ void whal_Test_Dispatch(void)
     WHAL_TEST(Test_Rng_NullDev);
     WHAL_TEST(Test_Rng_NullDriver);
     WHAL_TEST(Test_Rng_ValidDispatch);
+    WHAL_TEST(Test_Ieee802154_NullDev);
+    WHAL_TEST(Test_Ieee802154_NullDriver);
+    WHAL_TEST(Test_Ieee802154_MissingEntry);
+    WHAL_TEST(Test_Ieee802154_BadArgs);
+    WHAL_TEST(Test_Ieee802154_ValidDispatch);
     WHAL_TEST(Test_Spi_NullDev);
     WHAL_TEST(Test_Spi_NullDriver);
     WHAL_TEST(Test_Spi_ValidDispatch);

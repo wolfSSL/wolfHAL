@@ -14,6 +14,8 @@ build configuration.
 
 | Board | Platform | CPU | Directory |
 |-------|----------|-----|-----------|
+| Espressif ESP32-C6-DevKitC-1 | ESP32-C6 | RISC-V (RV32IMAC) | `esp32c6_devkitc1/` |
+| Seeed Studio XIAO ESP32C6 | ESP32-C6 | RISC-V (RV32IMAC) | `esp32c6_xiao/` |
 | Microchip PIC32CZ CA Curiosity Ultra | PIC32CZ | Cortex-M7 | `pic32cz_curiosity_ultra/` |
 | ST NUCLEO-C031C6 | STM32C0 | Cortex-M0+ | `stm32c031_nucleo/` |
 | ST NUCLEO-F091RC | STM32F0 | Cortex-M0 | `stm32f091rc_nucleo/` |

@@ -1842,6 +1842,85 @@ and duplex as WHAL_ETH_DUPLEX_HALF or WHAL_ETH_DUPLEX_FULL.
 
 ---
 
+## IEEE 802.15.4
+
+Header: `wolfHAL/ieee802154/ieee802154.h`
+
+The IEEE 802.15.4 driver controls a low-rate wireless radio at the frame level.
+Frames passed through the API are the MAC header and payload without the FCS;
+the radio computes and checks the FCS. The MAC sublayer above the driver (a
+stack such as OpenThread) builds frames, handles association and security, and
+uses GetCaps to decide which functions it must perform itself.
+
+Transmit, receive and energy detection complete asynchronously. As with DMA,
+the driver does not store callbacks: the board's ISR calls the chip driver's
+IRQ handler (e.g. `whal_Esp32c6_Ieee802154_IrqHandler()`) with a
+`whal_Ieee802154_Callbacks` struct and context pointer. Callbacks run in
+interrupt context and may call Transmit or EnergyDetect to start the next
+operation.
+
+### Init
+
+Power up the radio and set defaults: receiver off, PAN ID and short address
+0xffff, frame pending table disabled. Any RF calibration happens here.
+
+### Deinit
+
+Stop any operation in progress and power down the radio.
+
+### GetCaps
+
+Report `WHAL_IEEE802154_CAP_*` flags for what the radio does without help:
+automatic ACKs, waiting for ACKs, CSMA-CA, retransmission, address filtering,
+promiscuous mode, the frame pending table, energy detection and standalone
+CCA. A driver may implement CSMA-CA or retransmission in software on the
+radio's timers and still report the flag; what matters is that the caller does
+not have to.
+
+### SetAttr / GetAttr
+
+Read and write the attributes in `whal_Ieee802154_Attr` through a value union:
+channel, TX power, CCA mode and threshold, PAN ID, short and extended address,
+promiscuous mode and receive-on-when-idle. EUI64 and RX_SENSITIVITY are read
+only; setting them returns WHAL_EINVAL. Values the radio cannot use (a channel
+outside its band, an unknown attribute) return WHAL_ENOTSUP. Extended addresses
+are in over-the-air order (least significant byte first); EUI64 is most
+significant byte first.
+
+### Transmit
+
+Start sending a frame and return. The driver copies the frame, so the caller may
+reuse its buffer. The frame's Acknowledgment Request bit decides whether to wait
+for an ACK. `whal_Ieee802154_TxCfg` carries the per-frame CSMA-CA and retry
+settings. TxConfirm reports SUCCESS (with the ACK frame if one was received),
+NO_ACK after the retries run out, or CHANNEL_ACCESS_FAILURE when CSMA-CA gives
+up. Return WHAL_ENOTREADY if another operation is in progress.
+
+### GetRssi
+
+Read the received signal strength in dBm.
+
+### Cca
+
+Perform one clear channel assessment and report whether the channel is busy.
+Return WHAL_ENOTSUP if the radio only performs CCA as part of a transmit.
+
+### EnergyDetect
+
+Measure the energy on the current channel for the given duration. EdConfirm
+reports the peak level in dBm: the highest of the 8-symbol averaged
+measurements taken over the duration, as IEEE 802.15.4 defines for an energy
+detection scan.
+
+### PendingTable*
+
+Maintain the table of source addresses whose ACKs get the Frame Pending bit set,
+for coordinators holding indirect data. When the table is disabled, every ACK to
+a Data Request sets Frame Pending. Adding an address already present and
+removing one that is absent both succeed; a full table returns WHAL_ENOTREADY.
+
+---
+
 ## DMA
 
 Header: `wolfHAL/dma/dma.h`

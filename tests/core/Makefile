@@ -35,6 +35,7 @@ WHAL_SRC = $(WHAL_DIR)/src/reg.c \
            $(WHAL_DIR)/src/spimem/spimem.c \
            $(WHAL_DIR)/src/dma/dma.c \
            $(WHAL_DIR)/src/rng/rng.c \
+           $(WHAL_DIR)/src/ieee802154/ieee802154.c \
            $(WHAL_DIR)/src/block/block.c \
            $(WHAL_DIR)/src/pwm/pwm.c \
            $(WHAL_DIR)/src/display/display.c \
